@@ -40,9 +40,10 @@ npm --prefix server test
 
 # Linting and formatting
 npm --prefix client run lint
+npm --prefix server run lint
 npx prettier --write "client/src/**/*.{ts,tsx}" "server/src/**/*.ts"
 ```
 
-## CI
+## Contributing & CI
 
-GitHub Actions runs linting, tests, and builds on pull requests to `main` and `develop`. All checks must pass before merging.
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for branching, commit conventions, and pull request rules. GitHub Actions automatically validates branch names, PR titles, linting, tests, and builds on all pull requests to `main` and `develop`.

@@ -1,0 +1,112 @@
+name: CI Pipeline
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+    types: [opened, synchronize, reopened]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint-and-format:
+    name: Lint & Format
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Environment Diagnostics
+        run: |
+          echo "Node version: $(node -v)"
+          echo "NPM version: $(npm -v)"
+          echo "Directory: $(pwd)"
+
+      - name: Install Root Dependencies
+        run: npm ci
+
+      - name: Prettier Formatting Check
+        run: npx prettier --check "client/src/**/*.{ts,tsx,js,jsx}" "server/src/**/*.{ts,js}" "*.{json,md,yml,yaml}"
+
+  client-ci:
+    name: Client (Test & Build)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: ./client
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+          cache-dependency-path: client/package-lock.json
+
+      - name: Environment Diagnostics
+        run: |
+          echo "Node version: $(node -v)"
+          echo "NPM version: $(npm -v)"
+          echo "Working directory: $(pwd)"
+
+      - name: Install Client Dependencies
+        run: npm ci
+
+      - name: ESLint
+        run: npm run lint
+
+      - name: Unit Tests (Vitest)
+        run: npm test
+
+      - name: Typecheck & Build
+        run: npm run build
+
+  server-ci:
+    name: Server (Test & Build)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: ./server
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+          cache-dependency-path: server/package-lock.json
+
+      - name: Environment Diagnostics
+        run: |
+          echo "Node version: $(node -v)"
+          echo "NPM version: $(npm -v)"
+          echo "Working directory: $(pwd)"
+
+      - name: Install Server Dependencies
+        run: npm ci
+
+      - name: API Tests (Vitest)
+        run: npm test
+
+      - name: TypeScript Build
+        run: npm run build

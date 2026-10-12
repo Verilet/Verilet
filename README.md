@@ -1,2 +1,48 @@
 # Detect-Housing-Scam
-Detect scam on housing website. 
+
+Web app to detect fraudulent housing and rental listings.
+
+## Setup
+
+Requires Node 22 (`.nvmrc`).
+
+```bash
+# Install root tooling (Husky pre-commit hooks)
+npm install
+
+# Install client and server dependencies
+npm --prefix client install
+npm --prefix server install
+```
+
+## Development
+
+Run the frontend and backend in separate terminals:
+
+```bash
+# Frontend (runs on http://localhost:5173)
+npm --prefix client run dev
+
+# Backend (runs on http://localhost:5000)
+npm --prefix server run dev
+```
+
+The backend health check is at `http://localhost:5000/api/health`.
+
+## Testing & Linting
+
+Tests use Vitest. Place new test files alongside the code they test (`*.test.tsx` or `*.test.ts`).
+
+```bash
+# Run tests
+npm --prefix client test
+npm --prefix server test
+
+# Linting and formatting
+npm --prefix client run lint
+npx prettier --write "client/src/**/*.{ts,tsx}" "server/src/**/*.ts"
+```
+
+## CI
+
+GitHub Actions runs linting, tests, and builds on pull requests to `main` and `develop`. All checks must pass before merging.

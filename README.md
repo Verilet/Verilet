@@ -8,11 +8,11 @@ Requires Node 22 (`.nvmrc`).
 
 ```bash
 # Install root tooling (Husky pre-commit hooks)
-npm install
+npm ci
 
 # Install client and server dependencies
-npm --prefix client install
-npm --prefix server install
+npm --prefix client ci
+npm --prefix server ci
 ```
 
 ## Development

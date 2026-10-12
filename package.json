@@ -9,14 +9,15 @@
     "prepare": "husky"
   },
   "lint-staged": {
-    "client/src/**/*.{ts,tsx,js,jsx}": [
+    "client/**/*.{ts,tsx,js,jsx}": [
       "prettier --write",
       "eslint --fix"
     ],
-    "server/src/**/*.{ts,js}": [
-      "prettier --write"
+    "server/**/*.{ts,js}": [
+      "prettier --write",
+      "eslint --fix"
     ],
-    "*.{json,md,yml,yaml}": [
+    "**/*.{json,md,yml,yaml}": [
       "prettier --write"
     ]
   }

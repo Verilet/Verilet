@@ -27,8 +27,11 @@ jobs:
           HEAD_REF: ${{ github.head_ref }}
         run: |
           echo "Checking branch name: $HEAD_REF"
-          if [[ ! "$HEAD_REF" =~ ^(feat|fix|ci|docs|refactor|test|chore|perf|style|build)/.+ ]]; then
-            echo "❌ Error: Branch '$HEAD_REF' must start with a valid prefix: feat/, fix/, ci/, docs/, refactor/, test/, chore/, perf/, style/, or build/"
+          valid_branch_regex="^(build|chore|ci|docs|feat|fix|perf|refactor|style|test)\/SCRUM-[0-9]+-[a-zA-Z0-9-]+$"
+          if [[ ! "$HEAD_REF" =~ $valid_branch_regex ]]; then
+            echo "❌ ERROR: Invalid branch name: '$HEAD_REF', please rename your branch."
+            echo "Branch names must follow the format: type/SCRUM-#-description"
+            echo "Allowed types: (build, chore, ci, docs, feat, fix, perf, refactor, style, test)"
             exit 1
           fi
           echo "✅ Branch name is valid!"

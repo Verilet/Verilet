@@ -78,7 +78,7 @@ All user stories, sprint tasks, and bugs are tracked on our [**Jira Scrum Board*
 Before you submit your Pull Request (PR), follow these steps:
 
 1. Check GitHub for any open or closed PR that relates to your submission so we don't duplicate efforts.
-2. Create a new branch using a descriptive prefix (`feat/`, `fix/`, `ci/`, `docs/`, `refactor/`, `test/`) and your Jira ticket number:
+2. Create a new branch using a descriptive prefix (`build/`, `chore/`, `ci/`, `docs/`, `feat/`, `fix/`, `perf/`, `refactor/`, `style/`, `test/`) and your Jira ticket number (`SCRUM-XX`):
 
    ```shell
    git checkout -b feat/SCRUM-12-short-description
@@ -195,7 +195,7 @@ Must be one of the following:
 - **fix**: A bug fix
 - **perf**: A code change that improves performance
 - **refactor**: A code change that neither fixes a bug nor adds a feature
-- **style**: Changes that do not affect the meaning of the code (formatting, whitespace, etc.)
+- **style**: Changes that do not affect the meaning of the code (white-space, formatting, missing semi-colons, etc)
 - **test**: Adding missing tests or correcting existing tests
 
 ##### Scope (Optional)
@@ -212,12 +212,20 @@ The scope is optional and specifies the part of the codebase affected when appli
 
 ##### Summary
 
-Use the imperative, present tense ("add" not "added" nor "adds"), do not capitalize the first letter, and do not end with a period (`.`).
+The summary contains a succinct description of the change:
+
+- use the imperative, present tense: "change" not "changed" nor "changes"
+- don't capitalize the first letter
+- no dot (`.`) at the end
 
 #### <a name="commit-footer"></a> Commit Message Footer
 
-The footer can reference the Jira ticket or breaking changes:
+The footer can contain information about breaking changes and is also the place to reference Jira tickets or PRs that this commit closes or relates to:
 
 ```text
 Fixes SCRUM-13
 ```
+
+### Revert commits
+
+If the commit reverts a previous commit, it should begin with `revert: `, followed by the header of the reverted commit.

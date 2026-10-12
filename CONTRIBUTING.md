@@ -22,7 +22,7 @@ Clone the repository:
 
 ```shell
 # Clone the GitHub repository:
-git clone https://github.com/ Detect-Housing-Scam.git
+git clone https://github.com/ypeng64/Detect-Housing-Scam
 
 # Go to the directory:
 cd Detect-Housing-Scam

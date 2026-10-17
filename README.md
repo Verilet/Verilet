@@ -1,10 +1,23 @@
 # Detect-Housing-Scam
 
-Web app to detect fraudulent housing and rental listings.
+Web application to detect fraudulent housing and rental listings by evaluating risk indicators, price deviations, and listing metadata.
+
+## Tech Stack
+
+| Layer              | Technology                         | Purpose                                          |
+| ------------------ | ---------------------------------- | ------------------------------------------------ |
+| Frontend           | React 19, TypeScript, Vite         | User interface and manual scan workflows         |
+| Backend            | Node.js 22, Express 5, TypeScript  | API routing and orchestration                    |
+| Database           | MongoDB, Mongoose                  | Caching scanned listings and analysis results    |
+| Scraping           | Cheerio                            | Extracting listing content from web pages        |
+| Validation         | Zod                                | Runtime schema validation for forms and payloads |
+| Quality & Testing  | Vitest, ESLint, Prettier           | Unit/API tests, static analysis, code formatting |
+| Automation         | Husky, lint-staged, GitHub Actions | Pre-commit quality hooks, continuous integration |
+| Project Management | Jira, Figma                        | Scrum task tracking, UI design and flows         |
 
 ## Setup
 
-Requires Node 22 (`.nvmrc`).
+Requires Node 22 (pinned in `.nvmrc`).
 
 ```bash
 # Install root tooling (Husky pre-commit hooks)
@@ -27,14 +40,14 @@ npm --prefix client run dev
 npm --prefix server run dev
 ```
 
-The backend health check is at `http://localhost:5000/api/health`.
+The backend health check is accessible at `http://localhost:5000/api/health`.
 
 ## Testing & Linting
 
-Tests use Vitest. Place new test files alongside the code they test (`*.test.tsx` or `*.test.ts`).
+Tests are run using Vitest. Test files reside adjacent to the source modules they test (`*.test.tsx` or `*.test.ts`).
 
 ```bash
-# Run tests
+# Run test suites
 npm --prefix client test
 npm --prefix server test
 
@@ -44,6 +57,8 @@ npm --prefix server run lint
 npx prettier --write "client/src/**/*.{ts,tsx}" "server/src/**/*.ts"
 ```
 
-## Contributing & CI
+## Documentation
 
-See [CONTRIBUTING.md](./CONTRIBUTING.md) for branching, commit conventions, and pull request rules. GitHub Actions automatically validates branch names, PR titles, linting, tests, and builds on all pull requests to `main` and `develop`.
+- [CONTRIBUTING.md](./CONTRIBUTING.md): Branch naming, Jira linkage, commit format, and PR rules.
+- [docs/ci-cd.md](./docs/ci-cd.md): Detailed CI/CD workflow mechanics, job breakdowns, and troubleshooting.
+- [AGENTS.md](./AGENTS.md): Operational boundaries and constraints for AI coding assistants.

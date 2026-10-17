@@ -1,0 +1,55 @@
+name: PR Checks & Autolabeler
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  autolabel:
+    name: Auto-label PR
+    runs-on: ubuntu-latest
+    steps:
+      - name: Apply Labels Based on Changed Files
+        uses: actions/labeler@v5
+        with:
+          repo-token: '${{ secrets.GITHUB_TOKEN }}'
+
+  validate-pr:
+    name: Validate Branch & PR Title
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check Branch Naming Convention
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+        run: |
+          echo "Checking branch name: $HEAD_REF"
+          valid_branch_regex="^(build|chore|ci|docs|feat|fix|perf|refactor|style|test)\/SCRUM-[0-9]+-[a-zA-Z0-9-]+$"
+          if [[ ! "$HEAD_REF" =~ $valid_branch_regex ]]; then
+            echo "❌ ERROR: Invalid branch name: '$HEAD_REF', please rename your branch."
+            echo "Branch names must follow the format: type/SCRUM-#-description"
+            echo "Allowed types: (build, chore, ci, docs, feat, fix, perf, refactor, style, test)"
+            exit 1
+          fi
+          echo "✅ Branch name is valid!"
+
+      - name: Check PR Title Follows Conventional Commits
+        uses: amannn/action-semantic-pull-request@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          types: |
+            build
+            chore
+            ci
+            docs
+            feat
+            fix
+            perf
+            refactor
+            style
+            test
+          requireScope: false

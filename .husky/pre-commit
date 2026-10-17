@@ -1,0 +1,17 @@
+local_branch_name="$(git rev-parse --abbrev-ref HEAD)"
+valid_branch_regex="^(build|chore|ci|docs|feat|fix|perf|refactor|style|test)\/SCRUM-[0-9]+-[a-zA-Z0-9-]+$"
+
+if [[ ! $local_branch_name =~ $valid_branch_regex ]] && [[ $local_branch_name != "main" && $local_branch_name != "develop" ]]; then
+    echo "------------------------------------------------------"
+    echo "❌ ERROR: Invalid branch name: '$local_branch_name', please rename your branch."
+    echo ""
+    echo "Branch names must follow the format: type/SCRUM-#-description"
+    echo "Allowed types: (build, chore, ci, docs, feat, fix, perf, refactor, style, test)"
+    echo ""
+    echo "You can rename your branch with the command:"
+    echo "git branch -m {new name}"
+    echo "------------------------------------------------------"
+    exit 1
+fi
+
+npx lint-staged

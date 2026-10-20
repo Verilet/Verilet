@@ -1,0 +1,97 @@
+name: CD Pipeline
+
+on:
+  workflow_run:
+    workflows: ['CI Pipeline']
+    branches: [main]
+    types: [completed]
+  workflow_dispatch:
+
+concurrency:
+  group: production-deployment
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy to Production
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      # -----------------------------------------------------------
+      # 1. Deploy Frontend (Vercel)
+      # -----------------------------------------------------------
+      - name: Trigger Frontend Deployment (Vercel Deploy Hook)
+        if: ${{ env.VERCEL_DEPLOY_HOOK != '' }}
+        env:
+          VERCEL_DEPLOY_HOOK: ${{ secrets.VERCEL_DEPLOY_HOOK_URL }}
+        run: |
+          echo "Triggering Vercel Frontend Deployment via Deploy Hook..."
+          response=$(curl -s -w "\n%{http_code}" -X POST "$VERCEL_DEPLOY_HOOK")
+          http_code=$(echo "$response" | tail -n1)
+          if [ "$http_code" -ge 200 ] && [ "$http_code" -lt 300 ]; then
+            echo "Vercel deploy hook successfully triggered (HTTP $http_code)"
+          else
+            echo "Vercel deploy hook failed with HTTP $http_code"
+            echo "$response"
+            exit 1
+          fi
+
+      - name: Deploy Frontend via Vercel CLI (Fallback)
+        if: ${{ env.VERCEL_TOKEN != '' && env.VERCEL_DEPLOY_HOOK == '' }}
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        working-directory: ./client
+        run: |
+          echo "Deploying client to Vercel via CLI..."
+          npx vercel pull --yes --environment=production --token=$VERCEL_TOKEN
+          npx vercel build --prod --token=$VERCEL_TOKEN
+          npx vercel deploy --prebuilt --prod --token=$VERCEL_TOKEN
+
+      # -----------------------------------------------------------
+      # 2. Deploy Backend (Render)
+      # -----------------------------------------------------------
+      - name: Trigger Backend Deployment (Render Deploy Hook)
+        env:
+          RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          echo "Triggering Render Backend Deployment via Deploy Hook..."
+          if [ -z "$RENDER_DEPLOY_HOOK" ]; then
+            echo "Error: RENDER_DEPLOY_HOOK_URL secret is not set!"
+            exit 1
+          fi
+          response=$(curl -s -w "\n%{http_code}" -X POST "$RENDER_DEPLOY_HOOK")
+          http_code=$(echo "$response" | tail -n1)
+          if [ "$http_code" -ge 200 ] && [ "$http_code" -lt 300 ]; then
+            echo "Render deployment successfully triggered (HTTP $http_code)"
+          else
+            echo "Render deploy hook failed with HTTP $http_code"
+            echo "$response"
+            exit 1
+          fi
+
+      # -----------------------------------------------------------
+      # 3. Post-Deployment Verification
+      # -----------------------------------------------------------
+      - name: Verify Live Server Health
+        run: |
+          echo "Waiting 30 seconds for Render to spin up and deploy..."
+          sleep 30
+          echo "Verifying server health endpoint: https://verilet-prod.onrender.com/api/health"
+          for i in {1..12}; do
+            status=$(curl -s -o /dev/null -w "%{http_code}" https://verilet-prod.onrender.com/api/health || true)
+            echo "Health check attempt $i: HTTP $status"
+            if [ "$status" -eq 200 ]; then
+              echo "Production health check passed! Backend is live and healthy."
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "Health check timed out after 2 minutes."
+          exit 1

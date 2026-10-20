@@ -90,29 +90,39 @@ Triggers on pull request events (`opened`, `synchronize`, `reopened`, `edited`).
 
 #### Branch Name Validation
 
-Ensures the head branch follows the project format:
+Ensures the head branch follows either accepted format:
 
-```regex
-^(build|chore|ci|docs|feat|fix|perf|refactor|style|test)\/SCRUM-[0-9]+-[a-zA-Z0-9-]+$
-```
-
-Valid example: `feat/SCRUM-12-url-input-form`  
-Invalid example: `my-fix-branch`
+- **Team Format:** `^(build|chore|ci|docs|feat|fix|perf|refactor|style|test)\/SCRUM-[0-9]+-[a-zA-Z0-9-]+$` (e.g. `feat/SCRUM-12-url-input-form`)
+- **CSE 115A Sprint Task Format:** `^task\/US-[0-9]+-T-[0-9]+(-[a-zA-Z0-9-]+)?$` (e.g. `task/US-1-T-1`)
 
 #### PR Title Validation
 
-Validates that the PR title conforms to Conventional Commits:
+Validates that the PR title conforms to either:
 
-```text
-<type>(<scope>): <summary>
-```
-
-Valid example: `feat(client): add input form for link scanning`  
-Valid example: `ci: add github actions pipeline`
+- **Conventional Commits:** `<type>(<scope>): <summary>` (e.g. `feat(client): add input form for link scanning`)
+- **Course Sprint Tasks:** `<task-id>: <title>` (e.g. `US-1-T-1: Reject a non-university email on login`)
 
 #### Autolabeling
 
 Labels PRs automatically based on file paths touched (e.g. `client/` changes receive the `client` label; `server/` changes receive the `server` label).
+
+---
+
+### 3. CD Pipeline (`.github/workflows/cd.yml`)
+
+Triggers automatically upon the successful completion of the **CI Pipeline** on the `main` branch (via `workflow_run`) or manually via `workflow_dispatch`.
+
+#### Deployment Orchestration
+
+1. **Frontend Deployment (Vercel):**
+   - Triggers the Vercel Deploy Hook (`VERCEL_DEPLOY_HOOK_URL`) or deploys via Vercel CLI (`VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`).
+   - Production URL: Live Vercel client application.
+2. **Backend Deployment (Render):**
+   - Triggers the Render Deploy Hook (`RENDER_DEPLOY_HOOK_URL`).
+   - Render pulls the verified `main` branch, runs `npm ci --include=dev && npm run build`, and starts `node dist/index.js`.
+3. **Post-Deployment Verification:**
+   - Polls `https://verilet-prod.onrender.com/api/health` with retry attempts.
+   - Confirms HTTP 200 and healthy status before marking the deployment as successful.
 
 ---
 

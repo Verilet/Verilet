@@ -4,6 +4,7 @@ Welcome! We’re excited to have you here and appreciate your contributions to *
 
 - [Development Setup](#setup)
 - [Submission Guidelines](#submit)
+- [CSE 115A Sprint Task Workflow](#cse115a)
 - [Coding Rules](#rules)
 - [Commit Message Format](#commit)
 
@@ -22,10 +23,8 @@ Clone the repository:
 
 ```shell
 # Clone the GitHub repository:
-git clone https://github.com/ypeng64/Detect-Housing-Scam
-
-# Go to the directory:
-cd Detect-Housing-Scam
+git clone https://github.com/Verilet/Verilet.git
+cd Verilet
 ```
 
 ### <a name="npm"></a> Installing NPM Modules
@@ -40,6 +39,21 @@ npm ci
 npm --prefix client ci
 npm --prefix server ci
 ```
+
+### <a name="env"></a> Environment Configuration
+
+Both the frontend and backend require local `.env` configuration files:
+
+1. **Backend (`server/.env`):**
+   Copy the template and set `MONGO_URI` with the shared team development connection string:
+   ```shell
+   cp server/.env.example server/.env
+   ```
+2. **Frontend (`client/.env`):**
+   Copy the template (defaults to `http://localhost:5000` for local backend calls):
+   ```shell
+   cp client/.env.example client/.env
+   ```
 
 ### <a name="building"></a> Running the Project Locally
 
@@ -78,74 +92,50 @@ All user stories, sprint tasks, and bugs are tracked on our [**Jira Scrum Board*
 Before you submit your Pull Request (PR), follow these steps:
 
 1. Check GitHub for any open or closed PR that relates to your submission so we don't duplicate efforts.
-2. Create a new branch using a descriptive prefix (`build/`, `chore/`, `ci/`, `docs/`, `feat/`, `fix/`, `perf/`, `refactor/`, `style/`, `test/`) and your Jira ticket number (`SCRUM-XX`):
-
-   ```shell
-   git checkout -b feat/SCRUM-12-short-description
-   ```
-
+2. Create a new branch matching either accepted convention:
+   - **Team Infrastructure & General Features:** `<type>/SCRUM-<number>-<description>`
+     ```shell
+     git checkout -b feat/SCRUM-12-url-scanner-form
+     ```
+   - **CSE 115A Sprint Tasks:** `task/<task-id>`
+     ```shell
+     git switch -c task/US-1-T-1
+     ```
 3. Make your changes and follow our [Coding Rules](#rules).
-4. Commit your changes using a descriptive commit message that follows our [commit message conventions](#commit):
-
-   ```shell
-   git commit -m "feat(client): add url scanner input form"
-   ```
-
+4. Commit your changes using an accepted commit format:
+   - **Conventional Commits:** `git commit -m "feat(client): add url scanner input form"`
+   - **Sprint Tasks:** `git commit -m "US-1-T-1: task spec"`
 5. Push your branch to GitHub:
-
    ```shell
-   git push -u origin feat/SCRUM-12-short-description
+   git push -u origin feat/SCRUM-12-url-scanner-form
    ```
+6. Open a Pull Request targeting `main` and complete the PR template.
 
-6. In GitHub, open a Pull Request targeting `main` (or `develop`) and complete the PR template, including `Fixes SCRUM-XX` so Jira automatically links your PR.
+## <a name="cse115a"></a> CSE 115A Sprint Task Workflow
 
-### <a name="review-pr"></a> Reviewing a Pull Request
+For graded sprint tasks submitted to the Repo Metrics app, follow this exact sequence to protect your **Process point**:
 
-All Pull Requests require all GitHub Actions CI checks (`Lint & Format`, `Client`, and `Server`) to pass green and at least one teammate review before merging.
-
-#### Addressing Review Feedback
-
-If a teammate requests changes on your PR:
-
-1. Make the required updates to the code.
-2. Commit and push the updates to your branch (this will automatically update your Pull Request and re-run CI):
-
-   ```shell
-   git add .
-   git commit -m "fix(client): address pr review feedback"
-   git push
+1. **Write the task spec:** Create `docs/tasks/sprint-N/<task-id>.md` (with Front Matter, Description, Specs, Requirements, Acceptance criteria, Tests).
+2. **Branch from main:** `git switch -c task/US-1-T-1`
+3. **Commit the spec ALONE (no code):**
+   ```bash
+   git add docs/tasks/sprint-1/US-1-T-1.md
+   git commit -m "US-1-T-1: task spec"
    ```
-
-##### <a name="update-commit"></a> Updating the Last Commit Message
-
-If you need to fix the commit message of your most recent commit:
-
-1. Amend the last commit message:
-
-   ```shell
-   git commit --amend
+4. **Tag the base commit before writing any code:**
+   ```bash
+   git tag US-1-T-1-base
+   git push origin task/US-1-T-1 US-1-T-1-base
    ```
-
-2. Push safely to your branch:
-
-   ```shell
-   git push --force-with-lease
+5. **Implement and test:** Write the implementation and test files on the branch.
+6. **Open PR:** Title must be `<task-id>: <title>` (e.g. `US-1-T-1: Reject a non-university email on login`). Within `docs/tasks/`, only your task spec file may be changed.
+7. **Merge and tag done:** After CI passes and teammates review:
+   ```bash
+   git fetch origin
+   git tag US-1-T-1-done <merge-commit-sha>
+   git push origin US-1-T-1-done
    ```
-
-#### <a name="pr-merge"></a> After Your Pull Request Is Merged
-
-After your pull request is merged, delete your feature branch and pull the latest changes:
-
-```shell
-# Switch back to main
-git checkout main
-
-# Delete local feature branch
-git branch -d feat/SCRUM-12-short-description
-
-# Pull latest changes
-git pull origin main
-```
+8. **Submit in Repo Metrics App:** Paste the merged PR link into your assignment card.
 
 ## <a name="rules"></a> Coding Rules
 
@@ -155,77 +145,33 @@ To ensure consistency throughout the source code, keep these rules in mind as yo
 - Code formatting is enforced automatically on commit via **Husky** and **Prettier** (100-character line width, single quotes, semicolons).
 - All code must pass **ESLint** (`npm --prefix client run lint` and `npm --prefix server run lint`) with zero errors.
 
+### Backend Architecture Standards (`server/src/`)
+
+To keep code modular, adhere to the following directory responsibilities:
+
+- **`routes/`**: Express route definitions (e.g. `listing.routes.ts`). Register all routers in `routes/index.ts`.
+- **`controllers/`**: HTTP request handlers that parse inputs, coordinate logic, and return JSON responses.
+- **`models/`**: Mongoose schemas and data persistence models (e.g. `Listing.ts`).
+- **`services/`**: Core business logic, external API integrations, and web scrapers.
+- **`config/`**: App-level and database configuration (`database.ts`).
+- **`app.ts`**: Express configuration and middleware only. Do not bind ports or initiate database connections here.
+- **`index.ts`**: Application entry point that handles environment loading, database connection, and graceful shutdown.
+
 ## <a name="commit"></a> Commit Message Format
 
-We format our Git commit messages and Pull Request titles using [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0). This format leads to an **easier-to-read commit history**.
+Two commit formats are supported by Husky and CI:
 
-Each commit message consists of a **header**, an optional **body**, and an optional **footer**:
+### 1. Conventional Commits (Team / Infrastructure)
 
-```text
-<type>(<scope>): <short summary>
-<BLANK LINE>
-<body>
-<BLANK LINE>
-<footer>
-```
+Format: `<type>(<scope>): <short summary>`
 
-#### <a name="commit-header"></a> Commit Message Header
+- **Allowed Types:** `build`, `chore`, `ci`, `docs`, `feat`, `fix`, `perf`, `refactor`, `style`, `test`, `revert`.
+- **Optional Scopes:** `client`, `server`, `scanner`, `results`, `api`, `db`.
+- **Example:** `feat(client): add url scanner input form`
 
-```text
-<type>(<scope>): <short summary>
-  │       │             │
-  │       │             └─⫸ Summary in present tense. Not capitalized. No period at the end.
-  │       │
-  │       └─⫸ Commit Scope: client|server|scanner|results|api|db
-  │
-  └─⫸ Commit Type: build|chore|ci|docs|feat|fix|perf|refactor|style|test
-```
+### 2. Course Sprint Tasks
 
-The `<type>` and `<summary>` fields are mandatory; the `(<scope>)` field is optional.
+Format: `<task-id>: <short summary>`
 
-##### Type
-
-Must be one of the following:
-
-- **build**: Changes that affect the build system or external dependencies
-- **chore**: Routine maintenance tasks or config updates
-- **ci**: Changes to our CI configuration files and scripts
-- **docs**: Documentation-only changes
-- **feat**: A new feature
-- **fix**: A bug fix
-- **perf**: A code change that improves performance
-- **refactor**: A code change that neither fixes a bug nor adds a feature
-- **style**: Changes that do not affect the meaning of the code (white-space, formatting, missing semi-colons, etc)
-- **test**: Adding missing tests or correcting existing tests
-
-##### Scope (Optional)
-
-The scope is optional and specifies the part of the codebase affected when applicable:
-
-- **client**: Frontend React application changes
-- **server**: Backend Express server changes
-- **scanner**: URL/Manual listing scanner feature
-- **results**: Risk score and red-flag report view
-- **api**: Backend endpoints and external API integrations
-- **db**: Mongoose models and database caching
-- **none/omitted**: Useful for repo-wide, CI, or general changes (e.g., `ci: initialize repo scaffold and pipeline`)
-
-##### Summary
-
-The summary contains a succinct description of the change:
-
-- use the imperative, present tense: "change" not "changed" nor "changes"
-- don't capitalize the first letter
-- no dot (`.`) at the end
-
-#### <a name="commit-footer"></a> Commit Message Footer
-
-The footer can contain information about breaking changes and is also the place to reference Jira tickets or PRs that this commit closes or relates to:
-
-```text
-Fixes SCRUM-13
-```
-
-### Revert commits
-
-If the commit reverts a previous commit, it should begin with `revert: `, followed by the header of the reverted commit.
+- **Example:** `US-1-T-1: task spec`
+- **Example:** `US-1-T-1: implement non-university email check`

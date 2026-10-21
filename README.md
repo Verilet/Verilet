@@ -26,6 +26,34 @@ npm ci
 # Install client and server dependencies
 npm --prefix client ci
 npm --prefix server ci
+
+# Configure local environment files
+cp server/.env.example server/.env
+cp client/.env.example client/.env
+```
+
+## Project Structure
+
+```text
+Detect-Housing-Scam/
+├── client/                     # React frontend (Vite + TypeScript)
+│   ├── src/
+│   │   ├── assets/             # Static graphics and icons
+│   │   ├── App.tsx             # Root React component
+│   │   └── App.test.tsx        # Client unit tests
+│   └── .env.example            # Frontend environment template
+├── server/                     # Express REST API (Node 22 + TypeScript)
+│   ├── src/
+│   │   ├── config/             # App & database configuration (MongoDB connection)
+│   │   ├── controllers/        # Request handlers (HTTP status codes, responses)
+│   │   ├── models/             # Mongoose schemas and data models
+│   │   ├── routes/             # Express route definitions
+│   │   ├── services/           # Business logic and external API integrations
+│   │   ├── app.ts              # Express app configuration & middleware
+│   │   └── index.ts            # Server entry point & startup lifecycle
+│   └── .env.example            # Backend environment template
+├── docs/                       # Specifications and architecture docs
+└── .github/workflows/          # CI and CD GitHub Actions pipelines
 ```
 
 ## Development

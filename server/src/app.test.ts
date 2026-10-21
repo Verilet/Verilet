@@ -9,5 +9,6 @@ describe('Server API Health Check', () => {
     expect(response.status).toBe(200);
     expect(response.body).toHaveProperty('status', 'ok');
     expect(response.body).toHaveProperty('timestamp');
+    expect(response.body).toHaveProperty('database', 'disconnected');
   });
 });

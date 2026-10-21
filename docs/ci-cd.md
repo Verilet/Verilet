@@ -110,19 +110,21 @@ Labels PRs automatically based on file paths touched (e.g. `client/` changes rec
 
 ### 3. CD Pipeline (`.github/workflows/cd.yml`)
 
-Triggers automatically upon the successful completion of the **CI Pipeline** on the `main` branch (via `workflow_run`) or manually via `workflow_dispatch`.
+Continuous deployment is coordinated across two complementary channels upon merging verified code into `main`:
 
 #### Deployment Orchestration
 
 1. **Frontend Deployment (Vercel):**
-   - Triggers the Vercel Deploy Hook (`VERCEL_DEPLOY_HOOK_URL`) or deploys via Vercel CLI (`VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`).
-   - Production URL: Live Vercel client application.
+   - Automatically triggered on push or merge to `main` via Vercel's native GitHub integration.
+   - For pull requests, Vercel automatically provides isolated preview deployments for visual verification without modifying the production domain.
+   - Production URL: Live Vercel client application (`verilet.vercel.app`).
 2. **Backend Deployment (Render):**
-   - Triggers the Render Deploy Hook (`RENDER_DEPLOY_HOOK_URL`).
+   - Orchestrated by `.github/workflows/cd.yml` via the Render Deploy Hook (`RENDER_DEPLOY_HOOK_URL`).
+   - Triggers automatically upon successful completion of the **CI Pipeline** on `main` (or manually via `workflow_dispatch`).
    - Render pulls the verified `main` branch, runs `npm ci --include=dev && npm run build`, and starts `node dist/index.js`.
 3. **Post-Deployment Verification:**
-   - Polls `https://verilet-prod.onrender.com/api/health` with retry attempts.
-   - Confirms HTTP 200 and healthy status before marking the deployment as successful.
+   - GitHub Actions polls `https://verilet-prod.onrender.com/api/health` with retry attempts.
+   - Confirms HTTP 200 and healthy status (including active database connectivity) before marking the deployment as successful.
 
 ---
 

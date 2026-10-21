@@ -23,8 +23,8 @@ Clone the repository:
 
 ```shell
 # Clone the GitHub repository:
-git clone https://github.com/ypeng64/Detect-Housing-Scam
-cd Detect-Housing-Scam
+git clone https://github.com/Verilet/Verilet.git
+cd Verilet
 ```
 
 ### <a name="npm"></a> Installing NPM Modules
@@ -39,6 +39,21 @@ npm ci
 npm --prefix client ci
 npm --prefix server ci
 ```
+
+### <a name="env"></a> Environment Configuration
+
+Both the frontend and backend require local `.env` configuration files:
+
+1. **Backend (`server/.env`):**
+   Copy the template and set `MONGO_URI` with the shared team development connection string:
+   ```shell
+   cp server/.env.example server/.env
+   ```
+2. **Frontend (`client/.env`):**
+   Copy the template (defaults to `http://localhost:5000` for local backend calls):
+   ```shell
+   cp client/.env.example client/.env
+   ```
 
 ### <a name="building"></a> Running the Project Locally
 
@@ -129,6 +144,18 @@ To ensure consistency throughout the source code, keep these rules in mind as yo
 - All new features or bug fixes should include corresponding tests (`*.test.tsx` or `*.test.ts`).
 - Code formatting is enforced automatically on commit via **Husky** and **Prettier** (100-character line width, single quotes, semicolons).
 - All code must pass **ESLint** (`npm --prefix client run lint` and `npm --prefix server run lint`) with zero errors.
+
+### Backend Architecture Standards (`server/src/`)
+
+To keep code modular, adhere to the following directory responsibilities:
+
+- **`routes/`**: Express route definitions (e.g. `listing.routes.ts`). Register all routers in `routes/index.ts`.
+- **`controllers/`**: HTTP request handlers that parse inputs, coordinate logic, and return JSON responses.
+- **`models/`**: Mongoose schemas and data persistence models (e.g. `Listing.ts`).
+- **`services/`**: Core business logic, external API integrations, and web scrapers.
+- **`config/`**: App-level and database configuration (`database.ts`).
+- **`app.ts`**: Express configuration and middleware only. Do not bind ports or initiate database connections here.
+- **`index.ts`**: Application entry point that handles environment loading, database connection, and graceful shutdown.
 
 ## <a name="commit"></a> Commit Message Format
 

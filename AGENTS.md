@@ -9,6 +9,16 @@ Monorepo architecture with two main packages:
 - `client/`: React 19 frontend built with Vite and TypeScript.
 - `server/`: Express 5 REST API built with Node.js and TypeScript.
 
+### Server Directory Structure (`server/src/`)
+
+- `config/`: Configuration modules and database connection lifecycle (`database.ts`).
+- `controllers/`: HTTP request handlers responsible for parsing parameters and formatting responses.
+- `models/`: Mongoose schemas and data persistence models.
+- `routes/`: Express route definitions, aggregated into `routes/index.ts` and mounted at `/api`.
+- `services/`: Business logic, third-party API integrations, and web scrapers.
+- `app.ts`: Express application setup, middleware, and route mounting (no network binding, safe for Supertest).
+- `index.ts`: Application entry point; connects to MongoDB and starts the HTTP server.
+
 Key dependencies:
 
 - Validation: Zod schemas for form inputs, scraper outputs, and API payloads.
@@ -29,6 +39,8 @@ Always run commands targeting the appropriate workspace prefix:
 npm ci
 npm --prefix client ci
 npm --prefix server ci
+cp server/.env.example server/.env
+cp client/.env.example client/.env
 
 # Local dev servers
 npm --prefix client run dev # React app: http://localhost:5173
@@ -53,7 +65,9 @@ npx prettier --write "client/src/**/*.{ts,tsx,js,jsx}" "server/src/**/*.{ts,js}"
    - Do not implement ad-hoc request formats without corresponding Zod schemas.
 
 2. Backend patterns (`server/src/`):
-   - Keep controllers, route definitions, and service logic separate.
+   - Keep controllers, route definitions, and service logic separate across their designated directories (`controllers/`, `routes/`, `services/`, `models/`).
+   - Do not invoke `connectDatabase()` or `app.listen()` inside `app.ts` or route files; server startup and database lifecycle are strictly managed in `index.ts` to keep `app.ts` testable in-memory.
+   - All API endpoints must be declared in modular routers within `routes/` and registered through `routes/index.ts` under `/api`.
    - Every POST/PUT endpoint must parse and validate `req.body` using a Zod schema before business logic executes.
    - Return predictable JSON response envelopes:
      - Success: `{ "success": true, "data": ... }`

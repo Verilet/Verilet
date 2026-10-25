@@ -141,7 +141,7 @@ For graded sprint tasks submitted to the Repo Metrics app, follow this exact seq
 
 To ensure consistency throughout the source code, keep these rules in mind as you are working:
 
-- All new features or bug fixes should include corresponding tests (`*.test.tsx` or `*.test.ts`).
+- All new features or bug fixes should include corresponding tests in `client/tests/` or `server/tests/` (`*.test.tsx` or `*.test.ts`).
 - Code formatting is enforced automatically on commit via **Husky** and **Prettier** (100-character line width, single quotes, semicolons).
 - All code must pass **ESLint** (`npm --prefix client run lint` and `npm --prefix server run lint`) with zero errors.
 
@@ -171,7 +171,7 @@ Format: `<type>(<scope>): <short summary>`
 
 ### 2. Course Sprint Tasks
 
-Format: `<task-id>: <short summary>`
+Format: `<task-id>: <short summary>` (where task-id is `US-#-T-#` or `SCRUM-#-T-#`)
 
 - **Example:** `US-1-T-1: task spec`
-- **Example:** `US-1-T-1: implement non-university email check`
+- **Example:** `SCRUM-3-T-1: task spec`

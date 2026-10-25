@@ -1,6 +1,6 @@
 local_branch_name="$(git rev-parse --abbrev-ref HEAD)"
 valid_team_branch="^(build|chore|ci|docs|feat|fix|perf|refactor|style|test)\/SCRUM-[0-9]+-[a-zA-Z0-9-]+$"
-valid_task_branch="^task\/US-[0-9]+-T-[0-9]+(-[a-zA-Z0-9-]+)?$"
+valid_task_branch="^task\/(US|SCRUM)-[0-9]+-T-[0-9]+(-[a-zA-Z0-9-]+)?$"
 
 if [[ ! $local_branch_name =~ $valid_team_branch ]] && [[ ! $local_branch_name =~ $valid_task_branch ]] && [[ $local_branch_name != "main" && $local_branch_name != "develop" ]]; then
     echo "------------------------------------------------------"
@@ -8,7 +8,7 @@ if [[ ! $local_branch_name =~ $valid_team_branch ]] && [[ ! $local_branch_name =
     echo ""
     echo "Branch names must follow either:"
     echo "  1. Team format:   type/SCRUM-#-description (e.g. feat/SCRUM-12-url-input)"
-    echo "  2. Course format: task/US-#-T-# (e.g. task/US-1-T-1)"
+    echo "  2. Course format: task/US-#-T-# or task/SCRUM-#-T-# (e.g. task/US-1-T-1, task/SCRUM-3-T-1)"
     echo ""
     echo "You can rename your branch with the command:"
     echo "git branch -m {new name}"

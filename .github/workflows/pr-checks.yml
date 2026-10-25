@@ -28,12 +28,12 @@ jobs:
         run: |
           echo "Checking branch name: $HEAD_REF"
           valid_team_branch="^(build|chore|ci|docs|feat|fix|perf|refactor|style|test)\/SCRUM-[0-9]+-[a-zA-Z0-9-]+$"
-          valid_task_branch="^task\/US-[0-9]+-T-[0-9]+(-[a-zA-Z0-9-]+)?$"
+          valid_task_branch="^task\/(US|SCRUM)-[0-9]+-T-[0-9]+(-[a-zA-Z0-9-]+)?$"
           if [[ ! "$HEAD_REF" =~ $valid_team_branch ]] && [[ ! "$HEAD_REF" =~ $valid_task_branch ]]; then
             echo "ERROR: Invalid branch name: '$HEAD_REF', please rename your branch."
             echo "Branch names must follow either:"
             echo "  1. Team format:   type/SCRUM-#-description (e.g. feat/SCRUM-12-url-input)"
-            echo "  2. Course format: task/US-#-T-# (e.g. task/US-1-T-1)"
+            echo "  2. Course format: task/US-#-T-# or task/SCRUM-#-T-# (e.g. task/US-1-T-1, task/SCRUM-3-T-1)"
             exit 1
           fi
           echo "Branch name is valid!"
@@ -44,12 +44,12 @@ jobs:
         run: |
           echo "Checking PR title: $PR_TITLE"
           valid_conventional="^(build|chore|ci|docs|feat|fix|perf|refactor|style|test|revert)(\([a-zA-Z0-9_-]+\))?: .+$"
-          valid_task="^US-[0-9]+-T-[0-9]+: .+$"
+          valid_task="^(US|SCRUM)-[0-9]+-T-[0-9]+: .+$"
           if [[ ! "$PR_TITLE" =~ $valid_conventional ]] && [[ ! "$PR_TITLE" =~ $valid_task ]]; then
             echo "ERROR: Invalid PR title: '$PR_TITLE'"
             echo "PR titles must follow either:"
             echo "  1. Conventional format: type(optional-scope): description (e.g. feat(client): add scanner form)"
-            echo "  2. Course sprint format: US-#-T-#: <title> (e.g. US-1-T-1: Reject non-university email on login)"
+            echo "  2. Course sprint format: US-#-T-# or SCRUM-#-T-#: <title> (e.g. US-1-T-1: Reject non-university email on login)"
             exit 1
           fi
           echo "PR title is valid!"

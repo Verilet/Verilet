@@ -38,8 +38,8 @@ When running `git commit`, Husky intercepts the commit and executes `.husky/pre-
 
 Target rules defined in root `package.json`:
 
-- `client/src/**/*.{ts,tsx,js,jsx}`: Runs `prettier --write` followed by `eslint --fix`.
-- `server/src/**/*.{ts,js}`: Runs `prettier --write` followed by `eslint --fix`.
+- `client/**/*.{ts,tsx,js,jsx}`: Runs `prettier --write` followed by `eslint --fix`.
+- `server/**/*.{ts,js}`: Runs `prettier --write` followed by `eslint --fix`.
 - `*.{json,md,yml,yaml}`: Runs `prettier --write`.
 
 Only staged files are processed, keeping commit times minimal.
@@ -61,7 +61,7 @@ Concurrency is enabled: pushing a new commit to an active PR automatically cance
 - Environment: Ubuntu Latest, Node.js 22.
 - Action: Verifies formatting compliance across all client, server, and config files:
   ```bash
-  npx prettier --check "client/src/**/*.{ts,tsx,js,jsx}" "server/src/**/*.{ts,js}" "*.{json,md,yml,yaml}"
+  npx prettier --check "client/src/**/*.{ts,tsx,js,jsx}" "client/tests/**/*.{ts,tsx,js,jsx}" "server/src/**/*.{ts,js}" "server/tests/**/*.{ts,js}" "*.{json,md,yml,yaml}"
   ```
 
 #### Job: Client (`client-ci`)
@@ -93,14 +93,14 @@ Triggers on pull request events (`opened`, `synchronize`, `reopened`, `edited`).
 Ensures the head branch follows either accepted format:
 
 - **Team Format:** `^(build|chore|ci|docs|feat|fix|perf|refactor|style|test)\/SCRUM-[0-9]+-[a-zA-Z0-9-]+$` (e.g. `feat/SCRUM-12-url-input-form`)
-- **CSE 115A Sprint Task Format:** `^task\/US-[0-9]+-T-[0-9]+(-[a-zA-Z0-9-]+)?$` (e.g. `task/US-1-T-1`)
+- **CSE 115A Sprint Task Format:** `^task\/(US|SCRUM)-[0-9]+-T-[0-9]+(-[a-zA-Z0-9-]+)?$` (e.g. `task/US-1-T-1`, `task/SCRUM-3-T-1`)
 
 #### PR Title Validation
 
 Validates that the PR title conforms to either:
 
 - **Conventional Commits:** `<type>(<scope>): <summary>` (e.g. `feat(client): add input form for link scanning`)
-- **Course Sprint Tasks:** `<task-id>: <title>` (e.g. `US-1-T-1: Reject a non-university email on login`)
+- **Course Sprint Tasks:** `<task-id>: <title>` (e.g. `US-1-T-1: Reject a non-university email on login` or `SCRUM-3-T-1: task spec`)
 
 #### Autolabeling
 

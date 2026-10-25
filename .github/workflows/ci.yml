@@ -38,7 +38,7 @@ jobs:
         run: npm ci
 
       - name: Prettier Formatting Check
-        run: npx prettier --check "client/src/**/*.{ts,tsx,js,jsx}" "server/src/**/*.{ts,js}" "*.{json,md,yml,yaml}"
+        run: npx prettier --check "client/src/**/*.{ts,tsx,js,jsx}" "client/tests/**/*.{ts,tsx,js,jsx}" "server/src/**/*.{ts,js}" "server/tests/**/*.{ts,js}" "*.{json,md,yml,yaml}"
 
   client-ci:
     name: Client (Test & Build)

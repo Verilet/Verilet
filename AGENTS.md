@@ -2,12 +2,20 @@
 
 Context and operational rules for AI coding assistants working in this repository.
 
+## Mandatory Documentation Review
+
+Before designing, implementing, or testing features, agents **MUST consult the `docs/` directory** for repository context and invariants:
+
+- **[`docs/architecture.md`](./docs/architecture.md)**: System architecture, component boundaries, 3-tier scraper data flows, and design invariants.
+- **[`docs/ci-cd.md`](./docs/ci-cd.md)**: Git hooks, branch naming conventions, PR validation workflows, and CD pipelines.
+- **[`docs/tasks/`](./docs/tasks/)**: CSE 115A sprint task specifications, criteria mapping, and past task examples.
+
 ## Repository Overview
 
 Monorepo architecture with two main packages:
 
-- `client/`: React 19 frontend built with Vite and TypeScript.
-- `server/`: Express 5 REST API built with Node.js and TypeScript.
+- `client/`: React 19 frontend built with Vite and TypeScript (tests in `client/tests/`).
+- `server/`: Express 5 REST API built with Node.js and TypeScript (tests in `server/tests/`).
 
 ### Server Directory Structure (`server/src/`)
 
@@ -24,7 +32,7 @@ Key dependencies:
 - Validation: Zod schemas for form inputs, scraper outputs, and API payloads.
 - Scraping: Cheerio for static HTML extraction from listing sources.
 - Database: MongoDB via Mongoose (ODM).
-- Testing: Vitest for client unit tests and server endpoint tests.
+- Testing: Vitest for client unit tests (`client/tests/`) and server endpoint tests (`server/tests/`).
 - Code style: ESLint and Prettier, coordinated with `eslint-config-prettier`.
 - Git hooks: Husky running `lint-staged` on pre-commit.
 
@@ -47,8 +55,8 @@ npm --prefix client run dev # React app: http://localhost:5173
 npm --prefix server run dev # Express API: http://localhost:5000
 
 # Testing
-npm --prefix client test # Client unit tests (Vitest)
-npm --prefix server test # Server API tests (Vitest)
+npm --prefix client test # Client unit tests (Vitest in client/tests/)
+npm --prefix server test # Server API tests (Vitest in server/tests/)
 
 # Linting
 npm --prefix client run lint # Client ESLint
@@ -93,10 +101,10 @@ When working on sprint tasks submitted to the CSE 115A Repo Metrics app:
    - Tag that initial commit with `<task-id>-base` (e.g. `US-1-T-1-base`).
 
 2. **Branch Naming:**
-   - Use `task/<task-id>` (e.g. `task/US-1-T-1` or `task/US-1-T-1-v2`).
+   - Use `task/<task-id>` (e.g. `task/US-1-T-1` or `task/SCRUM-3-T-1`).
 
 3. **Commit Messages:**
-   - Spec commit: `<task-id>: task spec` (e.g. `US-1-T-1: task spec`).
+   - Spec commit: `<task-id>: task spec` (e.g. `US-1-T-1: task spec` or `SCRUM-3-T-1: task spec`).
    - Implementation commits: `<task-id>: <summary>` (e.g. `US-1-T-1: implement login rejection check`).
 
 4. **Pull Request Rules:**
@@ -117,7 +125,7 @@ Two valid branch and commit formats are supported:
   - Types: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`, `ci`, `build`.
 
 - **Format 2: CSE 115A Sprint Tasks**
-  - Branch: `task/<task-id>` (e.g. `task/US-1-T-1`).
+  - Branch: `task/<task-id>` (e.g. `task/US-1-T-1` or `task/SCRUM-3-T-1`).
   - Commit message: `<task-id>: <summary>` (e.g. `US-1-T-1: task spec`).
   - PR Title: `<task-id>: <title>`.
 

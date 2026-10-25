@@ -1,6 +1,6 @@
 commit_msg="$(head -n 1 "$1")"
 valid_conventional_regex="^(build|chore|ci|docs|feat|fix|perf|refactor|style|test|revert)(\([a-zA-Z0-9_-]+\))?: .+$"
-valid_task_regex="^US-[0-9]+-T-[0-9]+: .+$"
+valid_task_regex="^(US|SCRUM)-[0-9]+-T-[0-9]+: .+$"
 
 if [[ ! $commit_msg =~ $valid_conventional_regex ]] && [[ ! $commit_msg =~ $valid_task_regex ]] && [[ ! $commit_msg =~ ^Merge ]]; then
     echo "------------------------------------------------------"
@@ -11,7 +11,7 @@ if [[ ! $commit_msg =~ $valid_conventional_regex ]] && [[ ! $commit_msg =~ $vali
     echo "     Allowed types: (build, chore, ci, docs, feat, fix, perf, refactor, style, test)"
     echo "     Example: feat(client): add url scanner form"
     echo ""
-    echo "  2. Course sprint format: US-#-T-#: description"
+    echo "  2. Course sprint format: US-#-T-# or SCRUM-#-T-#: description"
     echo "     Example: US-1-T-1: task spec"
     echo "     Example: US-1-T-1: implement rejection logic"
     echo "------------------------------------------------------"

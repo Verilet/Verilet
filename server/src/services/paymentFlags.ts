@@ -1,4 +1,6 @@
 //Top of File; Important constants for subtask 1
+
+
 const CATEGORIES_OF_PAYMENT =[
 
     {

@@ -1,6 +1,7 @@
 import { useId, useState } from 'react';
 import ChevronIcon from '../components/ChevronIcon';
 import { RatingChip, StatusChip } from '../components/Chip';
+import { GUIDE } from '../content/guide';
 import { scanMeta } from '../lib/format';
 import { RATING_HEADLINE, ratingFromScore, ratingTone } from '../lib/risk';
 import type { ScanResult } from '../types';
@@ -112,6 +113,16 @@ export default function ResultsView({
                   <span className="check__detail">{check.detail}</span>
                 </div>
                 <StatusChip status={check.status} />
+              </li>
+            ))}
+          </ul>
+          <hr className="divider" />
+          <h2 className="details__heading">{GUIDE.legendHeading}</h2>
+          <ul className="legend__list">
+            {GUIDE.legend.map((item) => (
+              <li key={item.label} className="legend__item">
+                <span className={`chip chip--${item.tone}`}>{item.label}</span>
+                <span className="legend__text">{item.text}</span>
               </li>
             ))}
           </ul>

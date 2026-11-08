@@ -1,14 +1,22 @@
 import ListingForm from '../components/ListingForm';
+import type { CarArrivalInfo } from '../lib/carArrival';
 import type { ListingInput } from '../types';
 
 interface CheckViewProps {
   onSubmit: (input: ListingInput) => void;
   submitting: boolean;
   submitError: string | null;
+  /** Set when the visitor arrives through a car transition. */
+  carArrival?: CarArrivalInfo | null;
 }
 
 /** Screen 1: "Check a listing" (logged out). */
-export default function CheckView({ onSubmit, submitting, submitError }: CheckViewProps) {
+export default function CheckView({
+  onSubmit,
+  submitting,
+  submitError,
+  carArrival,
+}: CheckViewProps) {
   return (
     <main className="main main--center">
       <div className="intro">
@@ -18,7 +26,12 @@ export default function CheckView({ onSubmit, submitting, submitError }: CheckVi
         </p>
       </div>
       <section className="card card--form" aria-label="Check a listing">
-        <ListingForm onSubmit={onSubmit} submitting={submitting} submitError={submitError} />
+        <ListingForm
+          onSubmit={onSubmit}
+          submitting={submitting}
+          submitError={submitError}
+          carArrival={carArrival}
+        />
       </section>
       <p className="footnote">Verilet gives a risk rating, not a guarantee.</p>
     </main>

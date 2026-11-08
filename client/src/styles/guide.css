@@ -1,0 +1,1176 @@
+/* Warm theme and the landing / How it works pages (SCRUM-48). */
+
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-bg);
+  color: var(--color-ink);
+}
+
+.theme-warm {
+  --color-bg: #faf3e8;
+  --color-surface: #faf3e8;
+  --color-card: #fffcf7;
+  --color-border: #e6d8c3;
+  --color-ink: #2b1d12;
+  --color-muted: #6b5a4a;
+  --color-faint: #7a6857;
+  --color-track: #eadcc6;
+  --color-neutral-bg: #efe3d0;
+  --color-danger: #a8322a;
+  --color-danger-bg: #f9ddd8;
+  --color-ok: #25694f;
+  --color-ok-bg: #dcefe6;
+  --color-accent: #b84a29;
+  --color-accent-bg: #f8e3da;
+  --color-sand: #f1e5d2;
+}
+
+a.logo,
+a.nav__link,
+a.button {
+  text-decoration: none;
+}
+
+a.nav__link {
+  color: var(--color-muted);
+}
+
+a.nav__link[aria-current='page'] {
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+.theme-warm .logo__mark {
+  background: var(--color-accent);
+}
+
+.button--accent {
+  background: var(--color-accent);
+  color: #fff;
+  height: 52px;
+  padding: 0 28px;
+  font-size: 16px;
+}
+
+.theme-warm .button--secondary {
+  background: var(--color-card);
+  height: 52px;
+  padding: 0 28px;
+  font-size: 16px;
+}
+
+.guide {
+  flex: 1;
+  width: 100%;
+  padding: 56px 24px 72px;
+  display: flex;
+  justify-content: center;
+}
+
+.guide__column {
+  width: 100%;
+  max-width: 860px;
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+}
+
+.guide__column--landing {
+  max-width: 1040px;
+  gap: 96px;
+}
+
+.guide__column--road {
+  max-width: 1100px;
+}
+
+.guide h3 {
+  margin: 0;
+}
+
+.guide__heading {
+  margin-bottom: 20px;
+  font-size: 30px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.guide__footnote {
+  font-size: 13px;
+  color: var(--color-faint);
+  text-align: center;
+}
+
+.guide-card {
+  padding: 24px;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  box-shadow: 0 2px 10px rgba(43, 29, 18, 0.07);
+}
+
+.eyebrow {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: var(--color-accent);
+}
+
+.eyebrow--muted {
+  color: var(--color-faint);
+}
+
+/* ---------- Hero ---------- */
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+  align-items: center;
+  gap: 56px;
+}
+
+.hero__copy {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 18px;
+}
+
+.hero__title {
+  font-size: 52px;
+  line-height: 1.1;
+  font-weight: 700;
+}
+
+.hero__accent {
+  display: block;
+  color: var(--color-accent);
+}
+
+.hero__text {
+  max-width: 560px;
+  font-size: 18px;
+  line-height: 1.5;
+  color: var(--color-muted);
+}
+
+.hero__actions {
+  margin-top: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.hero__reassurance {
+  font-size: 13px;
+  color: var(--color-faint);
+}
+
+/* ---------- Example result ---------- */
+.example {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.example__meta {
+  font-size: 14px;
+  color: var(--color-muted);
+}
+
+.example__score {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.example__figure {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.example__value {
+  font-size: 52px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--color-danger);
+}
+
+.example__max {
+  font-size: 16px;
+  color: var(--color-faint);
+}
+
+.example__bar {
+  height: 8px;
+  border-radius: 4px;
+  background: var(--color-track);
+  overflow: hidden;
+}
+
+.example__bar-fill {
+  height: 100%;
+  background: var(--color-danger);
+}
+
+.example__reasons {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.example__reason {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 0;
+  border-top: 1px solid var(--color-border);
+}
+
+.example__reason:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.example__reason:last-child {
+  padding-bottom: 0;
+}
+
+.example__reason-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.example__reason-title {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.example__reason-detail {
+  font-size: 13px;
+  color: var(--color-muted);
+}
+
+/* ---------- What we check ---------- */
+.inspect__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: start;
+  gap: 48px;
+}
+
+.inspect__checks {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.inspect__check {
+  padding: 16px 0 16px 18px;
+  border-left: 3px solid var(--color-border);
+}
+
+.inspect__check[data-selected='true'] {
+  border-left-color: var(--color-accent);
+}
+
+.inspect__title {
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.inspect__button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-muted);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.inspect__check[data-selected='true'] .inspect__button {
+  color: var(--color-ink);
+}
+
+.inspect__why {
+  margin-top: 6px;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--color-muted);
+}
+
+.listing-demo {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.listing-demo__part {
+  padding: 10px;
+  border: 2px solid transparent;
+  border-radius: 10px;
+  font-size: 14px;
+}
+
+.listing-demo__part[data-highlight='true'] {
+  border-color: var(--color-accent);
+  background: var(--color-accent-bg);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .listing-demo__part {
+    transition:
+      border-color 200ms ease,
+      background-color 200ms ease;
+  }
+
+  .faq__item .chevron {
+    transition: transform 200ms ease;
+  }
+}
+
+.listing-demo__photo {
+  height: 120px;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  border-radius: 8px;
+  background: var(--color-sand);
+}
+
+.listing-demo__photo .house {
+  width: 96px;
+  height: 90px;
+  margin: 0 0 -1px;
+}
+
+.listing-demo__title {
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.listing-demo__description {
+  margin-top: 4px;
+  color: var(--color-muted);
+}
+
+.listing-demo__rent {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.listing-demo__location {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--color-muted);
+}
+
+.listing-demo__message {
+  font-style: italic;
+}
+
+/* ---------- The road strip ---------- */
+.trip {
+  display: flex;
+  flex-direction: column;
+}
+
+.steps {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+}
+
+.steps__item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: center;
+}
+
+.steps__number {
+  display: none;
+}
+
+.steps__title {
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.steps__item[data-active='true'] .steps__title {
+  color: var(--color-accent);
+}
+
+.steps__text {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--color-muted);
+}
+
+a.trip__link {
+  margin-top: 20px;
+  align-self: center;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-accent);
+}
+
+/* ---------- Answers and the final button ---------- */
+.honest {
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+}
+
+.honest__faq {
+  width: 100%;
+  max-width: 680px;
+  margin: 0 auto;
+}
+
+.guide__note {
+  margin-bottom: 16px;
+  padding: 14px;
+  border-radius: 10px;
+  background: var(--color-accent-bg);
+  color: #7a2f18;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.faq {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.faq__item {
+  border-bottom: 1px solid var(--color-border);
+}
+
+.faq__summary {
+  padding: 16px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  list-style: none;
+  cursor: pointer;
+}
+
+.faq__summary::-webkit-details-marker {
+  display: none;
+}
+
+.faq__item[open] .chevron {
+  transform: rotate(180deg);
+}
+
+.faq__question {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.faq__answer {
+  padding-bottom: 16px;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--color-muted);
+}
+
+/* ---------- Result legend ---------- */
+.legend__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.legend__item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.legend__item .chip {
+  min-width: 96px;
+  justify-content: center;
+}
+
+.legend__text {
+  font-size: 14px;
+}
+
+/* ---------- Closing ---------- */
+.closing {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 44px 24px;
+  border-radius: 16px;
+  background: var(--color-ink);
+  color: #fff3dc;
+  text-align: center;
+}
+
+.closing__title {
+  font-size: 30px;
+  font-weight: 700;
+}
+
+.closing__text {
+  font-size: 16px;
+  color: #d9c8b0;
+}
+
+.closing--plain {
+  padding: 8px 0 0;
+  background: none;
+  color: var(--color-ink);
+}
+
+/* ---------- Scroll reveals and the landing page road ---------- */
+.reveal[data-shown='false'] {
+  opacity: 0;
+  transform: translateY(24px);
+}
+
+.reveal[data-shown='false'] .example__bar-fill {
+  width: 0 !important;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .reveal {
+    transition:
+      opacity 600ms ease-out,
+      transform 600ms ease-out;
+  }
+
+  .example__bar-fill {
+    transition: width 900ms ease-out 200ms;
+  }
+
+  .steps-road__marker {
+    transition:
+      background-color 200ms ease,
+      border-color 200ms ease,
+      color 200ms ease;
+  }
+
+  .steps-road__car {
+    transition: left 800ms cubic-bezier(0.65, 0, 0.35, 1);
+  }
+}
+
+.steps-road {
+  position: relative;
+  height: 48px;
+  margin-bottom: 20px;
+  border-top: 4px solid #3f3228;
+  border-bottom: 4px solid #3f3228;
+  border-radius: 6px;
+  background:
+    repeating-linear-gradient(to right, var(--color-sand) 0 24px, transparent 24px 44px) center /
+      100% 4px no-repeat,
+    #5a4a3c;
+}
+
+.steps-road__marker {
+  position: absolute;
+  top: 50%;
+  width: 26px;
+  height: 26px;
+  margin: -13px 0 0 -13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--color-ink);
+  border-radius: 50%;
+  background: var(--color-sand);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-ink);
+}
+
+.steps-road__marker[data-index='0'] {
+  left: calc(100% / 6);
+}
+
+.steps-road__marker[data-index='1'] {
+  left: 50%;
+}
+
+.steps-road__marker[data-index='2'] {
+  left: calc(500% / 6);
+}
+
+.steps-road__marker[data-reached='true'] {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: #fff;
+}
+
+/* The car drawing faces down the page, so it is turned to drive along this road. */
+.steps-road__car {
+  position: absolute;
+  top: 50%;
+  left: 36px;
+  width: 34px;
+  height: 62px;
+  margin: -31px 0 0 -17px;
+  transform: rotate(-90deg) scale(0.62);
+}
+
+.steps-road__car .car {
+  display: block;
+}
+
+.steps-road__car[data-step='0'] {
+  left: calc(100% / 6 - 34px);
+}
+
+.steps-road__car[data-step='1'] {
+  left: calc(50% - 34px);
+}
+
+.steps-road__car[data-step='2'] {
+  left: calc(500% / 6 - 34px);
+}
+
+/* ---------- How it works road ---------- */
+.road-intro {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+}
+
+.road-intro__title {
+  font-size: 44px;
+  line-height: 1.1;
+  font-weight: 700;
+}
+
+.road-intro__text {
+  font-size: 17px;
+  color: var(--color-muted);
+}
+
+.road-trip {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.trip-status {
+  position: sticky;
+  top: 12px;
+  z-index: 3;
+  width: min(480px, 100%);
+  align-self: center;
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  box-shadow: 0 6px 18px rgba(43, 29, 18, 0.12);
+}
+
+.trip-status__text {
+  min-height: 20px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.trip-status__label {
+  margin-right: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+}
+
+.trip-status__legs {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 4px;
+}
+
+.trip-status__leg {
+  height: 5px;
+  border-radius: var(--radius-pill);
+  background: var(--color-track);
+}
+
+.trip-status__leg[data-done='true'] {
+  background: var(--color-accent);
+}
+
+.road {
+  position: relative;
+  padding: 80px 0 110px;
+}
+
+.road__lane {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 80px;
+  margin-left: -40px;
+  border-left: 4px solid #3f3228;
+  border-right: 4px solid #3f3228;
+  border-radius: 6px;
+  background:
+    repeating-linear-gradient(to bottom, var(--color-sand) 0 24px, transparent 24px 44px) center /
+      4px 100% no-repeat,
+    #5a4a3c;
+}
+
+.road__tag {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 14px;
+  border-radius: var(--radius-pill);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.road__tag--start {
+  top: 6px;
+  background: var(--color-ink);
+  color: #fff3dc;
+}
+
+.road__tag--finish {
+  bottom: 14px;
+  background: var(--color-accent);
+  color: #fff;
+}
+
+.road__car {
+  position: absolute;
+  top: 40px;
+  left: 50%;
+  margin-left: 4px;
+  z-index: 2;
+  will-change: transform;
+}
+
+.road__car[data-flying='true'] {
+  visibility: hidden;
+}
+
+/* The car transition to the check form. The car sits above a veil in the page's own colour. */
+.car-flight,
+.car-arrival {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  pointer-events: none;
+}
+
+/* The landing page's drive-through: a road laid across the screen for a passing car. */
+.car-drive {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  pointer-events: none;
+}
+
+.car-drive__veil {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  background: var(--color-bg);
+}
+
+.car-drive__road {
+  position: fixed;
+  left: 0;
+  right: 0;
+  box-sizing: border-box;
+  border-top: 4px solid #3f3228;
+  border-bottom: 4px solid #3f3228;
+  background:
+    repeating-linear-gradient(to right, var(--color-sand) 0 24px, transparent 24px 44px) center /
+      100% 4px no-repeat,
+    #5a4a3c;
+  transform: scaleX(0);
+  transform-origin: left center;
+}
+
+.car-drive__car {
+  position: fixed;
+  left: 0;
+  width: 34px;
+  height: 62px;
+  transform: translateX(-90px) rotate(-90deg) scale(0.62);
+}
+
+.car-drive__car .car {
+  display: block;
+}
+
+.car-flight__veil,
+.car-arrival__veil {
+  position: absolute;
+  inset: 0;
+  background: var(--color-bg);
+}
+
+.car-flight__veil {
+  opacity: 0;
+}
+
+.car-flight__car,
+.car-arrival__details,
+.car-arrival__body {
+  position: fixed;
+}
+
+.car-flight__car .car,
+.car-arrival__details .car {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.car-arrival__body {
+  box-sizing: border-box;
+  border: 2px solid #2b1d12;
+  background: #c2512f;
+}
+
+.road__you {
+  position: absolute;
+  top: 18px;
+  left: 44px;
+  padding: 3px 10px;
+  border: 1.5px solid var(--color-ink);
+  border-radius: var(--radius-pill);
+  background: var(--color-card);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.road__stops {
+  position: relative;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 56px;
+}
+
+.stop {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 80px 1fr;
+}
+
+/* A numbered waypoint on the road, level with the house. Its driveway shows when the car parks. */
+.stop__marker {
+  position: absolute;
+  top: 46px;
+  left: 50%;
+  width: 28px;
+  height: 28px;
+  margin-left: -14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--color-ink);
+  border-radius: 50%;
+  background-color: var(--color-sand);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-ink);
+}
+
+.stop__marker::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 40px;
+  margin-top: -2px;
+  border-top: 4px dotted var(--color-accent);
+  opacity: 0;
+}
+
+.stop--left .stop__marker::after {
+  right: 100%;
+}
+
+.stop--right .stop__marker::after {
+  left: 100%;
+}
+
+.stop__marker--finish {
+  background-image: repeating-conic-gradient(var(--color-ink) 0 25%, #fffcf7 0 50%);
+  background-size: 12px 12px;
+}
+
+.stop[data-passed='true'] .stop__marker {
+  background-color: var(--color-ok-bg);
+  border-color: var(--color-ok);
+  color: var(--color-ok);
+}
+
+.stop[data-active='true'] .stop__marker {
+  background-color: var(--color-accent);
+  border-color: var(--color-accent);
+  color: #fff;
+}
+
+.stop[data-active='true'] .stop__marker::after {
+  opacity: 1;
+}
+
+.stop__content {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.stop--left .stop__content {
+  grid-column: 1;
+  justify-content: flex-end;
+  padding-right: 16px;
+}
+
+.stop--right .stop__content {
+  grid-column: 3;
+  flex-direction: row-reverse;
+  justify-content: flex-end;
+  padding-left: 16px;
+}
+
+.stop__card {
+  width: 350px;
+  max-width: 100%;
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  box-shadow: 0 2px 10px rgba(43, 29, 18, 0.07);
+}
+
+.stop__label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+}
+
+.stop__title {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.stop__what {
+  font-size: 15px;
+}
+
+.stop__why {
+  margin-top: 4px;
+  padding: 12px;
+  border-radius: 8px;
+  background: var(--color-sand);
+  font-size: 13px;
+  color: var(--color-muted);
+}
+
+.stop__why-label {
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+.house {
+  flex-shrink: 0;
+  margin-top: 4px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .stop__card,
+  .house {
+    transition:
+      transform 200ms ease,
+      box-shadow 200ms ease,
+      border-color 200ms ease;
+  }
+
+  .stop__marker {
+    transition:
+      background-color 200ms ease,
+      border-color 200ms ease,
+      color 200ms ease;
+  }
+
+  .stop__marker::after {
+    transition: opacity 200ms ease;
+  }
+
+  .trip-status__leg {
+    transition: background-color 200ms ease;
+  }
+}
+
+.stop[data-active='true'] .stop__card {
+  border-color: var(--color-accent);
+  box-shadow: 0 6px 18px rgba(43, 29, 18, 0.14);
+  transform: translateY(-3px);
+}
+
+.stop[data-active='true'] .house {
+  transform: translateY(-4px);
+}
+
+/* ---------- Phone ---------- */
+@media (max-width: 720px) {
+  .guide {
+    padding: 32px 16px 56px;
+  }
+
+  .hero__title {
+    font-size: 36px;
+  }
+
+  .road-intro__title {
+    font-size: 30px;
+    text-align: center;
+  }
+
+  .guide__column--landing {
+    gap: 64px;
+  }
+
+  .hero,
+  .inspect__grid,
+  .steps {
+    grid-template-columns: 1fr;
+  }
+
+  .hero {
+    gap: 32px;
+  }
+
+  .inspect__grid {
+    gap: 24px;
+  }
+
+  .steps__item {
+    text-align: left;
+  }
+
+  .steps__number {
+    display: inline;
+    margin-right: 8px;
+    color: var(--color-accent);
+  }
+
+  .legend__item {
+    align-items: flex-start;
+  }
+
+  .road {
+    padding: 56px 0 90px;
+  }
+
+  .road__lane {
+    left: 16px;
+    margin-left: 0;
+    width: 36px;
+  }
+
+  .road__tag {
+    left: 62px;
+    transform: none;
+  }
+
+  .road__car {
+    left: 22px;
+    margin-left: 0;
+  }
+
+  .stop__marker {
+    top: 20px;
+    left: 34px;
+    width: 24px;
+    height: 24px;
+    margin-left: -12px;
+    font-size: 12px;
+  }
+
+  .stop--left .stop__marker::after,
+  .stop--right .stop__marker::after {
+    right: auto;
+    left: 100%;
+    width: 22px;
+  }
+
+  .road__you {
+    display: none;
+  }
+
+  .road__car .car {
+    width: 24px;
+    height: 44px;
+  }
+
+  .stop {
+    grid-template-columns: 1fr;
+    padding-left: 68px;
+  }
+
+  .stop--left .stop__content,
+  .stop--right .stop__content {
+    grid-column: 1;
+    flex-direction: column-reverse;
+    align-items: flex-start;
+    justify-content: flex-start;
+    gap: 8px;
+    padding: 0;
+  }
+
+  .stop__card {
+    width: 100%;
+  }
+
+  .house {
+    width: 72px;
+    height: 67px;
+  }
+
+  .header {
+    padding: 0 16px;
+  }
+}

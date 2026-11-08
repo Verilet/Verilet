@@ -98,11 +98,14 @@ export function scoreListing(input: ListingInput): Pick<ScanResult, 'score' | 'c
   });
   score += 10;
 
+  const hasDetails = input.description !== '' || input.photos.length > 0;
   checks.push({
     id: 'details',
     title: 'Listing details',
-    detail: 'Photos and description look consistent',
-    status: 'OK',
+    detail: hasDetails
+      ? 'Photos and description look consistent'
+      : 'No description or photos were added',
+    status: hasDetails ? 'OK' : 'UNKNOWN',
   });
 
   return { score: Math.min(100, score), checks };

@@ -3,8 +3,6 @@ interface ChevronIconProps {
   up?: boolean;
 }
 
-// TODO: swap for the exported "icon/chevron" SVG from Figma. The Figma asset host was blocked in the
-// environment this was built in, so this is a stand-in with the same 16x16 box.
 export default function ChevronIcon({ up = false }: ChevronIconProps) {
   return (
     <svg

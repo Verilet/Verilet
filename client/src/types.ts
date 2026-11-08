@@ -1,40 +1,58 @@
+import type { z } from 'zod';
+import type { listingFormSchema } from './schemas/listing';
+
 export type Rating = 'HIGH' | 'MEDIUM' | 'LOW';
 export type CheckStatus = 'FLAG' | 'UNKNOWN' | 'OK';
 
-export const BEDROOM_OPTIONS = [
-  { value: 'room', label: 'Room' },
-  { value: 'studio', label: 'Studio' },
-  { value: '1', label: '1 bed' },
-  { value: '2', label: '2 bed' },
-  { value: '3', label: '3 bed' },
-  { value: '4+', label: '4+ bed' },
+export const BEDROOM_VALUES = ['room', 'studio', '1', '2', '3', '4+'] as const;
+export type Bedrooms = (typeof BEDROOM_VALUES)[number];
+
+const BEDROOM_LABELS: Record<Bedrooms, string> = {
+  room: 'Room',
+  studio: 'Studio',
+  '1': '1 bed',
+  '2': '2 bed',
+  '3': '3 bed',
+  '4+': '4+ bed',
+};
+
+export const BEDROOM_OPTIONS = BEDROOM_VALUES.map((value) => ({
+  value,
+  label: BEDROOM_LABELS[value],
+}));
+
+export const PAYMENT_VALUES = [
+  'bank-transfer',
+  'check',
+  'rental-platform',
+  'zelle-venmo',
+  'cash',
+  'wire',
+  'gift-card',
+  'crypto',
+  'other',
 ] as const;
+export type PaymentMethod = (typeof PAYMENT_VALUES)[number];
 
-export type Bedrooms = (typeof BEDROOM_OPTIONS)[number]['value'];
+const PAYMENT_LABELS: Record<PaymentMethod, string> = {
+  'bank-transfer': 'Bank transfer or ACH',
+  check: 'Check or money order',
+  'rental-platform': 'Through a rental platform',
+  'zelle-venmo': 'Zelle, Venmo, or Cash App',
+  cash: 'Cash',
+  wire: 'Wire transfer',
+  'gift-card': 'Gift card',
+  crypto: 'Cryptocurrency',
+  other: 'Something else',
+};
 
-export const PAYMENT_OPTIONS = [
-  { value: 'bank-transfer', label: 'Bank transfer or ACH' },
-  { value: 'check', label: 'Check or money order' },
-  { value: 'rental-platform', label: 'Through a rental platform' },
-  { value: 'zelle-venmo', label: 'Zelle, Venmo, or Cash App' },
-  { value: 'cash', label: 'Cash' },
-  { value: 'wire', label: 'Wire transfer' },
-  { value: 'gift-card', label: 'Gift card' },
-  { value: 'crypto', label: 'Cryptocurrency' },
-  { value: 'other', label: 'Something else' },
-] as const;
-
-export type PaymentMethod = (typeof PAYMENT_OPTIONS)[number]['value'];
+export const PAYMENT_OPTIONS = PAYMENT_VALUES.map((value) => ({
+  value,
+  label: PAYMENT_LABELS[value],
+}));
 
 /** Validated form data, ready to send to the scan service. */
-export interface ListingInput {
-  listingUrl: string;
-  rent: number;
-  bedrooms: Bedrooms;
-  location: string;
-  landlord: string;
-  payment: PaymentMethod;
-}
+export type ListingInput = z.infer<typeof listingFormSchema>;
 
 export interface ScanCheck {
   id: string;

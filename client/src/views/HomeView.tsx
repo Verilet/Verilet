@@ -1,5 +1,6 @@
 import { RatingChip } from '../components/Chip';
 import ListingForm from '../components/ListingForm';
+import type { CarArrivalInfo } from '../lib/carArrival';
 import { formatScanDate, scanShortTitle } from '../lib/format';
 import { ratingFromScore } from '../lib/risk';
 import type { ListingInput, ScanResult } from '../types';
@@ -9,6 +10,8 @@ interface HomeViewProps {
   onSubmit: (input: ListingInput) => void;
   submitting: boolean;
   submitError: string | null;
+  /** Set when the visitor arrives through a car transition. */
+  carArrival?: CarArrivalInfo | null;
   onViewScan: (scanId: string) => void;
   onViewAll: () => void;
 }
@@ -21,6 +24,7 @@ export default function HomeView({
   onSubmit,
   submitting,
   submitError,
+  carArrival,
   onViewScan,
   onViewAll,
 }: HomeViewProps) {
@@ -37,7 +41,12 @@ export default function HomeView({
           <h2 className="card__heading" id="home-check-heading">
             Check a listing
           </h2>
-          <ListingForm onSubmit={onSubmit} submitting={submitting} submitError={submitError} />
+          <ListingForm
+            onSubmit={onSubmit}
+            submitting={submitting}
+            submitError={submitError}
+            carArrival={carArrival}
+          />
         </section>
 
         <section className="card card--recent" aria-labelledby="recent-heading">

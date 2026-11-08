@@ -7,7 +7,18 @@ function daysAgo(days: number): string {
   return date.toISOString();
 }
 
-function seed(id: string, days: number, score: number, input: ListingInput): ScanResult {
+const SAMPLE_DETAILS = {
+  securityDeposit: null,
+  applicationFee: null,
+  contactPhone: '',
+  description: 'Sample listing description.',
+  photos: [],
+} satisfies Partial<ListingInput>;
+
+type SeedInput = Omit<ListingInput, keyof typeof SAMPLE_DETAILS>;
+
+function seed(id: string, days: number, score: number, sample: SeedInput): ScanResult {
+  const input: ListingInput = { ...sample, ...SAMPLE_DETAILS };
   return { ...input, ...scoreListing(input), score, id, createdAt: daysAgo(days) };
 }
 

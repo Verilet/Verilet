@@ -1,44 +1,32 @@
-export type NavTarget = 'check' | 'scans';
+import { Link, useLocation } from 'react-router-dom';
 
 interface HeaderProps {
   loggedIn: boolean;
-  /** Which logged-in nav item is current. */
-  active?: NavTarget;
   initials?: string;
-  onNavigate: (target: NavTarget) => void;
 }
 
-export default function Header({ loggedIn, active, initials = 'JD', onNavigate }: HeaderProps) {
+export default function Header({ loggedIn, initials = 'JD' }: HeaderProps) {
+  const { pathname } = useLocation();
+  const onScans = pathname.startsWith('/scans') || pathname.startsWith('/results');
+  const onHome = pathname === '/' || pathname === '/check';
+
   return (
     <header className="header">
       <div className="header__left">
-        <button
-          type="button"
-          className="logo"
-          onClick={() => onNavigate('check')}
-          aria-label="Verilet home"
-        >
-          <span className="logo__mark" aria-hidden="true" />
+        <Link to="/" className="logo" aria-label="Verilet home">
+          <span className="logo__mark" aria-hidden="true">
+            V
+          </span>
           <span className="logo__name">Verilet</span>
-        </button>
+        </Link>
         {loggedIn && (
           <nav className="nav" aria-label="Main">
-            <button
-              type="button"
-              className="nav__link"
-              aria-current={active === 'check' ? 'page' : undefined}
-              onClick={() => onNavigate('check')}
-            >
+            <Link to="/" className="nav__link" aria-current={onHome ? 'page' : undefined}>
               Check a listing
-            </button>
-            <button
-              type="button"
-              className="nav__link"
-              aria-current={active === 'scans' ? 'page' : undefined}
-              onClick={() => onNavigate('scans')}
-            >
+            </Link>
+            <Link to="/scans" className="nav__link" aria-current={onScans ? 'page' : undefined}>
               My scans
-            </button>
+            </Link>
           </nav>
         )}
       </div>
@@ -47,9 +35,15 @@ export default function Header({ loggedIn, active, initials = 'JD', onNavigate }
           {initials}
         </div>
       ) : (
-        // TODO: link these once the "How it works" and "About" pages exist.
         <nav className="nav nav--public" aria-label="Site">
-          <span>How it works</span>
+          <Link
+            to="/how-it-works"
+            className="nav__link"
+            aria-current={pathname === '/how-it-works' ? 'page' : undefined}
+          >
+            How it works
+          </Link>
+          {/* TODO: link "About" once that page exists. */}
           <span>About</span>
         </nav>
       )}

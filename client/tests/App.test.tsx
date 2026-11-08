@@ -1,4 +1,6 @@
 import { render, screen, within } from '@testing-library/react';
+import type { ReactElement } from 'react';
+import { MemoryRouter } from 'react-router-dom';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import App from '../src/App';
@@ -13,6 +15,11 @@ const validInput: ListingInput = {
   location: 'Santa Cruz, CA',
   landlord: '',
   payment: 'gift-card',
+  securityDeposit: null,
+  applicationFee: null,
+  contactPhone: '',
+  description: '',
+  photos: [],
 };
 
 const fakeCheck: CheckListing = async (input) => ({
@@ -45,20 +52,46 @@ async function fillAndSubmit(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByRole('button', { name: 'Check listing' }));
 }
 
+/** Renders the app at `/check` (the form page for both logged-out and logged-in users). */
+function renderApp(ui: ReactElement, path = '/check') {
+  return render(<MemoryRouter initialEntries={[path]}>{ui}</MemoryRouter>);
+}
+
+describe('page refresh', () => {
+  it('reopens a checked listing from the same browser tab after a refresh', async () => {
+    const user = userEvent.setup();
+    const first = renderApp(<App loggedIn={false} checkListing={fakeCheck} />);
+    await fillAndSubmit(user);
+    await screen.findByRole('button', { name: 'More details' });
+    first.unmount();
+
+    renderApp(<App loggedIn={false} checkListing={fakeCheck} />, '/results/scan-new');
+
+    expect(screen.getByRole('button', { name: 'More details' })).toBeInTheDocument();
+    expect(screen.queryByText("We couldn't find that scan")).not.toBeInTheDocument();
+  });
+
+  it('ignores saved scans it cannot read', () => {
+    sessionStorage.setItem('verilet:scans', '{not json');
+    renderApp(<App loggedIn={false} />, '/results/scan-new');
+    expect(screen.getByRole('heading', { name: "We couldn't find that scan" })).toBeInTheDocument();
+  });
+});
+
 describe('logged-out flow', () => {
   it('shows the check page with its headline and form', () => {
-    render(<App loggedIn={false} />);
+    renderApp(<App loggedIn={false} />);
     expect(
       screen.getByRole('heading', { level: 1, name: 'Check a rental listing before you pay' }),
     ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Check listing' })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'My scans' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'My scans' })).not.toBeInTheDocument();
   });
 
   it('shows errors and does not check the listing when the form is invalid', async () => {
     const user = userEvent.setup();
     const check = vi.fn(fakeCheck);
-    render(<App loggedIn={false} checkListing={check} />);
+    renderApp(<App loggedIn={false} checkListing={check} />);
 
     await user.type(screen.getByLabelText('Listing link'), 'not a link');
     await user.click(screen.getByRole('button', { name: 'Check listing' }));
@@ -76,7 +109,7 @@ describe('logged-out flow', () => {
   it('checks a valid listing, shows the result, and toggles details', async () => {
     const user = userEvent.setup();
     const check = vi.fn(fakeCheck);
-    render(<App loggedIn={false} checkListing={check} />);
+    renderApp(<App loggedIn={false} checkListing={check} />);
 
     await fillAndSubmit(user);
 
@@ -85,7 +118,11 @@ describe('logged-out flow', () => {
     ).toBeInTheDocument();
     expect(check).toHaveBeenCalledWith(validInput);
     expect(screen.getByText('2 bed · $1,200 / month · Santa Cruz, CA')).toBeInTheDocument();
-    expect(screen.getByText('HIGH RISK')).toBeInTheDocument();
+    expect(
+      within(
+        screen.getByRole('region', { name: 'This listing shows several scam signals' }),
+      ).getByText('HIGH RISK'),
+    ).toBeInTheDocument();
 
     const toggle = screen.getByRole('button', { name: 'More details' });
     expect(toggle).toHaveAttribute('aria-expanded', 'false');
@@ -103,7 +140,7 @@ describe('logged-out flow', () => {
 
   it('returns to a blank form from the results page', async () => {
     const user = userEvent.setup();
-    render(<App loggedIn={false} checkListing={fakeCheck} />);
+    renderApp(<App loggedIn={false} checkListing={fakeCheck} />);
     await fillAndSubmit(user);
     await screen.findByRole('heading', { level: 1, name: /scam signals/i });
 
@@ -114,7 +151,7 @@ describe('logged-out flow', () => {
   it('shows an error and keeps the form values when the check fails', async () => {
     const user = userEvent.setup();
     const failing: CheckListing = () => Promise.reject(new Error('boom'));
-    render(<App loggedIn={false} checkListing={failing} />);
+    renderApp(<App loggedIn={false} checkListing={failing} />);
 
     await fillAndSubmit(user);
 
@@ -132,7 +169,7 @@ describe('logged-in flow', () => {
   ];
 
   it('shows the welcome page with recent scans', () => {
-    render(<App loggedIn initialScans={scans} />);
+    renderApp(<App loggedIn initialScans={scans} />);
     expect(screen.getByRole('heading', { level: 1, name: 'Welcome back' })).toBeInTheDocument();
     const recent = screen.getByRole('region', { name: 'Recent scans' });
     expect(within(recent).getAllByRole('listitem')).toHaveLength(3);
@@ -140,15 +177,15 @@ describe('logged-in flow', () => {
   });
 
   it('shows an empty state when there are no scans', () => {
-    render(<App loggedIn initialScans={[]} />);
+    renderApp(<App loggedIn initialScans={[]} />);
     expect(screen.getByText(/No scans yet/)).toBeInTheDocument();
   });
 
   it('filters My scans by rating', async () => {
     const user = userEvent.setup();
-    render(<App loggedIn initialScans={scans} />);
+    renderApp(<App loggedIn initialScans={scans} />);
 
-    await user.click(screen.getByRole('button', { name: 'My scans' }));
+    await user.click(screen.getByRole('link', { name: 'My scans' }));
     expect(screen.getByRole('heading', { level: 1, name: 'My scans' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'All (3)' })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getAllByRole('row')).toHaveLength(4);
@@ -164,9 +201,9 @@ describe('logged-in flow', () => {
 
   it('opens a saved scan with details expanded and a share button', async () => {
     const user = userEvent.setup();
-    render(<App loggedIn initialScans={scans} />);
+    renderApp(<App loggedIn initialScans={scans} />);
 
-    await user.click(screen.getByRole('button', { name: 'My scans' }));
+    await user.click(screen.getByRole('link', { name: 'My scans' }));
     await user.click(within(screen.getAllByRole('row')[1]).getByRole('button', { name: 'View' }));
 
     expect(await screen.findByRole('button', { name: 'Hide details' })).toBeInTheDocument();
@@ -179,7 +216,7 @@ describe('logged-in flow', () => {
 
   it('adds a newly checked listing to My scans', async () => {
     const user = userEvent.setup();
-    render(<App loggedIn initialScans={[]} checkListing={fakeCheck} />);
+    renderApp(<App loggedIn initialScans={[]} checkListing={fakeCheck} />);
 
     await fillAndSubmit(user);
     await screen.findByText('Saved to My scans');

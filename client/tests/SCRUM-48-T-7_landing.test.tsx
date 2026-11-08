@@ -190,6 +190,120 @@ describe('SCRUM-48-T-7 landing motion', () => {
     expect(example.getByText('82')).toBeInTheDocument();
   });
 
+  function stubAnimations() {
+    const animations: { onfinish: (() => void) | null; cancel: ReturnType<typeof vi.fn> }[] = [];
+    Object.defineProperty(HTMLElement.prototype, 'animate', {
+      configurable: true,
+      value: () => {
+        const animation = { onfinish: null, cancel: vi.fn() };
+        animations.push(animation);
+        return animation;
+      },
+    });
+    return animations;
+  }
+
+  const checkLinks = () => screen.getAllByRole('link', { name: 'Check a listing' });
+
+  it('SCRUM-48-T-7 the closing button plays the drive-through too', () => {
+    stubAnimations();
+    const { container } = renderAt(<App loggedIn={false} />, '/');
+    fireEvent.click(checkLinks()[1]);
+    expect(container.querySelector('.car-drive')).not.toBeNull();
+    expect(screen.queryByLabelText('Listing link')).not.toBeInTheDocument();
+  });
+
+  it('SCRUM-48-T-7 clicking again during the drive does not restart it', () => {
+    const animations = stubAnimations();
+    const box = (bottom: number) =>
+      ({ bottom, top: 0, left: 0, right: 0, width: 0, height: 0 }) as DOMRect;
+    const rect = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect');
+    renderAt(<App loggedIn={false} />, '/');
+    rect.mockReturnValue(box(100));
+    fireEvent.click(checkLinks()[0]);
+    // The page has moved by the second click, so a restart would put the road somewhere new.
+    rect.mockReturnValue(box(300));
+    fireEvent.click(checkLinks()[0]);
+    expect(animations).toHaveLength(3);
+    rect.mockRestore();
+  });
+
+  it('SCRUM-48-T-7 reduced motion goes straight to the form', () => {
+    const animations = stubAnimations();
+    mockReducedMotion();
+    const { container } = renderAt(<App loggedIn={false} />, '/');
+    fireEvent.click(checkLinks()[0]);
+    expect(animations).toHaveLength(0);
+    expect(container.querySelector('.car-drive')).toBeNull();
+    expect(screen.getByLabelText('Listing link')).toBeInTheDocument();
+  });
+
+  it('SCRUM-48-T-7 a modified click skips the drive-through', () => {
+    const animations = stubAnimations();
+    const { container } = renderAt(<App loggedIn={false} />, '/');
+    fireEvent.click(checkLinks()[0], { ctrlKey: true });
+    expect(animations).toHaveLength(0);
+    expect(container.querySelector('.car-drive')).toBeNull();
+  });
+
+  it('SCRUM-48-T-7 leaving the page cancels the drive-through', () => {
+    const animations = stubAnimations();
+    const { unmount } = renderAt(<App loggedIn={false} />, '/');
+    fireEvent.click(checkLinks()[0]);
+    unmount();
+    expect(animations).toHaveLength(3);
+    for (const animation of animations) expect(animation.cancel).toHaveBeenCalled();
+  });
+
+  it('SCRUM-48-T-7 the road stays on screen when the section runs past the fold', () => {
+    stubAnimations();
+    const rect = vi
+      .spyOn(HTMLElement.prototype, 'getBoundingClientRect')
+      .mockReturnValue({ bottom: 5000, top: 0, left: 0, right: 0, width: 0, height: 0 } as DOMRect);
+    const { container } = renderAt(<App loggedIn={false} />, '/');
+    fireEvent.click(checkLinks()[0]);
+    const road = container.querySelector<HTMLElement>('.car-drive__road');
+    expect(parseFloat(road?.style.top ?? '')).toBe(window.innerHeight - 48 - 12);
+    rect.mockRestore();
+  });
+
+  it('SCRUM-48-T-7 the road link goes to the full page', () => {
+    renderAt(<App loggedIn={false} />, '/');
+    expect(screen.getByRole('link', { name: GUIDE.tripLinkLabel })).toHaveAttribute(
+      'href',
+      '/how-it-works',
+    );
+  });
+
+  it('SCRUM-48-T-7 each answer opens under its own question', () => {
+    const { container } = renderAt(<App loggedIn={false} />, '/');
+    const items = Array.from(container.querySelectorAll('details'));
+    expect(items).toHaveLength(GUIDE.faq.length);
+    GUIDE.faq.forEach((item, index) => {
+      expect(items[index]).not.toHaveAttribute('open');
+      expect(within(items[index]).getByRole('heading', { level: 3 })).toHaveTextContent(
+        item.question,
+      );
+      expect(items[index]).toHaveTextContent(item.answer);
+    });
+  });
+
+  it('SCRUM-48-T-7 leaving the page stops the car and the score', () => {
+    vi.useFakeTimers();
+    const { everything } = stubObserver();
+    const { unmount } = renderAt(<App loggedIn={false} />, '/');
+    // React keeps a scheduler timer of its own, so count from here.
+    const timersBefore = vi.getTimerCount();
+    everything();
+    const controls = vi.mocked(animate).mock.results.at(-1)?.value as { stop: () => void };
+    expect(vi.getTimerCount()).toBe(timersBefore + GUIDE.steps.length);
+
+    unmount();
+
+    expect(vi.getTimerCount()).toBe(timersBefore);
+    expect(controls.stop).toHaveBeenCalled();
+  });
+
   it('SCRUM-48-T-7 sections reveal when scrolled into view', () => {
     const { scrollIntoView } = stubObserver();
     const { container } = renderAt(<App loggedIn={false} />, '/');

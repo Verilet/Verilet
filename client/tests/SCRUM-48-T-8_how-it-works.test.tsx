@@ -465,6 +465,23 @@ describe('SCRUM-48-T-8 how it works page', () => {
       expect(container.querySelector('.car-flight')).toBeNull();
     });
 
+    it('SCRUM-48-T-8 clicking again during the flight does not restart it', () => {
+      const { animate } = stubAnimate();
+      renderPage();
+      fireEvent.click(checkLink());
+      fireEvent.click(checkLink());
+      expect(animate).toHaveBeenCalledTimes(1);
+    });
+
+    it('SCRUM-48-T-8 the road car hides while its copy takes off', () => {
+      stubAnimate();
+      const { container } = renderPage();
+      const car = container.querySelector('.road__car');
+      expect(car).not.toHaveAttribute('data-flying');
+      fireEvent.click(checkLink());
+      expect(car).toHaveAttribute('data-flying', 'true');
+    });
+
     it('SCRUM-48-T-8 leaving the page cancels the car flight', () => {
       const { animations } = stubAnimate();
       const { unmount } = renderPage();
@@ -474,6 +491,55 @@ describe('SCRUM-48-T-8 how it works page', () => {
 
       expect(animations[0].cancel).toHaveBeenCalled();
     });
+  });
+
+  it('SCRUM-48-T-8 at the top of the page the car waits at the start', () => {
+    // The road starts far below the trigger line, so no stop has been crossed.
+    scrollY = -1000;
+    const { container } = renderPage();
+    const car = container.querySelector<HTMLElement>('.road__car');
+
+    expect(car?.style.transform).toBe('translate3d(0, 0.00px, 0)');
+    expect(screen.getAllByRole('listitem').indexOf(activeStops()[0])).toBe(0);
+    screen
+      .getAllByRole('listitem')
+      .forEach((stop) => expect(stop).toHaveAttribute('data-passed', 'false'));
+  });
+
+  it('SCRUM-48-T-8 reaching the bottom of the page drives to the finish', () => {
+    renderPage();
+    const heightSpy = vi
+      .spyOn(document.documentElement, 'scrollHeight', 'get')
+      .mockReturnValue(1000);
+    vi.stubGlobal('scrollY', 300);
+
+    scrollTo(50);
+
+    expect(screen.getAllByRole('listitem').indexOf(activeStops()[0])).toBe(GUIDE.stops.length - 1);
+    heightSpy.mockRestore();
+  });
+
+  it('SCRUM-48-T-8 resizing keeps the car on its stop', () => {
+    const { container } = renderPage();
+    const car = container.querySelector<HTMLElement>('.road__car');
+    const before = car?.style.transform;
+    const active = activeStops()[0];
+
+    act(() => {
+      window.dispatchEvent(new Event('resize'));
+    });
+
+    expect(car?.style.transform).toBe(before);
+    expect(activeStops()[0]).toBe(active);
+  });
+
+  it('SCRUM-48-T-8 reduced motion never starts the animation', () => {
+    const request = vi.fn();
+    vi.stubGlobal('requestAnimationFrame', request);
+    mockMotion(true);
+    renderPage();
+    scrollTo(1000);
+    expect(request).not.toHaveBeenCalled();
   });
 
   it('SCRUM-48-T-8 cleans up the scroll listener', () => {

@@ -101,8 +101,7 @@ const STOPS: GuideStop[] = [
 
 export const GUIDE = {
   eyebrow: 'RENTAL SCAM CHECK FOR STUDENTS',
-  headline: 'Check a rental listing before you pay',
-  headlineAccent: 'before you pay',
+  headline: { prefix: 'Check a rental listing', accent: 'before you pay' },
   pitch:
     'Verilet looks for common scam signs in a rental listing and gives you a clear risk rating, with the reasons behind it.',
   reassurance: 'No account needed · Takes about a minute',

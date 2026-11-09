@@ -18,7 +18,7 @@ interface HomeViewProps {
 
 const RECENT_COUNT = 4;
 
-/** Screen 4: Home (logged in) with the form and recent scans. */
+/** The logged-in home page, with the listing form and recent scans. */
 export default function HomeView({
   scans,
   onSubmit,

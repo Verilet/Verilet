@@ -1,0 +1,86 @@
+/* Car transitions from the landing and How it works pages to the check form. */
+
+.road__car[data-flying='true'] {
+  visibility: hidden;
+}
+
+/* The car transition to the check form. The car sits above a veil in the page's own colour. */
+.car-flight,
+.car-arrival {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  pointer-events: none;
+}
+
+/* The landing page's drive-through: a road laid across the screen for a passing car. */
+.car-drive {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  pointer-events: none;
+}
+
+.car-drive__veil {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  background: var(--color-bg);
+}
+
+.car-drive__road {
+  position: fixed;
+  left: 0;
+  right: 0;
+  box-sizing: border-box;
+  border-top: 4px solid #3f3228;
+  border-bottom: 4px solid #3f3228;
+  background:
+    repeating-linear-gradient(to right, var(--color-sand) 0 24px, transparent 24px 44px) center /
+      100% 4px no-repeat,
+    #5a4a3c;
+  transform: scaleX(0);
+  transform-origin: left center;
+}
+
+.car-drive__car {
+  position: fixed;
+  left: 0;
+  width: 34px;
+  height: 62px;
+  transform: translateX(-90px) rotate(-90deg) scale(0.62);
+}
+
+.car-drive__car .car {
+  display: block;
+}
+
+.car-flight__veil,
+.car-arrival__veil {
+  position: absolute;
+  inset: 0;
+  background: var(--color-bg);
+}
+
+.car-flight__veil {
+  opacity: 0;
+}
+
+.car-flight__car,
+.car-arrival__details,
+.car-arrival__body {
+  position: fixed;
+}
+
+.car-flight__car .car,
+.car-arrival__details .car {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.car-arrival__body {
+  box-sizing: border-box;
+  border: 2px solid #2b1d12;
+  background: #c2512f;
+}

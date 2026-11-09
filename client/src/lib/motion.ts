@@ -1,3 +1,4 @@
+/** Whether the visitor has asked their system for less animation. */
 export function prefersReducedMotion(): boolean {
   return (
     typeof window.matchMedia === 'function' &&
@@ -5,7 +6,7 @@ export function prefersReducedMotion(): boolean {
   );
 }
 
-/** Scroll-triggered animations need the browser's observer and a visitor who wants motion. */
+/** Whether scroll-triggered animations can run: needs the browser's observer and no reduced motion. */
 export function canAnimateOnScroll(): boolean {
   return typeof IntersectionObserver === 'function' && !prefersReducedMotion();
 }

@@ -1,4 +1,3 @@
-import { animate } from 'motion';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import CarDriveLink from '../components/CarDriveLink';
@@ -14,7 +13,7 @@ import type { CheckStatus } from '../types';
 /** Pause before the car sets off, and the time between stops (an 800ms drive, then parked). */
 const TRIP_START_MS = 250;
 const TRIP_LEG_MS = 1100;
-const SCORE_COUNT_SECONDS = 1.2;
+const SCORE_COUNT_MS = 1200;
 const DEMO_PHOTO_COLOR = '#ead7b5';
 
 /** The example result, whose score counts up the first time it comes into view. */
@@ -26,12 +25,16 @@ function ExampleResult() {
 
   useEffect(() => {
     if (!animated || !inView) return;
-    const controls = animate(0, target, {
-      duration: SCORE_COUNT_SECONDS,
-      ease: [0.22, 1, 0.36, 1],
-      onUpdate: (value) => setScore(Math.round(value)),
-    });
-    return () => controls.stop();
+    let frame = 0;
+    let startTime: number | null = null;
+    const step = (now: number) => {
+      startTime ??= now;
+      const progress = Math.min(1, (now - startTime) / SCORE_COUNT_MS);
+      setScore(Math.round(target * (1 - (1 - progress) ** 3)));
+      if (progress < 1) frame = requestAnimationFrame(step);
+    };
+    frame = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(frame);
   }, [animated, inView, target]);
 
   return (
@@ -184,8 +187,6 @@ function StepsTrip() {
 
 /** Logged-out home: shows what Verilet does and sends visitors to the form at /check. */
 export default function LandingView() {
-  const [before, after] = GUIDE.headline.split(GUIDE.headlineAccent);
-
   return (
     <main className="guide">
       <div className="guide__column guide__column--landing">
@@ -193,9 +194,7 @@ export default function LandingView() {
           <div className="hero__copy">
             <p className="eyebrow">{GUIDE.eyebrow}</p>
             <h1 className="hero__title" id="hero-heading">
-              {before}
-              <span className="hero__accent">{GUIDE.headlineAccent}</span>
-              {after}
+              {GUIDE.headline.prefix} <span className="hero__accent">{GUIDE.headline.accent}</span>
             </h1>
             <p className="hero__text">{GUIDE.pitch}</p>
             <div className="hero__actions">

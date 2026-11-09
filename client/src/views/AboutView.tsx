@@ -10,22 +10,36 @@ const CAR_HEIGHT = 62;
 const TRIGGER_LINE = 0.6;
 /** How far a stop must drop back below the trigger line before the car reverses, in pixels. */
 const REVERSE_MARGIN = 40;
-/** Every drive from one stop to the next takes this long, however the page was scrolled. */
+/** A drive to the next stop takes this long, however the page was scrolled. */
 const DRIVE_MS = 800;
-/** Used instead when the car is more than one stop behind, so it never lags far behind the page. */
-const CATCH_UP_DRIVE_MS = 350;
+/** Each extra stop adds this much to a drive, up to the longest drive below. */
+const EXTRA_STOP_MS = 150;
+const LONGEST_DRIVE_MS = 1400;
 /** Frame gaps are clamped so a slow frame cannot make the car jump. */
 const MIN_FRAME_MS = 8;
 const MAX_FRAME_MS = 50;
 const FIRST_FRAME_MS = 16;
 /** The car's place before the first stop, at the START tag. */
 const AT_START = -1;
+
+/** Road measurements, cached because reading layout on every frame is slow. */
+interface RoadLayout {
+  /** The top of the road, measured from the top of the page. */
+  roadTop: number;
+  pageHeight: number;
+  carHeight: number;
+  carOffset: number;
+  startCentre: number;
+  stopCentres: number[];
+}
+
 interface Drive {
   from: number;
   to: number;
   toStop: number;
   duration: number;
   elapsed: number;
+  ease: (progress: number) => number;
 }
 
 function clamp(value: number, min: number, max: number): number {
@@ -37,8 +51,20 @@ function easeDrive(progress: number): number {
   return progress < 0.5 ? 4 * progress ** 3 : 1 - (-2 * progress + 2) ** 3 / 2;
 }
 
+/** Eases out only, for a car that is already moving when its destination changes. */
+function easeRetarget(progress: number): number {
+  return 1 - (1 - progress) ** 3;
+}
+
 /** The stop the car should be at: the last one scrolled past the trigger line. */
-function destinationStop(scrolled: number, stopCentres: number[], currentStop: number): number {
+function destinationStop(layout: RoadLayout, currentStop: number): number {
+  const { roadTop, pageHeight, stopCentres } = layout;
+  const viewport = window.innerHeight;
+  if (pageHeight > viewport && window.scrollY + viewport >= pageHeight - 2) {
+    return stopCentres.length - 1;
+  }
+
+  const scrolled = viewport * TRIGGER_LINE - (roadTop - window.scrollY);
   let destination = AT_START;
   stopCentres.forEach((centre, index) => {
     if (centre <= scrolled) destination = index;
@@ -54,21 +80,14 @@ function destinationStop(scrolled: number, stopCentres: number[], currentStop: n
   return destination;
 }
 
-function isScrolledToBottom(): boolean {
-  const { scrollHeight } = document.documentElement;
-  return (
-    scrollHeight > window.innerHeight && window.scrollY + window.innerHeight >= scrollHeight - 2
-  );
-}
-
 /**
  * The How it works page: a road with six houses, one per step. Scrolling a stop into place sends
- * the car on a fixed drive to that house, and when it parks the stop lights up and a sticky status
+ * the car on one fixed drive to that house, and as it reaches each stop the stop lights up and a sticky status
  * bar says what is happening there. The drive looks the same however the page was scrolled. With
  * reduced motion on, the page is a plain ordered list (the car stays at the top, nothing is
  * highlighted, and the status bar is not shown).
  */
-export default function HowItWorksView() {
+export default function AboutView() {
   const roadRef = useRef<HTMLDivElement>(null);
   const carRef = useRef<HTMLDivElement>(null);
   const stopRefs = useRef<(HTMLLIElement | null)[]>([]);
@@ -79,72 +98,102 @@ export default function HowItWorksView() {
   useEffect(() => {
     if (prefersReducedMotion()) return;
 
+    let layout = null as RoadLayout | null;
     let currentStop = AT_START;
+    let position = 0;
     let drive: Drive | null = null;
     let frame = 0;
     let frameQueued = false;
     let lastTime: number | null = null;
 
-    function readRoad() {
+    function measure() {
       const road = roadRef.current;
       const car = carRef.current;
-      if (!road || !car) return null;
+      if (!road || !car) return;
 
-      const rect = road.getBoundingClientRect();
+      const roadBox = road.getBoundingClientRect();
       const carHeight = car.getBoundingClientRect().height || CAR_HEIGHT;
-      const stopCentres = stopRefs.current.map((stop, index) => {
-        const marker = markerRefs.current[index];
-        const markerCentre = marker ? marker.offsetTop + marker.offsetHeight / 2 : 0;
-        return (stop?.getBoundingClientRect().top ?? 0) - rect.top + markerCentre;
-      });
-      const start = car.offsetTop + carHeight / 2;
-      const scrolled = window.innerHeight * TRIGGER_LINE - rect.top;
-      const destination = isScrolledToBottom()
-        ? stopCentres.length - 1
-        : destinationStop(scrolled, stopCentres, currentStop);
-      const centreOf = (stop: number) => (stop === AT_START ? start : stopCentres[stop]);
-      const placeCar = (carCentre: number) => {
-        const carTop = carCentre - carHeight / 2 - car.offsetTop;
-        car.style.transform = `translate3d(0, ${carTop.toFixed(2)}px, 0)`;
+      const carOffset = car.offsetTop;
+      layout = {
+        roadTop: roadBox.top + window.scrollY,
+        pageHeight: document.documentElement.scrollHeight,
+        carHeight,
+        carOffset,
+        startCentre: carOffset + carHeight / 2,
+        stopCentres: stopRefs.current.map((stop, index) => {
+          const marker = markerRefs.current[index];
+          const markerCentre = marker ? marker.offsetTop + marker.offsetHeight / 2 : 0;
+          return (stop?.getBoundingClientRect().top ?? 0) - roadBox.top + markerCentre;
+        }),
       };
-      return { destination, centreOf, placeCar };
+    }
+
+    function centreOf({ startCentre, stopCentres }: RoadLayout, stop: number) {
+      return stop === AT_START ? startCentre : stopCentres[stop];
+    }
+
+    function placeCar({ carHeight, carOffset }: RoadLayout, carCentre: number) {
+      position = carCentre;
+      const carTop = carCentre - carHeight / 2 - carOffset;
+      if (carRef.current) {
+        carRef.current.style.transform = `translate3d(0, ${carTop.toFixed(2)}px, 0)`;
+      }
+    }
+
+    /** Lights up the last stop the car has reached, whichever way it is going. */
+    function markReachedStop({ stopCentres }: RoadLayout, forwards: boolean) {
+      const reached = forwards
+        ? stopCentres.reduce((last, centre, index) => (centre <= position ? index : last), AT_START)
+        : stopCentres.findIndex((centre) => centre >= position);
+      setActiveIndex(Math.max(reached, 0));
+    }
+
+    function startDrive(current: RoadLayout, fromStop: number, toStop: number, moving: boolean) {
+      const stops = Math.abs(toStop - fromStop);
+      const to = centreOf(current, toStop);
+      const sameWay = drive !== null && drive.to > drive.from === to > position;
+      lastTime = moving ? lastTime : null;
+      return {
+        from: position,
+        to,
+        toStop,
+        duration: Math.min(LONGEST_DRIVE_MS, DRIVE_MS + (stops - 1) * EXTRA_STOP_MS),
+        elapsed: 0,
+        ease: moving && sameWay ? easeRetarget : easeDrive,
+      };
     }
 
     function tick(now: number) {
       frameQueued = false;
-      const road = readRoad();
-      if (!road) return;
-      const { destination, centreOf, placeCar } = road;
+      if (!layout) return;
 
+      const destination = destinationStop(layout, drive ? drive.toStop : currentStop);
+      if (drive && destination !== drive.toStop) {
+        drive = startDrive(layout, drive.toStop, destination, true);
+      }
       if (!drive) {
         if (destination === currentStop) {
           // Nothing to drive to. Keep the car on its stop if the layout shifted.
-          placeCar(centreOf(currentStop));
+          placeCar(layout, centreOf(layout, currentStop));
           lastTime = null;
           return;
         }
-        const direction = destination > currentStop ? 1 : -1;
-        const toStop = currentStop + direction;
-        drive = {
-          from: centreOf(currentStop),
-          to: centreOf(toStop),
-          toStop,
-          duration: Math.abs(destination - currentStop) > 1 ? CATCH_UP_DRIVE_MS : DRIVE_MS,
-          elapsed: 0,
-        };
+        drive = startDrive(layout, currentStop, destination, false);
       }
 
       const gap =
         lastTime === null ? FIRST_FRAME_MS : clamp(now - lastTime, MIN_FRAME_MS, MAX_FRAME_MS);
       lastTime = now;
       drive.elapsed = Math.min(drive.duration, drive.elapsed + gap);
-      const progress = easeDrive(drive.elapsed / drive.duration);
-      placeCar(drive.from + (drive.to - drive.from) * progress);
+      placeCar(
+        layout,
+        drive.from + (drive.to - drive.from) * drive.ease(drive.elapsed / drive.duration),
+      );
+      markReachedStop(layout, drive.to > drive.from);
 
       if (drive.elapsed >= drive.duration) {
         currentStop = drive.toStop;
         drive = null;
-        setActiveIndex(Math.max(currentStop, 0));
       }
       queueFrame();
     }
@@ -155,18 +204,28 @@ export default function HowItWorksView() {
       frame = requestAnimationFrame(tick);
     }
 
-    const initial = readRoad();
-    if (initial) {
-      currentStop = initial.destination;
-      initial.placeCar(initial.centreOf(currentStop));
+    function remeasure() {
+      measure();
+      if (drive && layout) drive.to = centreOf(layout, drive.toStop);
+      queueFrame();
+    }
+
+    measure();
+    if (layout) {
+      currentStop = destinationStop(layout, AT_START);
+      placeCar(layout, centreOf(layout, currentStop));
       setActiveIndex(Math.max(currentStop, 0));
     }
 
     window.addEventListener('scroll', queueFrame, { passive: true });
-    window.addEventListener('resize', queueFrame);
+    window.addEventListener('resize', remeasure);
+    // Catches layout changes without a window resize, like web fonts or the status bar appearing.
+    const pageSize = typeof ResizeObserver === 'function' ? new ResizeObserver(remeasure) : null;
+    pageSize?.observe(document.documentElement);
     return () => {
       window.removeEventListener('scroll', queueFrame);
-      window.removeEventListener('resize', queueFrame);
+      window.removeEventListener('resize', remeasure);
+      pageSize?.disconnect();
       if (frameQueued) cancelAnimationFrame(frame);
     };
   }, []);

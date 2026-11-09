@@ -85,5 +85,5 @@ Setup for all: render `App` in `MemoryRouter` (default logged out).
 - Criterion 14: `SCRUM-48-T-7 check link plays the car drive-through` — stubs `animate`, finishes the animations by hand, and asserts the route, focus, and overlay.
 - Criterion 15: `SCRUM-48-T-7 choosing a check highlights the listing` — clicks a check and asserts the reason and `data-highlight`.
 - Criterion 16: `SCRUM-48-T-7 legend is on the results page` — asserts the labels on a results page and none on the landing page.
-- Criterion 17: `SCRUM-48-T-7 example score counts up` — mocks Motion's `animate`; `SCRUM-48-T-7 example result` covers the no-animation case.
+- Criterion 17: `SCRUM-48-T-7 example score counts up` — steps `requestAnimationFrame` by hand; `SCRUM-48-T-7 example result` covers the no-animation case.
 - Criterion 18: `SCRUM-48-T-7 opening another page starts at the top` — clicks the road link and asserts `window.scrollTo(0, 0)`.

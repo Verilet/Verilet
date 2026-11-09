@@ -1,0 +1,138 @@
+/* My scans page: filters and table. */
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.filter {
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  background: var(--color-surface);
+  color: var(--color-ink);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+}
+
+.filter[aria-pressed='true'] {
+  background: var(--color-ink);
+  border-color: var(--color-ink);
+  color: #fff;
+}
+
+.table-card {
+  overflow-x: auto;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+}
+
+.scans-table {
+  width: 100%;
+  min-width: 820px;
+  border-collapse: collapse;
+}
+
+.scans-table th {
+  padding: 12px 0;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: left;
+  color: var(--color-muted);
+  background: var(--color-surface-muted);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.scans-table td {
+  padding: 16px 0;
+  vertical-align: middle;
+  font-size: 14px;
+  color: var(--color-muted);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.scans-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.scans-table th:first-child,
+.scans-table td:first-child {
+  padding-left: 24px;
+}
+
+.scans-table th:last-child,
+.scans-table td:last-child {
+  padding-right: 24px;
+}
+
+.col-listing {
+  width: 38%;
+}
+
+.col-rating {
+  width: 12%;
+}
+
+.col-score {
+  width: 9%;
+}
+
+.col-date {
+  width: 14%;
+}
+
+.col-actions {
+  text-align: right !important;
+  white-space: nowrap;
+}
+
+.scans-table td.col-actions {
+  display: table-cell;
+}
+
+.scans-table__title {
+  display: block;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--color-ink);
+}
+
+.scans-table__sub {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--color-muted);
+}
+
+.score {
+  font-size: 16px !important;
+  font-weight: 700;
+}
+
+.score--danger {
+  color: var(--color-danger) !important;
+}
+
+.score--warn {
+  color: var(--color-warn) !important;
+}
+
+.score--ok {
+  color: var(--color-ok) !important;
+}
+
+.row-action {
+  margin-left: 20px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: 14px;
+  color: var(--color-muted);
+}
+
+.row-action--strong {
+  font-weight: 600;
+  color: var(--color-ink);
+}

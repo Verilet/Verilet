@@ -21,7 +21,7 @@ Out of scope: the landing page (SCRUM-48-T-7) and the explanation panel on the C
 - Each stop is a list item with a stop label ("Stop 1" ... "Stop 5", "Finish"), a title as an `<h2>`, a "what we do" sentence, and a "Why it matters" note. The house drawing is decorative (`aria-hidden`).
 - Desktop (width 720px and up): the road is centered; stops alternate left and right of it.
 - Phone (under 720px): the road runs down the left edge and every stop stacks to its right, the house above its card.
-- Motion: a car drawing sits on the road. When a stop's numbered marker scrolls past 60% of the screen height (or the page reaches the bottom), the car plays a fixed 800ms drive from its current stop to that stop. The scroll only triggers the drive: scrolling further during a drive does not change it, and the car does not move while no stop is crossed. If the car is more than one stop behind, it visits each stop in order using shorter 350ms drives. Scrolling back past a stop by more than 40px drives it back. The stop the car is parked at is highlighted (`data-active="true"`: house lifts and card gets an accent outline) and announced to nobody (no live region). Stops behind the car are `data-passed="true"` and their marker turns green.
+- Motion: a car drawing sits on the road. When a stop's numbered marker scrolls past 60% of the screen height (or the page reaches the bottom), the car plays a fixed 800ms drive from its current stop to that stop. The scroll only triggers the drive: scrolling further during a drive does not change it, and the car does not move while no stop is crossed. If several stops are crossed at once, the car plays one continuous drive to the furthest one (800ms plus 150ms per extra stop, up to 1400ms), lighting up each stop as it reaches it. If the destination changes during a drive, the car heads to the new stop without stopping first. Scrolling back past a stop by more than 40px drives it back. The stop the car is parked at is highlighted (`data-active="true"`: house lifts and card gets an accent outline) and announced to nobody (no live region). Stops behind the car are `data-passed="true"` and their marker turns green.
 - Status bar: a sticky bar above the road shows the current stop's label, a short `status` sentence from `GUIDE.stops` saying what is happening there, and a six-segment progress bar. It is `aria-hidden` because the stops already carry the same information.
 - Reduced motion: when `prefers-reduced-motion: reduce` is on, the car stays at the top, no stop is highlighted or passed, the status bar is not shown, and no transitions run.
 - The closing "Check a listing" link goes to `/check`.
@@ -30,7 +30,7 @@ Out of scope: the landing page (SCRUM-48-T-7) and the explanation panel on the C
 ## Requirements
 
 - Wording is imported from `client/src/content/guide.ts`; no copied strings in the view.
-- Scroll handling uses a passive scroll listener cleaned up on unmount, `requestAnimationFrame` throttling, and refs (no `document.querySelector`).
+- Scroll handling uses a passive scroll listener cleaned up on unmount, `requestAnimationFrame` throttling, and refs (no `document.querySelector`). Road positions are measured on load and when the page size changes, not on every frame.
 - The page is fully understandable with animation off: all six stops are in the DOM and readable in order.
 - Houses and car are inline SVG components; no image files and no new runtime dependencies.
 - Colour contrast of text at least 4.5:1; layout has no horizontal scroll at 390px.
@@ -48,7 +48,7 @@ Out of scope: the landing page (SCRUM-48-T-7) and the explanation panel on the C
 9. Crossing a stop plays a drive over several frames that ends exactly on that stop and then stops requesting frames.
 10. The drive takes the same number of frames however far past the stop the page was scrolled, and scrolling during a drive does not change the car's path.
 11. The car does not move when no stop is crossed, including a small scroll back.
-12. A stop becomes `data-active="true"` only when the car arrives; after a long scroll the car visits each stop in order; scrolling up drives it back.
+12. A stop becomes `data-active="true"` only when the car reaches it; after a long scroll the car makes one continuous drive past each stop in order, and a new destination mid-drive changes course without a jump; scrolling up drives it back.
 13. The status bar shows the label and status of the active stop, and stops behind the car are `data-passed="true"`.
 14. With reduced motion on, the status bar is not shown and no stop is `data-passed="true"`.
 15. Unmounting during the car's animation cancels the pending frame.
@@ -71,7 +71,7 @@ Setup for all: render `App` in `MemoryRouter initialEntries={['/how-it-works']}`
 - Criterion 9: `SCRUM-48-T-8 car plays over several frames and parks exactly on the stop` — steps frames by hand, asserts partial progress, the final position, and no pending frame.
 - Criterion 10: `SCRUM-48-T-8 drive takes the same time however far past the stop you scroll` and `SCRUM-48-T-8 scrolling during a drive does not steer the car` — compare frame counts and per-frame positions.
 - Criterion 11: `SCRUM-48-T-8 car does not move when no stop is crossed` — asserts an unchanged transform.
-- Criterion 12: `SCRUM-48-T-8 stop lights up only when the car arrives`, `SCRUM-48-T-8 car visits every stop in order after a long scroll`, and `SCRUM-48-T-8 car drives back when scrolling up` — assert `data-active` across frames.
+- Criterion 12: `SCRUM-48-T-8 a long scroll is one continuous drive`, `SCRUM-48-T-8 a new destination mid-drive changes course without a jump`, `SCRUM-48-T-8 stop lights up only when the car arrives`, `SCRUM-48-T-8 car visits every stop in order after a long scroll`, and `SCRUM-48-T-8 car drives back when scrolling up` — assert `data-active` across frames.
 - Criterion 13: `SCRUM-48-T-8 status bar says what happens at the current stop` and `SCRUM-48-T-8 stops behind the car are marked as passed` — compare with `GUIDE.stops` and assert `data-passed`.
 - Criterion 14: `SCRUM-48-T-8 reduced motion hides the status bar` — asserts no status bar and no passed stop.
 - Criterion 15: `SCRUM-48-T-8 cancels a running animation on unmount` — asserts no pending frame after unmount.

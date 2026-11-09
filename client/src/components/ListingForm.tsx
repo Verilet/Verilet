@@ -174,10 +174,16 @@ export default function ListingForm({
           </button>
         </div>
         {fieldError('listingUrl')}
-        <p className="field__hint" role="status">
-          {autofillMessage ??
-            'Autofill can find the rent, address, and description. You can edit anything it fills in.'}
-        </p>
+        <div className="field__hint">
+          {!autofillMessage && (
+            <p>
+              Autofill can find the rent, address, and description. You can edit anything it fills
+              in.
+            </p>
+          )}
+          {/* Stays mounted but empty, so screen readers announce a message only when one appears. */}
+          <div role="status">{autofillMessage}</div>
+        </div>
       </div>
 
       <div className="field-row">

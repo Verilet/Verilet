@@ -21,7 +21,7 @@ const FILTERS: { value: Filter; label: string }[] = [
   { value: 'LOW', label: 'Low risk' },
 ];
 
-/** Screen 5: My scans. */
+/** The logged-in table of past scans, with rating filters. */
 export default function ScansView({ scans, onViewScan, onShareScan, shareStatus }: ScansViewProps) {
   const [filter, setFilter] = useState<Filter>('ALL');
   const visible =

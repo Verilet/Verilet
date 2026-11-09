@@ -19,9 +19,9 @@ import { loadScans, saveScans } from './lib/scanStorage';
 import { isLoggedInFromUrl } from './lib/session';
 import { checkListing as defaultCheckListing, type CheckListing } from './services/scanService';
 import type { ListingInput, ScanResult } from './types';
+import AboutView from './views/AboutView';
 import CheckView from './views/CheckView';
 import HomeView from './views/HomeView';
-import HowItWorksView from './views/HowItWorksView';
 import LandingView from './views/LandingView';
 import ResultsView from './views/ResultsView';
 import ScansView from './views/ScansView';
@@ -182,7 +182,7 @@ function App({
       <Routes>
         <Route path="/" element={loggedIn ? home : <LandingView />} />
         <Route path="/check" element={loggedIn ? home : checkForm} />
-        <Route path="/how-it-works" element={<HowItWorksView />} />
+        <Route path="/how-it-works" element={<AboutView />} />
         <Route
           path="/scans"
           element={

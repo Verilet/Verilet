@@ -115,6 +115,7 @@ const activeStops = () =>
 
 beforeEach(() => {
   scrollY = 0;
+  Object.defineProperty(window, 'scrollY', { configurable: true, get: () => scrollY });
   vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
     callback(0);
     return 1;
@@ -325,6 +326,50 @@ describe('SCRUM-48-T-8 how it works page', () => {
       expect(visited).toEqual([1, 2, 3, 4]);
     });
 
+    function recordDrive(frames: ReturnType<typeof manualFrames>, car: HTMLElement | null) {
+      const positions: number[] = [];
+      for (let guard = 0; frames.pending() > 0 && guard < 1000; guard += 1) {
+        frames.step();
+        positions.push(carTop(car));
+      }
+      return positions.slice(1).map((position, index) => position - positions[index]);
+    }
+
+    it('SCRUM-48-T-8 a long scroll is one continuous drive', () => {
+      const frames = manualFrames();
+      const { container } = renderPage();
+      const car = container.querySelector<HTMLElement>('.road__car');
+
+      scrollPast(4);
+      const steps = recordDrive(frames, car);
+
+      // Parking at each stop on the way would drop the speed to almost nothing mid-drive.
+      const middle = steps.slice(Math.floor(steps.length * 0.15), Math.ceil(steps.length * 0.85));
+      for (const step of middle) expect(step).toBeGreaterThan(1);
+      expect(steps.length).toBeLessThanOrEqual(1400 / 16 + 2);
+      expect(activePosition()).toBe(4);
+    });
+
+    it('SCRUM-48-T-8 a new destination mid-drive changes course without a jump', () => {
+      const frames = manualFrames();
+      const { container } = renderPage();
+      const car = container.querySelector<HTMLElement>('.road__car');
+
+      scrollPast(2);
+      for (let step = 0; step < 20; step += 1) frames.step();
+      scrollPast(4);
+      const further = recordDrive(frames, car);
+      expect(Math.max(...further.map(Math.abs))).toBeLessThan(60);
+      expect(activePosition()).toBe(4);
+
+      scrollPast(3);
+      for (let step = 0; step < 10; step += 1) frames.step();
+      scrollPast(1);
+      const back = recordDrive(frames, car);
+      expect(Math.max(...back.map(Math.abs))).toBeLessThan(60);
+      expect(activePosition()).toBe(1);
+    });
+
     it('SCRUM-48-T-8 car drives back when scrolling up', () => {
       const frames = manualFrames();
       renderPage();
@@ -507,16 +552,29 @@ describe('SCRUM-48-T-8 how it works page', () => {
   });
 
   it('SCRUM-48-T-8 reaching the bottom of the page drives to the finish', () => {
-    renderPage();
     const heightSpy = vi
       .spyOn(document.documentElement, 'scrollHeight', 'get')
       .mockReturnValue(1000);
-    vi.stubGlobal('scrollY', 300);
+    renderPage();
 
-    scrollTo(50);
+    scrollTo(300);
 
     expect(screen.getAllByRole('listitem').indexOf(activeStops()[0])).toBe(GUIDE.stops.length - 1);
     heightSpy.mockRestore();
+  });
+
+  it('SCRUM-48-T-8 road positions are measured on resize, not every frame', () => {
+    renderPage();
+    const measure = vi.mocked(HTMLElement.prototype.getBoundingClientRect);
+    measure.mockClear();
+
+    scrollTo(1000);
+    expect(measure).not.toHaveBeenCalled();
+
+    act(() => {
+      window.dispatchEvent(new Event('resize'));
+    });
+    expect(measure).toHaveBeenCalled();
   });
 
   it('SCRUM-48-T-8 resizing keeps the car on its stop', () => {

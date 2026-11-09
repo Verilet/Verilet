@@ -1,13 +1,10 @@
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import type { ReactElement } from 'react';
 import { MemoryRouter } from 'react-router-dom';
-import { animate } from 'motion';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import App from '../src/App';
 import { GUIDE } from '../src/content/guide';
 import { MOCK_SCANS } from '../src/data/mockScans';
-
-vi.mock('motion', () => ({ animate: vi.fn(() => ({ stop: vi.fn() })) }));
 
 function renderAt(ui: ReactElement, path: string) {
   return render(<MemoryRouter initialEntries={[path]}>{ui}</MemoryRouter>);
@@ -177,16 +174,25 @@ describe('SCRUM-48-T-7 landing motion', () => {
 
   it('SCRUM-48-T-7 example score counts up', () => {
     const { everything } = stubObserver();
+    let nextFrame: FrameRequestCallback | undefined;
+    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
+      nextFrame = callback;
+      return 1;
+    });
+    const frameAt = (time: number) => {
+      act(() => nextFrame?.(time));
+    };
     renderAt(<App loggedIn={false} />, '/');
     const example = within(screen.getByRole('region', { name: 'EXAMPLE RESULT' }));
     expect(example.getByText('0')).toBeInTheDocument();
 
     everything();
 
-    const options = vi.mocked(animate).mock.lastCall?.[2] as { onUpdate: (v: number) => void };
-    act(() => options.onUpdate(41.4));
-    expect(example.getByText('41')).toBeInTheDocument();
-    act(() => options.onUpdate(82));
+    frameAt(100);
+    expect(example.getByText('0')).toBeInTheDocument();
+    frameAt(700);
+    expect(example.getByText('72')).toBeInTheDocument();
+    frameAt(1300);
     expect(example.getByText('82')).toBeInTheDocument();
   });
 
@@ -291,17 +297,19 @@ describe('SCRUM-48-T-7 landing motion', () => {
   it('SCRUM-48-T-7 leaving the page stops the car and the score', () => {
     vi.useFakeTimers();
     const { everything } = stubObserver();
+    const cancel = vi.fn();
+    vi.stubGlobal('requestAnimationFrame', () => 7);
+    vi.stubGlobal('cancelAnimationFrame', cancel);
     const { unmount } = renderAt(<App loggedIn={false} />, '/');
     // React keeps a scheduler timer of its own, so count from here.
     const timersBefore = vi.getTimerCount();
     everything();
-    const controls = vi.mocked(animate).mock.results.at(-1)?.value as { stop: () => void };
     expect(vi.getTimerCount()).toBe(timersBefore + GUIDE.steps.length);
 
     unmount();
 
     expect(vi.getTimerCount()).toBe(timersBefore);
-    expect(controls.stop).toHaveBeenCalled();
+    expect(cancel).toHaveBeenCalledWith(7);
   });
 
   it('SCRUM-48-T-7 sections reveal when scrolled into view', () => {

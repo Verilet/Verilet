@@ -46,6 +46,7 @@ export function loadScans(): ScanResult[] | null {
   }
 }
 
+/** Saves scans for this browser tab. Photo files are left out because they can't be stored. */
 export function saveScans(scans: ScanResult[]): void {
   try {
     const withoutPhotos = (key: string, value: unknown) => (key === 'photos' ? undefined : value);

@@ -1,17 +1,20 @@
 import type { Rating } from '../types';
 
+/** The rating band for a 0 to 100 risk score. */
 export function ratingFromScore(score: number): Rating {
   if (score >= 70) return 'HIGH';
   if (score >= 40) return 'MEDIUM';
   return 'LOW';
 }
 
+/** The text shown on each rating chip. */
 export const RATING_LABEL: Record<Rating, string> = {
   HIGH: 'HIGH RISK',
   MEDIUM: 'MEDIUM RISK',
   LOW: 'LOW RISK',
 };
 
+/** The results page heading and advice for each rating. */
 export const RATING_HEADLINE: Record<Rating, { title: string; advice: string }> = {
   HIGH: {
     title: 'This listing shows several scam signals',
@@ -29,11 +32,13 @@ export const RATING_HEADLINE: Record<Rating, { title: string; advice: string }> 
   },
 };
 
+/** The colour families used for ratings and scores. */
 export type Tone = 'danger' | 'warn' | 'ok' | 'neutral';
 
+/** The colour family for each rating. */
 export const RATING_TONE: Record<Rating, Tone> = { HIGH: 'danger', MEDIUM: 'warn', LOW: 'ok' };
 
-/** Colour tone for a score (used for the score number and bar). */
+/** The colour family for a score, used for the score number and bar. */
 export function ratingTone(score: number): Tone {
   return RATING_TONE[ratingFromScore(score)];
 }

@@ -18,7 +18,7 @@ interface ResultsViewProps {
   defaultExpanded: boolean;
 }
 
-/** Screens 2, 3 and 6: results, with and without the "More details" panel. */
+/** The result of a check, with an expandable "More details" panel. */
 export default function ResultsView({
   scan,
   loggedIn,

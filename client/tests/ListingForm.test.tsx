@@ -21,6 +21,18 @@ function renderForm(autofillListing?: AutofillListing, onSubmit = vi.fn()) {
 const autofillButton = () => screen.getByRole('button', { name: 'Autofill' });
 
 describe('ListingForm autofill', () => {
+  it('only puts text in the status region when there is a message', async () => {
+    const { user } = renderForm(async () => ({ rent: '1,200' }));
+    expect(screen.getByRole('status')).toBeEmptyDOMElement();
+    expect(screen.getByText(/Autofill can find the rent/)).toBeInTheDocument();
+
+    await user.type(screen.getByLabelText('Listing link'), LINK);
+    await user.click(autofillButton());
+
+    expect(await screen.findByRole('status')).toHaveTextContent(/We filled in what we could find/);
+    expect(screen.queryByText(/Autofill can find the rent/)).not.toBeInTheDocument();
+  });
+
   it('fills blank fields from the link and leaves them editable', async () => {
     const autofill = vi.fn<AutofillListing>().mockResolvedValue({
       rent: '1,200',

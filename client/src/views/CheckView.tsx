@@ -10,7 +10,7 @@ interface CheckViewProps {
   carArrival?: CarArrivalInfo | null;
 }
 
-/** Screen 1: "Check a listing" (logged out). */
+/** The listing form page for logged-out visitors. */
 export default function CheckView({
   onSubmit,
   submitting,

@@ -2,6 +2,7 @@ import { RATING_LABEL, ratingFromScore } from './risk';
 import { scanTitle } from './format';
 import type { ScanResult } from '../types';
 
+/** A one-line text summary of a scan. */
 export function shareText(scan: ScanResult): string {
   const rating = RATING_LABEL[ratingFromScore(scan.score)];
   return `Verilet: ${rating} (${scan.score}/100) · ${scanTitle(scan)}`;

@@ -1,9 +1,11 @@
 import { BEDROOM_OPTIONS, type ScanResult } from '../types';
 
+/** "$1,200". */
 export function formatRent(rent: number): string {
   return `$${rent.toLocaleString('en-US')}`;
 }
 
+/** "2 bed", from a stored bedroom value. */
 export function bedroomLabel(bedrooms: ScanResult['bedrooms']): string {
   return BEDROOM_OPTIONS.find((option) => option.value === bedrooms)?.label ?? bedrooms;
 }
@@ -24,6 +26,7 @@ export function scanMeta(scan: ScanResult): string {
   return `${bedroomLabel(scan.bedrooms)} · ${formatRent(scan.rent)} / month · ${scan.location}`;
 }
 
+/** "zillow.com", or the original text if it is not a valid URL. */
 export function listingHost(url: string): string {
   try {
     return new URL(url).hostname.replace(/^www\./, '');
@@ -32,6 +35,7 @@ export function listingHost(url: string): string {
   }
 }
 
+/** Midnight at the start of the given local day, in milliseconds. */
 function startOfDay(date: Date): number {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
 }

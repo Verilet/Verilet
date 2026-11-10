@@ -207,6 +207,12 @@
   background: var(--color-sand);
 }
 
+.listing-demo__photo .house {
+  width: 96px;
+  height: 90px;
+  margin: 0 0 -1px;
+}
+
 .listing-demo__title {
   font-size: 17px;
   font-weight: 600;

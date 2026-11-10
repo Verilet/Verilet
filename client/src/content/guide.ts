@@ -123,6 +123,8 @@ export const GUIDE = {
   steps: STEPS,
   checks: CHECKS,
   stops: STOPS,
+  /** The How it works status bar before the car reaches the first stop. */
+  tripStart: { label: 'Start', status: 'Scroll down to follow the road' },
   example: {
     meta: '2 bed · $1,200 / month · Santa Cruz, CA',
     score: 82,

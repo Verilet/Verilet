@@ -16,7 +16,7 @@ Out of scope: form fields, link autofill and the other PR #5 review items (separ
 
 ## Specs
 
-- `/` renders the landing page when logged out. When logged in, `/` still renders the Welcome back / Home page.
+- `/` renders the landing page. The signed-in screens (Welcome back, My scans) are out of scope and kept on the `feat/SCRUM-15-signed-in-screens` branch; `/scans` redirects to `/`.
 - `/check` renders the Check page (the form) for everyone.
 - The landing page has four sections, top to bottom:
   1. Hero: `<h1>` "Check a rental listing before you pay", a one-line pitch, a "Check a listing" link, a "See how it works" link, and "No account needed · Takes about a minute", beside an "Example result": a static HIGH RISK 82 / 100 result with three reasons (Rent vs. area price FLAG, Payment method FLAG, Landlord check UNKNOWN).
@@ -40,13 +40,13 @@ Out of scope: form fields, link autofill and the other PR #5 review items (separ
 - Wording is imported from `client/src/content/guide.ts`; views contain no copied strings for the steps, checks, legend or Q&A.
 - Semantic HTML: one `<h1>`, headings in order, links for navigation, sufficient colour contrast (text at least 4.5:1).
 - Adds `react-router-dom` (client only) and replaces the `useState` view switching in `App.tsx` with routes: `/`, `/check`, `/how-it-works`, `/scans`, `/results/:scanId`, and a "Page not found" screen for any other path. `main.tsx` wraps `App` in `BrowserRouter`; `client/vercel.json` rewrites all paths to `/index.html`.
-- Header items are real links; the `?loggedIn=true` preview flag is remembered for the browser tab.
+- Header items are real links. The header has the logo and a "How it works" link; there is no separate About page.
 - Existing tests keep passing; those that expect the form at `/` while logged out are updated to use `/check`.
 
 ## Acceptance criteria
 
 1. Logged out, `/` shows the landing page with the `<h1>` "Check a rental listing before you pay" and no form.
-2. Logged in, `/` still shows the Welcome back page.
+2. The header has the logo and a "How it works" link, and no separate About link.
 3. `/check` shows the form for logged-out users.
 4. Both "Check a listing" links on the landing page have `href="/check"`.
 5. The "See how it works" link has `href="/how-it-works"`.
@@ -70,7 +70,7 @@ File: `client/tests/SCRUM-48-T-7_landing.test.tsx`
 Setup for all: render `App` in `MemoryRouter` (default logged out).
 
 - Criterion 1: `SCRUM-48-T-7 logged out root is the landing page` — asserts the `<h1>` and that no "Listing link" or "Street address" field exists.
-- Criterion 2: `SCRUM-48-T-7 logged in root is still the welcome page` — renders with `loggedIn`.
+- Criterion 2: `SCRUM-48-T-7 header links home and to How it works` — asserts the two links and no About link.
 - Criterion 3: `SCRUM-48-T-7 check route shows the form` — renders `/check`.
 - Criterion 4: `SCRUM-48-T-7 check links go to the form` — asserts every "Check a listing" link in the page body has `href="/check"`.
 - Criterion 5: `SCRUM-48-T-7 how it works link` — asserts the `href`.

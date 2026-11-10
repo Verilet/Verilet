@@ -1,4 +1,4 @@
-/* Site header: logo, navigation, and avatar. */
+/* Site header: logo and navigation. */
 
 .header {
   height: 72px;
@@ -8,12 +8,6 @@
   justify-content: space-between;
   background: var(--color-surface);
   border-bottom: 1px solid var(--color-border);
-}
-
-.header__left {
-  display: flex;
-  align-items: center;
-  gap: 48px;
 }
 
 .logo {
@@ -68,31 +62,11 @@
   color: var(--color-ink);
 }
 
-.avatar {
-  width: 36px;
-  height: 36px;
-  border-radius: var(--radius-pill);
-  display: grid;
-  place-items: center;
-  background: var(--color-neutral-bg);
-  color: var(--color-muted);
-  font-size: 13px;
-  font-weight: 600;
-}
-
 .theme-warm .logo__mark {
   background: var(--color-accent);
 }
 
 @media (max-width: 720px) {
-  .header {
-    padding: 0 20px;
-  }
-
-  .header__left {
-    gap: 20px;
-  }
-
   .nav {
     gap: 16px;
   }

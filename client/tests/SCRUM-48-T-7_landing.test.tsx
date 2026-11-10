@@ -4,7 +4,8 @@ import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import App from '../src/App';
 import { GUIDE } from '../src/content/guide';
-import { MOCK_SCANS } from '../src/data/mockScans';
+import { scoreListing } from '../src/services/scanService';
+import type { ListingInput, ScanResult } from '../src/types';
 
 function renderAt(ui: ReactElement, path: string) {
   return render(<MemoryRouter initialEntries={[path]}>{ui}</MemoryRouter>);
@@ -12,7 +13,7 @@ function renderAt(ui: ReactElement, path: string) {
 
 describe('SCRUM-48-T-7 landing page', () => {
   it('SCRUM-48-T-7 logged out root is the landing page', () => {
-    renderAt(<App loggedIn={false} />, '/');
+    renderAt(<App />, '/');
     expect(
       screen.getByRole('heading', { level: 1, name: 'Check a rental listing before you pay' }),
     ).toBeInTheDocument();
@@ -20,26 +21,33 @@ describe('SCRUM-48-T-7 landing page', () => {
     expect(screen.queryByRole('button', { name: 'Check listing' })).not.toBeInTheDocument();
   });
 
-  it('SCRUM-48-T-7 logged in root is still the welcome page', () => {
-    renderAt(<App loggedIn initialScans={[]} />, '/');
-    expect(screen.getByRole('heading', { level: 1, name: 'Welcome back' })).toBeInTheDocument();
+  it('SCRUM-48-T-7 header links home and to How it works', () => {
+    renderAt(<App />, '/');
+    const header = within(screen.getByRole('banner'));
+    expect(header.getByRole('link', { name: 'Verilet home' })).toHaveAttribute('href', '/');
+    expect(header.getByRole('link', { name: 'How it works' })).toHaveAttribute(
+      'href',
+      '/how-it-works',
+    );
+    expect(header.queryByText('About')).not.toBeInTheDocument();
+    expect(header.getAllByRole('link')).toHaveLength(2);
   });
 
   it('SCRUM-48-T-7 check route shows the form', () => {
-    renderAt(<App loggedIn={false} />, '/check');
+    renderAt(<App />, '/check');
     expect(screen.getByLabelText('Listing link')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Check listing' })).toBeInTheDocument();
   });
 
   it('SCRUM-48-T-7 check links go to the form', () => {
-    renderAt(<App loggedIn={false} />, '/');
+    renderAt(<App />, '/');
     const links = screen.getAllByRole('link', { name: 'Check a listing' });
     expect(links).toHaveLength(2);
     for (const link of links) expect(link).toHaveAttribute('href', '/check');
   });
 
   it('SCRUM-48-T-7 how it works link', () => {
-    renderAt(<App loggedIn={false} />, '/');
+    renderAt(<App />, '/');
     const body = within(screen.getByRole('main'));
     expect(body.getByRole('link', { name: 'See how it works' })).toHaveAttribute(
       'href',
@@ -48,7 +56,7 @@ describe('SCRUM-48-T-7 landing page', () => {
   });
 
   it('SCRUM-48-T-7 shows all sections', () => {
-    renderAt(<App loggedIn={false} />, '/');
+    renderAt(<App />, '/');
     for (const name of ['How it works', 'What we check, and why', 'Quick answers']) {
       expect(screen.getByRole('heading', { level: 2, name })).toBeInTheDocument();
     }
@@ -58,18 +66,37 @@ describe('SCRUM-48-T-7 landing page', () => {
   });
 
   it('SCRUM-48-T-7 legend is on the results page', () => {
-    const landing = renderAt(<App loggedIn={false} />, '/');
+    const landing = renderAt(<App />, '/');
     expect(screen.queryByText(GUIDE.legendHeading)).not.toBeInTheDocument();
     landing.unmount();
 
-    const scan = MOCK_SCANS[0];
-    renderAt(<App loggedIn initialScans={[scan]} />, `/results/${scan.id}`);
+    const input: ListingInput = {
+      listingUrl: 'https://example.com/listing/1',
+      rent: 1200,
+      bedrooms: '2',
+      location: 'Santa Cruz, CA',
+      landlord: '',
+      payment: 'gift-card',
+      securityDeposit: null,
+      applicationFee: null,
+      contactPhone: '',
+      description: '',
+      photos: [],
+    };
+    const scan: ScanResult = {
+      ...input,
+      ...scoreListing(input),
+      id: 'scan-1',
+      createdAt: new Date().toISOString(),
+    };
+    renderAt(<App initialScans={[scan]} />, `/results/${scan.id}`);
+    fireEvent.click(screen.getByRole('button', { name: 'More details' }));
     expect(screen.getByRole('heading', { name: GUIDE.legendHeading })).toBeInTheDocument();
     for (const item of GUIDE.legend) expect(screen.getByText(item.text)).toBeInTheDocument();
   });
 
   it('SCRUM-48-T-7 choosing a check highlights the listing', () => {
-    const { container } = renderAt(<App loggedIn={false} />, '/');
+    const { container } = renderAt(<App />, '/');
     const highlighted = () => container.querySelectorAll('[data-highlight="true"]');
     const [first, second] = GUIDE.checks;
     expect(screen.getByText(first.why)).toBeVisible();
@@ -86,7 +113,7 @@ describe('SCRUM-48-T-7 landing page', () => {
   });
 
   it('SCRUM-48-T-7 example result', () => {
-    renderAt(<App loggedIn={false} />, '/');
+    renderAt(<App />, '/');
     const example = within(screen.getByRole('region', { name: 'EXAMPLE RESULT' }));
     expect(example.getByText('HIGH RISK')).toBeInTheDocument();
     expect(example.getByText('82')).toBeInTheDocument();
@@ -96,14 +123,14 @@ describe('SCRUM-48-T-7 landing page', () => {
   });
 
   it('SCRUM-48-T-7 never promises safety', () => {
-    renderAt(<App loggedIn={false} />, '/');
+    renderAt(<App />, '/');
     expect(screen.getByText(GUIDE.disclaimer)).toBeInTheDocument();
     expect(screen.getByText(GUIDE.footnote)).toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(/\b(listing|place) is safe\b/i);
   });
 
   it('SCRUM-48-T-7 wording comes from the content file', () => {
-    renderAt(<App loggedIn={false} />, '/');
+    renderAt(<App />, '/');
     for (const step of GUIDE.steps) {
       expect(screen.getByText(step.text)).toBeInTheDocument();
     }
@@ -182,7 +209,7 @@ describe('SCRUM-48-T-7 landing motion', () => {
     const frameAt = (time: number) => {
       act(() => nextFrame?.(time));
     };
-    renderAt(<App loggedIn={false} />, '/');
+    renderAt(<App />, '/');
     const example = within(screen.getByRole('region', { name: 'EXAMPLE RESULT' }));
     expect(example.getByText('0')).toBeInTheDocument();
 
@@ -213,7 +240,7 @@ describe('SCRUM-48-T-7 landing motion', () => {
 
   it('SCRUM-48-T-7 the closing button plays the drive-through too', () => {
     stubAnimations();
-    const { container } = renderAt(<App loggedIn={false} />, '/');
+    const { container } = renderAt(<App />, '/');
     fireEvent.click(checkLinks()[1]);
     expect(container.querySelector('.car-drive')).not.toBeNull();
     expect(screen.queryByLabelText('Listing link')).not.toBeInTheDocument();
@@ -224,7 +251,7 @@ describe('SCRUM-48-T-7 landing motion', () => {
     const box = (bottom: number) =>
       ({ bottom, top: 0, left: 0, right: 0, width: 0, height: 0 }) as DOMRect;
     const rect = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect');
-    renderAt(<App loggedIn={false} />, '/');
+    renderAt(<App />, '/');
     rect.mockReturnValue(box(100));
     fireEvent.click(checkLinks()[0]);
     // The page has moved by the second click, so a restart would put the road somewhere new.
@@ -237,7 +264,7 @@ describe('SCRUM-48-T-7 landing motion', () => {
   it('SCRUM-48-T-7 reduced motion goes straight to the form', () => {
     const animations = stubAnimations();
     mockReducedMotion();
-    const { container } = renderAt(<App loggedIn={false} />, '/');
+    const { container } = renderAt(<App />, '/');
     fireEvent.click(checkLinks()[0]);
     expect(animations).toHaveLength(0);
     expect(container.querySelector('.car-drive')).toBeNull();
@@ -246,7 +273,7 @@ describe('SCRUM-48-T-7 landing motion', () => {
 
   it('SCRUM-48-T-7 a modified click skips the drive-through', () => {
     const animations = stubAnimations();
-    const { container } = renderAt(<App loggedIn={false} />, '/');
+    const { container } = renderAt(<App />, '/');
     fireEvent.click(checkLinks()[0], { ctrlKey: true });
     expect(animations).toHaveLength(0);
     expect(container.querySelector('.car-drive')).toBeNull();
@@ -254,7 +281,7 @@ describe('SCRUM-48-T-7 landing motion', () => {
 
   it('SCRUM-48-T-7 leaving the page cancels the drive-through', () => {
     const animations = stubAnimations();
-    const { unmount } = renderAt(<App loggedIn={false} />, '/');
+    const { unmount } = renderAt(<App />, '/');
     fireEvent.click(checkLinks()[0]);
     unmount();
     expect(animations).toHaveLength(3);
@@ -266,7 +293,7 @@ describe('SCRUM-48-T-7 landing motion', () => {
     const rect = vi
       .spyOn(HTMLElement.prototype, 'getBoundingClientRect')
       .mockReturnValue({ bottom: 5000, top: 0, left: 0, right: 0, width: 0, height: 0 } as DOMRect);
-    const { container } = renderAt(<App loggedIn={false} />, '/');
+    const { container } = renderAt(<App />, '/');
     fireEvent.click(checkLinks()[0]);
     const road = container.querySelector<HTMLElement>('.car-drive__road');
     expect(parseFloat(road?.style.top ?? '')).toBe(window.innerHeight - 48 - 12);
@@ -274,7 +301,7 @@ describe('SCRUM-48-T-7 landing motion', () => {
   });
 
   it('SCRUM-48-T-7 the road link goes to the full page', () => {
-    renderAt(<App loggedIn={false} />, '/');
+    renderAt(<App />, '/');
     expect(screen.getByRole('link', { name: GUIDE.tripLinkLabel })).toHaveAttribute(
       'href',
       '/how-it-works',
@@ -282,7 +309,7 @@ describe('SCRUM-48-T-7 landing motion', () => {
   });
 
   it('SCRUM-48-T-7 each answer opens under its own question', () => {
-    const { container } = renderAt(<App loggedIn={false} />, '/');
+    const { container } = renderAt(<App />, '/');
     const items = Array.from(container.querySelectorAll('details'));
     expect(items).toHaveLength(GUIDE.faq.length);
     GUIDE.faq.forEach((item, index) => {
@@ -300,7 +327,7 @@ describe('SCRUM-48-T-7 landing motion', () => {
     const cancel = vi.fn();
     vi.stubGlobal('requestAnimationFrame', () => 7);
     vi.stubGlobal('cancelAnimationFrame', cancel);
-    const { unmount } = renderAt(<App loggedIn={false} />, '/');
+    const { unmount } = renderAt(<App />, '/');
     // React keeps a scheduler timer of its own, so count from here.
     const timersBefore = vi.getTimerCount();
     everything();
@@ -314,7 +341,7 @@ describe('SCRUM-48-T-7 landing motion', () => {
 
   it('SCRUM-48-T-7 sections reveal when scrolled into view', () => {
     const { scrollIntoView } = stubObserver();
-    const { container } = renderAt(<App loggedIn={false} />, '/');
+    const { container } = renderAt(<App />, '/');
     const reveals = Array.from(container.querySelectorAll('.reveal'));
     expect(reveals).toHaveLength(3);
     expect(
@@ -333,7 +360,7 @@ describe('SCRUM-48-T-7 landing motion', () => {
   it('SCRUM-48-T-7 car drives past each step on a set schedule', () => {
     vi.useFakeTimers();
     const { everything } = stubObserver();
-    const { container } = renderAt(<App loggedIn={false} />, '/');
+    const { container } = renderAt(<App />, '/');
     const car = container.querySelector('.steps-road__car');
     expect(car).toHaveAttribute('data-step', 'start');
     expect(activeSteps()).toEqual([false, false, false]);
@@ -358,7 +385,7 @@ describe('SCRUM-48-T-7 landing motion', () => {
   });
 
   it('SCRUM-48-T-7 everything shows without scroll animation', () => {
-    const noObserver = renderAt(<App loggedIn={false} />, '/');
+    const noObserver = renderAt(<App />, '/');
     for (const reveal of noObserver.container.querySelectorAll('.reveal')) {
       expect(reveal).toHaveAttribute('data-shown', 'true');
     }
@@ -368,7 +395,7 @@ describe('SCRUM-48-T-7 landing motion', () => {
     vi.useFakeTimers();
     stubObserver();
     mockReducedMotion();
-    const reduced = renderAt(<App loggedIn={false} />, '/');
+    const reduced = renderAt(<App />, '/');
     for (const reveal of reduced.container.querySelectorAll('.reveal')) {
       expect(reveal).toHaveAttribute('data-shown', 'true');
     }
@@ -393,7 +420,7 @@ describe('SCRUM-48-T-7 landing motion', () => {
       },
     });
     vi.stubGlobal('scrollTo', vi.fn());
-    const { container } = renderAt(<App loggedIn={false} />, '/');
+    const { container } = renderAt(<App />, '/');
 
     fireEvent.click(screen.getAllByRole('link', { name: 'Check a listing' })[0]);
 
@@ -422,7 +449,7 @@ describe('SCRUM-48-T-7 landing motion', () => {
 describe('SCRUM-48-T-7 page routes', () => {
   it('SCRUM-48-T-7 opening another page starts at the top', () => {
     const scrollTo = vi.spyOn(window, 'scrollTo');
-    renderAt(<App loggedIn={false} />, '/');
+    renderAt(<App />, '/');
     expect(scrollTo).not.toHaveBeenCalled();
 
     fireEvent.click(screen.getByRole('link', { name: GUIDE.tripLinkLabel }));
@@ -435,18 +462,18 @@ describe('SCRUM-48-T-7 page routes', () => {
   });
 
   it('SCRUM-48-T-7 unknown path shows page not found with a link home', () => {
-    renderAt(<App loggedIn={false} />, '/nope');
+    renderAt(<App />, '/nope');
     expect(screen.getByRole('heading', { name: 'Page not found' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Go to the home page' })).toHaveAttribute('href', '/');
   });
 
   it('SCRUM-48-T-7 unknown scan id shows a not-found message', () => {
-    renderAt(<App loggedIn={false} />, '/results/does-not-exist');
+    renderAt(<App />, '/results/does-not-exist');
     expect(screen.getByRole('heading', { name: "We couldn't find that scan" })).toBeInTheDocument();
   });
 
   it('SCRUM-48-T-7 scans route redirects to the landing page when logged out', () => {
-    renderAt(<App loggedIn={false} />, '/scans');
+    renderAt(<App />, '/scans');
     expect(
       screen.getByRole('heading', { level: 1, name: 'Check a rental listing before you pay' }),
     ).toBeInTheDocument();

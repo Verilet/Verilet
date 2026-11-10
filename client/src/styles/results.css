@@ -24,11 +24,6 @@
   color: var(--color-muted);
 }
 
-.summary__saved {
-  font-size: 13px;
-  color: var(--color-faint);
-}
-
 .summary__title {
   font-size: 28px;
   font-weight: 700;
@@ -165,6 +160,19 @@
 .legend__item .chip {
   min-width: 96px;
   justify-content: center;
+}
+
+/* Score colours for the number and bar. */
+.score--danger {
+  color: var(--color-danger) !important;
+}
+
+.score--warn {
+  color: var(--color-warn) !important;
+}
+
+.score--ok {
+  color: var(--color-ok) !important;
 }
 
 @media (max-width: 720px) {

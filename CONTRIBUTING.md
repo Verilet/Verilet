@@ -69,17 +69,6 @@ npm --prefix server run dev
 
 You can verify the backend health check at `http://localhost:5000/api/health`.
 
-#### The dev Preview bar
-
-Under `npm --prefix client run dev`, a **Preview** bar sits at the bottom right of the app (`client/src/components/DevNav.tsx`). Sign-in and the scan API are not built yet, so it lets you jump to the screens that depend on them:
-
-- **Check** or **Home**: the listing form.
-- **Results**: a sample result from `client/src/data/mockScans.ts`.
-- **My scans**: the scan table (logged in only).
-- **Logged out** or **Logged in**: switches between the two sets of screens. Opening the app with `?loggedIn=true` does the same, and it lasts for that browser tab (`?loggedIn=false` turns it off).
-
-`App.tsx` only renders the bar when `import.meta.env.MODE` is `development`, so it never appears in production builds or tests. Remove it once real sign-in and the API are in place.
-
 ### <a name="testing-the-application"></a> Testing the Application
 
 We use **Vitest** for unit and API testing across the client and server. Place new test files alongside the code they test (`*.test.tsx` or `*.test.ts`).

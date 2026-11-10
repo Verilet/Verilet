@@ -51,7 +51,7 @@ function mockGeometry() {
 function renderPage() {
   return render(
     <MemoryRouter initialEntries={['/how-it-works']}>
-      <App loggedIn={false} />
+      <App />
     </MemoryRouter>,
   );
 }
@@ -381,6 +381,21 @@ describe('SCRUM-48-T-8 how it works page', () => {
       framesToFinish(frames);
       expect(activePosition()).toBe(2);
     });
+
+    it('SCRUM-48-T-8 driving back to the start empties the progress bar', () => {
+      const frames = manualFrames();
+      const { container } = renderPage();
+      scrollPast(3);
+      framesToFinish(frames);
+
+      // Scroll back above the first stop, so the car returns to the START tag.
+      scrollTo(-1000);
+      framesToFinish(frames);
+
+      expect(activeStops()).toHaveLength(0);
+      expect(container.querySelector('.trip-status')).toHaveTextContent(GUIDE.tripStart.label);
+      expect(container.querySelectorAll('.trip-status__leg[data-done="true"]')).toHaveLength(0);
+    });
   });
 
   it('SCRUM-48-T-8 status bar says what happens at the current stop', () => {
@@ -545,10 +560,29 @@ describe('SCRUM-48-T-8 how it works page', () => {
     const car = container.querySelector<HTMLElement>('.road__car');
 
     expect(car?.style.transform).toBe('translate3d(0, 0.00px, 0)');
-    expect(screen.getAllByRole('listitem').indexOf(activeStops()[0])).toBe(0);
+    expect(activeStops()).toHaveLength(0);
     screen
       .getAllByRole('listitem')
       .forEach((stop) => expect(stop).toHaveAttribute('data-passed', 'false'));
+    const statusBar = container.querySelector('.trip-status');
+    expect(statusBar).toHaveTextContent(GUIDE.tripStart.label);
+    expect(statusBar).toHaveTextContent(GUIDE.tripStart.status);
+    expect(container.querySelectorAll('.trip-status__leg[data-done="true"]')).toHaveLength(0);
+  });
+
+  it('SCRUM-48-T-8 the progress bar fills as the car reaches each stop', () => {
+    const frames = manualFrames();
+    const { container } = renderPage();
+    const filled = () => container.querySelectorAll('.trip-status__leg[data-done="true"]').length;
+    const active = () => screen.getAllByRole('listitem').indexOf(activeStops()[0]);
+    expect(filled()).toBe(active() + 1);
+
+    scrollTo(1000);
+    for (let guard = 0; frames.pending() > 0 && guard < 1000; guard += 1) {
+      frames.step();
+      expect(filled()).toBe(active() + 1);
+    }
+    expect(active()).toBe(4);
   });
 
   it('SCRUM-48-T-8 reaching the bottom of the page drives to the finish', () => {

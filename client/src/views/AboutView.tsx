@@ -145,7 +145,8 @@ export default function AboutView() {
       const reached = forwards
         ? stopCentres.reduce((last, centre, index) => (centre <= position ? index : last), AT_START)
         : stopCentres.findIndex((centre) => centre >= position);
-      setActiveIndex(Math.max(reached, 0));
+      // Driving back past the last stop finds nothing ahead, so the last stop is the one reached.
+      setActiveIndex(!forwards && reached === AT_START ? stopCentres.length - 1 : reached);
     }
 
     function startDrive(current: RoadLayout, fromStop: number, toStop: number, moving: boolean) {
@@ -194,6 +195,8 @@ export default function AboutView() {
       if (drive.elapsed >= drive.duration) {
         currentStop = drive.toStop;
         drive = null;
+        // Parked: the progress bar shows exactly where the car stopped, including back at the start.
+        setActiveIndex(currentStop);
       }
       queueFrame();
     }
@@ -214,7 +217,7 @@ export default function AboutView() {
     if (layout) {
       currentStop = destinationStop(layout, AT_START);
       placeCar(layout, centreOf(layout, currentStop));
-      setActiveIndex(Math.max(currentStop, 0));
+      setActiveIndex(currentStop);
     }
 
     window.addEventListener('scroll', queueFrame, { passive: true });
@@ -247,8 +250,14 @@ export default function AboutView() {
           {activeIndex !== null && (
             <div className="trip-status" aria-hidden="true">
               <p className="trip-status__text">
-                <span className="trip-status__label">{GUIDE.stops[activeIndex].label}</span>
-                {GUIDE.stops[activeIndex].status}
+                <span className="trip-status__label">
+                  {activeIndex === AT_START
+                    ? GUIDE.tripStart.label
+                    : GUIDE.stops[activeIndex].label}
+                </span>
+                {activeIndex === AT_START
+                  ? GUIDE.tripStart.status
+                  : GUIDE.stops[activeIndex].status}
               </p>
               <div className="trip-status__legs">
                 {GUIDE.stops.map((stop, index) => (

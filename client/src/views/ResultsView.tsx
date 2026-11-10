@@ -8,28 +8,14 @@ import type { ScanResult } from '../types';
 
 interface ResultsViewProps {
   scan: ScanResult;
-  loggedIn: boolean;
   backLabel: string;
   onBack: () => void;
   onCheckAnother: () => void;
-  onShare: () => void;
-  shareLabel: string;
-  /** Whether "More details" starts open. */
-  defaultExpanded: boolean;
 }
 
 /** The result of a check, with an expandable "More details" panel. */
-export default function ResultsView({
-  scan,
-  loggedIn,
-  backLabel,
-  onBack,
-  onCheckAnother,
-  onShare,
-  shareLabel,
-  defaultExpanded,
-}: ResultsViewProps) {
-  const [expanded, setExpanded] = useState(defaultExpanded);
+export default function ResultsView({ scan, backLabel, onBack, onCheckAnother }: ResultsViewProps) {
+  const [expanded, setExpanded] = useState(false);
   const detailsId = useId();
   const rating = ratingFromScore(scan.score);
   const headline = RATING_HEADLINE[rating];
@@ -44,7 +30,6 @@ export default function ResultsView({
         <section className="card card--summary" aria-labelledby="result-heading">
           <div className="summary__meta">
             <p>{scanMeta(scan)}</p>
-            {loggedIn && <p className="summary__saved">Saved to My scans</p>}
           </div>
           <RatingChip rating={rating} />
           <h1 className="summary__title" id="result-heading">
@@ -62,11 +47,6 @@ export default function ResultsView({
               {expanded ? 'Hide details' : 'More details'}
               <ChevronIcon up={expanded} />
             </button>
-            {loggedIn && (
-              <button type="button" className="button button--secondary" onClick={onShare}>
-                {shareLabel}
-              </button>
-            )}
             <button type="button" className="button button--secondary" onClick={onCheckAnother}>
               Check another listing
             </button>

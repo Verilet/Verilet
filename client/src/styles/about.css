@@ -1,11 +1,5 @@
 /* How it works page: the road, its stops, and the car. */
 
-.listing-demo__photo .house {
-  width: 96px;
-  height: 90px;
-  margin: 0 0 -1px;
-}
-
 .road-intro {
   display: flex;
   flex-direction: column;

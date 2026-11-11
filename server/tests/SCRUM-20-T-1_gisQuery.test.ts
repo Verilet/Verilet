@@ -135,7 +135,7 @@ describe('SCRUM-20-T-1 GIS Query Service', () => {
   // Criterion 1:
   // A valid Santa Cruz parcel returns compliant and includes parcel details.
   it('SCRUM-20-T-1 returns compliant when a parcel is found', async () => {
-    vi.spyOn(global, 'fetch').mockResolvedValue({
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
       ok: true,
       json: async () => ({
         features: [
@@ -173,7 +173,7 @@ describe('SCRUM-20-T-1 GIS Query Service', () => {
   // Criterion 3:
   // Non-existent addresses return warning and UNVERIFIED_ADDRESS.
   it('SCRUM-20-T-1 returns warning when no parcel is found', async () => {
-    vi.spyOn(global, 'fetch').mockResolvedValue({
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
       ok: true,
       json: async () => ({
         features: [],
@@ -195,7 +195,7 @@ describe('SCRUM-20-T-1 GIS Query Service', () => {
   // Criterion 5:
   // HTTP 4xx/5xx responses return GIS_SERVICE_UNAVAILABLE.
   it('SCRUM-20-T-1 returns skipped when GIS service returns an HTTP error', async () => {
-    vi.spyOn(global, 'fetch').mockResolvedValue({
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
       ok: false,
     } as Response);
     const result = await evaluateGisQuery({
@@ -213,7 +213,7 @@ describe('SCRUM-20-T-1 GIS Query Service', () => {
   // Criterion 5:
   // Network failures and timeout scenarios return GIS_SERVICE_UNAVAILABLE.
   it('SCRUM-20-T-1 returns skipped when GIS service throws an error', async () => {
-    vi.spyOn(global, 'fetch').mockRejectedValue(
+    vi.spyOn(globalThis, 'fetch').mockRejectedValue(
       new Error('timeout'),
     );
     const result = await evaluateGisQuery({

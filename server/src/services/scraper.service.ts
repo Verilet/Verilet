@@ -45,9 +45,9 @@ export type PhotoInput = string | SchemaOrgImage | null | undefined;
  * Resolves an image URL candidate against the page base URL.
  * Converts relative paths to absolute URLs.
  *
- * @param {PhotoInput} photo - Image candidate string or SchemaOrgImage entry.
- * @param {string} baseUrl - The listing page URL used to resolve relative paths.
- * @returns {string | null} - Absolute URL string, or null if invalid.
+ * @param photo Image candidate string or SchemaOrgImage entry.
+ * @param baseUrl The listing page URL used to resolve relative paths.
+ * @returns Absolute URL string, or null if invalid.
  */
 function resolvePhotoUrl(photo: PhotoInput, baseUrl: string): string | null {
   let rawUrl: string | null = null;
@@ -78,8 +78,8 @@ function resolvePhotoUrl(photo: PhotoInput, baseUrl: string): string | null {
 /**
  * Checks whether a URL belongs to Craigslist.
  *
- * @param {string} url - The listing URL string to inspect.
- * @returns {boolean} - True if the URL is a Craigslist domain.
+ * @param url The listing URL string to inspect.
+ * @returns True if the URL is a Craigslist domain.
  */
 export function isCraigslistUrl(url: string): boolean {
   try {
@@ -94,9 +94,9 @@ export function isCraigslistUrl(url: string): boolean {
 /**
  * Cheerio extractor for Craigslist listing, populating data with rent, title, address, description, and photos.
  *
- * @param {CheerioAPI} $ - Loaded Cheerio API instance.
- * @param {ScrapedListingData} data - Target ScrapedListingData to populate.
- * @param {string} baseUrl - The base listing URL to resolve photo paths.
+ * @param $ Loaded Cheerio API instance.
+ * @param data Target ScrapedListingData to populate.
+ * @param baseUrl The base listing URL to resolve photo paths.
  */
 function extractCraigslistData($: CheerioAPI, data: ScrapedListingData, baseUrl: string): void {
   // Rent
@@ -172,9 +172,9 @@ function extractCraigslistData($: CheerioAPI, data: ScrapedListingData, baseUrl:
  * Extracts property details from Schema.org JSON-LD scripts.
  * Populates only fields in `data` that are currently null or empty.
  *
- * @param {CheerioAPI} $ - Loaded Cheerio API instance.
- * @param {ScrapedListingData} data - Target ScrapedListingData to populate.
- * @param {string} baseUrl - The base listing URL to resolve photo paths.
+ * @param $ Loaded Cheerio API instance.
+ * @param data Target ScrapedListingData to populate.
+ * @param baseUrl The base listing URL to resolve photo paths.
  */
 function extractJsonLdData($: CheerioAPI, data: ScrapedListingData, baseUrl: string): void {
   const jsonLdScripts = $('script[type="application/ld+json"]');
@@ -241,9 +241,9 @@ function extractJsonLdData($: CheerioAPI, data: ScrapedListingData, baseUrl: str
  * Extracts property details from OpenGraph and standard HTML meta tags.
  * Populates only fields in `data` that are currently null or empty.
  *
- * @param {CheerioAPI} $ - Loaded Cheerio API instance.
- * @param {ScrapedListingData} data - Target ScrapedListingData to populate.
- * @param {string} baseUrl - Base listing URL to resolve photo paths.
+ * @param $ Loaded Cheerio API instance.
+ * @param data Target ScrapedListingData to populate.
+ * @param baseUrl Base listing URL to resolve photo paths.
  */
 function extractOpenGraphData($: CheerioAPI, data: ScrapedListingData, baseUrl: string): void {
   if (!data.title) {
@@ -271,8 +271,8 @@ function extractOpenGraphData($: CheerioAPI, data: ScrapedListingData, baseUrl: 
 /**
  * Checks if all required listing fields have been populated with non-empty values.
  *
- * @param {ScrapedListingData} data - Target ScrapedListingData to evaluate.
- * @returns {boolean} - True if all fields are non-null and photos array is non-empty.
+ * @param data Target ScrapedListingData to evaluate.
+ * @returns True if all fields are non-null and photos array is non-empty.
  */
 function isCompleteListing(data: ScrapedListingData): boolean {
   return (
@@ -289,8 +289,8 @@ function isCompleteListing(data: ScrapedListingData): boolean {
  * Attempts extraction from Craigslist, then falls back to Schema.org JSON-LD scripts and OpenGraph meta tags.
  * Enforces a 5000ms timeout and handles network or parsing failures.
  *
- * @param {string} url - The listing URL to scrape.
- * @returns {Promise<ScrapeResult>} - Promise resolving to a ScrapeResult envelope.
+ * @param url The listing URL to scrape.
+ * @returns Promise resolving to a ScrapeResult envelope.
  */
 export async function scrapeListing(url: string): Promise<ScrapeResult> {
   try {

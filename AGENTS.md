@@ -8,6 +8,9 @@ Before designing, implementing, or testing features, agents **MUST consult the `
 
 - **[`docs/architecture.md`](./docs/architecture.md)**: System architecture, component boundaries, 3-tier scraper data flows, and design invariants.
 - **[`docs/ci-cd.md`](./docs/ci-cd.md)**: Git hooks, branch naming conventions, PR validation workflows, and CD pipelines.
+- **[`docs/style-guide.md`](./docs/style-guide.md)**: Google JavaScript and TypeScript coding standards, Express 5 API conventions, and React 19 guidelines.
+- **[`docs/definition-of-done.md`](./docs/definition-of-done.md)**: Definition of Done checklist covering code quality, offline testing, CSE 115A process points, and PR review.
+- **[`docs/acceptance-criteria-guide.md`](./docs/acceptance-criteria-guide.md)**: Given-When-Then story criteria, task-level technical invariants, and the 1-to-1 test mapping invariant.
 - **[`docs/tasks/`](./docs/tasks/)**: CSE 115A sprint task specifications, criteria mapping, and past task examples.
 
 ## Repository Overview

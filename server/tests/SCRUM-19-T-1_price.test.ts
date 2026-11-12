@@ -4,7 +4,7 @@ import {
   checkPrice,
   evaluatePrice,
   findBaseline,
-} from '../src/services/checkers/averagePrice.checker.js';
+} from '../src/services/checkers/averagePrice.service.js';
 
 describe('SCRUM-19-T-1 Price outlier checker', () => {
   afterEach(() => {

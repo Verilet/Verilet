@@ -82,7 +82,7 @@ npm --prefix server test
 # Linting and formatting
 npm --prefix client run lint
 npm --prefix server run lint
-npx prettier --write "client/src/**/*.{ts,tsx}" "server/src/**/*.ts"
+npm run format # Formats all client, server, and doc files (same as pre-commit hook)
 ```
 
 ## Documentation

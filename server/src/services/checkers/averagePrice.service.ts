@@ -20,7 +20,7 @@ export const SPACE_TYPES = [
 /** One of the supported rental space types. */
 export type SpaceType = (typeof SPACE_TYPES)[number];
 
-/** Regions with rent data */
+/** Regions with rent data. */
 export const REGIONS = ['santa_cruz', 'san_jose'] as const;
 
 /** One of the supported regions. */
@@ -114,7 +114,7 @@ export interface BaselineMatch {
   region: Region;
 }
 
-/** For writing the explanation sentence */
+/** For writing the explanation sentence. */
 const SPACE_TYPE_LABELS: Record<SpaceType, string> = {
   shared_room: 'shared room',
   single_room: 'single room',
@@ -127,6 +127,9 @@ const SPACE_TYPE_LABELS: Record<SpaceType, string> = {
 
 /**
  * Formats a number as whole US dollars, e.g. 2400 -> "$2,400".
+ *
+ * @param amount Numeric dollar amount.
+ * @return Formatted USD currency string.
  */
 function formatUsd(amount: number): string {
   return `$${Math.round(amount).toLocaleString('en-US')}`;
@@ -134,21 +137,34 @@ function formatUsd(amount: number): string {
 
 /**
  * Returns the lowest price among matching records.
+ *
+ * @param docs Array of rent baseline documents.
+ * @return Lowest price found among records.
  */
 function lowestPrice(docs: RentBaseline[]): number {
   return Math.min(...docs.map((doc) => doc.price));
 }
 
 /**
- * Decides which region's data to use: If region is not given, use zip
- * to find the region. If not even zip is given, return null.
+ * Decides which region's data to use: if region is not given, uses ZIP
+ * to find the region. If neither is given or valid, returns null.
+ *
+ * @param zip Optional 5-digit ZIP code.
+ * @param region Optional explicit region name.
+ * @return Resolved region name, or null if unresolvable.
  */
 export async function resolveRegion(zip?: string, region?: Region): Promise<Region | null> {
-  if (region) return region;
-  if (!zip) return null;
+  if (region) {
+    return region;
+  }
+  if (!zip) {
+    return null;
+  }
 
   for (const candidate of REGIONS) {
-    if (await REGION_DATA[candidate].model.exists({ zipCode: zip })) return candidate;
+    if (await REGION_DATA[candidate].model.exists({ zipCode: zip })) {
+      return candidate;
+    }
   }
 
   // A ZIP outside every region would otherwise be compared against the wrong area's prices
@@ -156,9 +172,13 @@ export async function resolveRegion(zip?: string, region?: Region): Promise<Regi
 }
 
 /**
- * Finds the average rent for a space type in one region, trying the Zip
- *  code first. If not zip give, use the region-wide average. If no Zip
- * or region is given, return null.
+ * Finds the average rent baseline for a space type in a region, checking ZIP first then county-wide.
+ * If no ZIP or region-wide baseline matches, returns null.
+ *
+ * @param region The region to search.
+ * @param spaceType The type of rental space.
+ * @param zip Optional 5-digit ZIP code.
+ * @return The matched baseline record with rent, source, and region, or null if not found.
  */
 export async function findBaseline(
   region: Region,
@@ -167,11 +187,15 @@ export async function findBaseline(
 ): Promise<BaselineMatch | null> {
   const { model, roomTypes: regionRoomTypes } = REGION_DATA[region];
   const roomTypes = regionRoomTypes[spaceType];
-  if (roomTypes.length === 0) return null;
+  if (roomTypes.length === 0) {
+    return null;
+  }
 
   if (zip) {
     const byZip = await model.find({ zipCode: zip, roomType: { $in: roomTypes } });
-    if (byZip.length > 0) return { rent: lowestPrice(byZip), source: 'zip', region };
+    if (byZip.length > 0) {
+      return { rent: lowestPrice(byZip), source: 'zip', region };
+    }
   }
 
   // Find Region-wide averages
@@ -179,13 +203,19 @@ export async function findBaseline(
     zipCode: { $exists: false },
     roomType: { $in: roomTypes },
   });
-  if (regionWide.length > 0) return { rent: lowestPrice(regionWide), source: 'county', region };
+  if (regionWide.length > 0) {
+    return { rent: lowestPrice(regionWide), source: 'county', region };
+  }
 
   return null;
 }
 
 /**
- * Compares a listing's rent against a baseline.
+ * Compares listing rent against a baseline to determine if it is an outlier violation.
+ *
+ * @param input Validated price check input.
+ * @param match Baseline match from the database, or null.
+ * @return Evaluation result with status, percentage, and user explanation.
  */
 export function evaluatePrice(
   input: PriceCheckInput,
@@ -239,8 +269,10 @@ export function evaluatePrice(
 }
 
 /**
- * Runs the four functions for price check: validates input, picks the region,
- * looks up the baseline, and compares.
+ * Runs the full price check: validates input, resolves region, retrieves baseline, and evaluates.
+ *
+ * @param rawInput Untrusted input payload to parse and validate.
+ * @return Final price check evaluation result.
  */
 export async function checkPrice(rawInput: unknown): Promise<PriceCheckResult> {
   const input = PriceCheckInputSchema.parse(rawInput);

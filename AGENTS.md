@@ -65,8 +65,9 @@ npm --prefix server test # Server API tests (Vitest in server/tests/)
 npm --prefix client run lint # Client ESLint
 npm --prefix server run lint # Server ESLint
 
-# Formatting (Prettier)
-npx prettier --write "client/src/**/*.{ts,tsx,js,jsx}" "server/src/**/*.{ts,js}" "*.{json,md,yml,yaml}"
+# Formatting (Prettier - aligned with pre-commit hook)
+npm run format # Formats all client, server, and markdown files
+npm run format:check # Verifies formatting without writing
 ```
 
 ## Architectural Guidelines and Invariants

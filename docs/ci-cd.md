@@ -40,7 +40,7 @@ Target rules defined in root `package.json`:
 
 - `client/**/*.{ts,tsx,js,jsx}`: Runs `prettier --write` followed by `eslint --fix`.
 - `server/**/*.{ts,js}`: Runs `prettier --write` followed by `eslint --fix`.
-- `*.{json,md,yml,yaml}`: Runs `prettier --write`.
+- `**/*.{json,md,yml,yaml}`: Runs `prettier --write`.
 
 Only staged files are processed, keeping commit times minimal.
 
@@ -135,7 +135,7 @@ Continuous deployment is coordinated across two complementary channels upon merg
 If the `lint-and-format` job fails:
 
 ```bash
-npx prettier --write "client/src/**/*.{ts,tsx,js,jsx}" "server/src/**/*.{ts,js}" "*.{json,md,yml,yaml}"
+npm run format
 ```
 
 Commit and push the formatted files.

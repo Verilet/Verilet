@@ -31,7 +31,7 @@ Before an item can be considered complete, all code must meet repository quality
 3. **Prettier Formatting:**  
    All files must be formatted cleanly according to `.prettierrc`:
    ```bash
-   npx prettier --check "client/src/**/*.{ts,tsx}" "server/src/**/*.{ts}" "*.{json,md,yml}"
+   npm run format:check
    ```
 4. **Strict TypeScript Compilation:**  
    Code must compile with strict TypeScript checks enabled and zero type errors:

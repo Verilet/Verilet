@@ -1,6 +1,6 @@
 import {afterEach, describe, expect, it, vi,} from 'vitest';
 
-import {GisQueryInputSchema, normalizeAddress, evaluateGisQuery, type GisQueryInput,
+import {GisQueryInputSchema, normalizeAddress, evaluateGisQuery,
 } from '../src/services/gisQuery.service.ts';
 
 afterEach(() => {
@@ -14,6 +14,42 @@ describe('SCRUM-20-T-1 GIS Query Service', () => {
   it('SCRUM-20-T-1 removes apartment numbers', () => {
     expect(
       normalizeAddress('530 High St Apt 4B'),
+    ).toBe('530 HIGH ST');
+  });
+
+  // Criterion 2:
+  // Apartment designators containing periods normalize
+  // to the base parcel address.
+  it('SCRUM-20-T-1 removes apartment numbers with periods', () => {
+    expect(
+      normalizeAddress('530 High St Apt. 4B'),
+    ).toBe('530 HIGH ST');
+  });
+
+  // Criterion 2:
+  // Suite designators containing periods normalize
+  // to the base parcel address.
+  it('SCRUM-20-T-1 removes suite numbers with periods', () => {
+    expect(
+      normalizeAddress('530 High St Ste. 100'),
+    ).toBe('530 HIGH ST');
+  });
+
+  // Criterion 2:
+  // Suite designators without periods normalize
+  // to the base parcel address.
+  it('SCRUM-20-T-1 removes suite numbers', () => {
+    expect(
+      normalizeAddress('530 High St Ste 100'),
+    ).toBe('530 HIGH ST');
+  });
+
+  // Criterion 2:
+  // Hash-style unit identifiers with spaces normalize
+  // to the base parcel address.
+  it('SCRUM-20-T-1 removes spaced hash unit identifiers', () => {
+    expect(
+      normalizeAddress('530 High St # 12'),
     ).toBe('530 HIGH ST');
   });
 
@@ -68,12 +104,15 @@ describe('SCRUM-20-T-1 GIS Query Service', () => {
   // Missing address inputs return skipped status.
   it('SCRUM-20-T-1 returns skipped when input is undefined', async () => {
     const result = await evaluateGisQuery();
-    expect(result.success).toBe(true);
-    if (result.success) {
-      expect(result.data.status).toBe('skipped');
-      expect(result.data.flag).toBeNull();
-      expect(result.data.parcel).toBeNull();
-    }
+    expect(result).toEqual({
+      success: true,
+      data: {
+        status: 'skipped',
+        flag: null,
+        message: 'Address not specified; check skipped',
+        parcel: null,
+      },
+    });
   });
 
   // Criterion 4:
@@ -82,12 +121,15 @@ describe('SCRUM-20-T-1 GIS Query Service', () => {
     const result = await evaluateGisQuery({
       address: null,
     });
-    expect(result.success).toBe(true);
-    if (result.success) {
-      expect(result.data.status).toBe('skipped');
-      expect(result.data.flag).toBeNull();
-      expect(result.data.parcel).toBeNull();
-    }
+    expect(result).toEqual({
+      success: true,
+      data: {
+        status: 'skipped',
+        flag: null,
+        message: 'Address not specified; check skipped',
+        parcel: null,
+      },
+    });
   });
 
   // Criterion 4:
@@ -96,12 +138,15 @@ describe('SCRUM-20-T-1 GIS Query Service', () => {
     const result = await evaluateGisQuery({
       address: '',
     });
-    expect(result.success).toBe(true);
-    if (result.success) {
-      expect(result.data.status).toBe('skipped');
-      expect(result.data.flag).toBeNull();
-      expect(result.data.parcel).toBeNull();
-    }
+    expect(result).toEqual({
+      success: true,
+      data: {
+        status: 'skipped',
+        flag: null,
+        message: 'Address not specified; check skipped',
+        parcel: null,
+      },
+    });
   });
 
   // Criterion 4:
@@ -110,12 +155,15 @@ describe('SCRUM-20-T-1 GIS Query Service', () => {
     const result = await evaluateGisQuery({
       address: '     ',
     });
-    expect(result.success).toBe(true);
-    if (result.success) {
-      expect(result.data.status).toBe('skipped');
-      expect(result.data.flag).toBeNull();
-      expect(result.data.parcel).toBeNull();
-    }
+    expect(result).toEqual({
+      success: true,
+      data: {
+        status: 'skipped',
+        flag: null,
+        message: 'Address not specified; check skipped',
+        parcel: null,
+      },
+    });
   });
 
   // Criterion 6:
@@ -123,13 +171,11 @@ describe('SCRUM-20-T-1 GIS Query Service', () => {
   it('SCRUM-20-T-1 rejects invalid address input values', async () => {
     const result = await evaluateGisQuery({
       address: 123,
-    } as unknown as GisQueryInput);
-    expect(result.success).toBe(false);
-    if (!result.success) {
-      expect(result.error).toBe(
-        'Invalid address input value',
-      );
-    }
+    } as unknown as Record<string, unknown>);
+    expect(result).toEqual({
+      success: false,
+      error: 'Invalid address input value',
+    });
   });
 
   // Criterion 1:
@@ -155,19 +201,22 @@ describe('SCRUM-20-T-1 GIS Query Service', () => {
     const result = await evaluateGisQuery({
       address: '530 High St Apt 4B',
     });
-    expect(result.success).toBe(true);
-    if (result.success) {
-      expect(result.data.status).toBe('compliant');
-      expect(result.data.flag).toBeNull();
-      expect(result.data.parcel).toEqual({
-        apn: '123456',
-        siteAddress: '530 HIGH ST',
-        city: 'SANTA CRUZ',
-        zip: '95064',
-        useCode: '101',
-        useDescription: 'Single Residence',
-      });
-    }
+    expect(result).toEqual({
+      success: true,
+      data: {
+        status: 'compliant',
+        flag: null,
+        message: 'Address verified in county parcel records',
+        parcel: {
+          apn: '123456',
+          siteAddress: '530 HIGH ST',
+          city: 'SANTA CRUZ',
+          zip: '95064',
+          useCode: '101',
+          useDescription: 'Single Residence',
+        },
+      },
+    });
   });
 
   // Criterion 3:
@@ -182,14 +231,15 @@ describe('SCRUM-20-T-1 GIS Query Service', () => {
     const result = await evaluateGisQuery({
       address: '999 Fake Street',
     });
-    expect(result.success).toBe(true);
-    if (result.success) {
-      expect(result.data.status).toBe('warning');
-      expect(result.data.flag).toBe(
-        'UNVERIFIED_ADDRESS',
-      );
-      expect(result.data.parcel).toBeNull();
-    }
+    expect(result).toEqual({
+      success: true,
+      data: {
+        status: 'warning',
+        flag: 'UNVERIFIED_ADDRESS',
+        message: 'Address could not be verified in Santa Cruz County records',
+        parcel: null,
+      },
+    });
   });
 
   // Criterion 5:
@@ -201,13 +251,15 @@ describe('SCRUM-20-T-1 GIS Query Service', () => {
     const result = await evaluateGisQuery({
       address: '530 High St',
     });
-    expect(result.success).toBe(true);
-    if (result.success) {
-      expect(result.data.status).toBe('skipped');
-      expect(result.data.flag).toBe(
-        'GIS_SERVICE_UNAVAILABLE',
-      );
-    }
+    expect(result).toEqual({
+      success: true,
+      data: {
+        status: 'skipped',
+        flag: 'GIS_SERVICE_UNAVAILABLE',
+        message: 'County GIS service timed out or unavailable; check skipped',
+        parcel: null,
+      },
+    });
   });
 
   // Criterion 5:
@@ -219,12 +271,40 @@ describe('SCRUM-20-T-1 GIS Query Service', () => {
     const result = await evaluateGisQuery({
       address: '530 High St',
     });
-    expect(result.success).toBe(true);
-    if (result.success) {
-      expect(result.data.status).toBe('skipped');
-      expect(result.data.flag).toBe(
-        'GIS_SERVICE_UNAVAILABLE',
-      );
-    }
+    expect(result).toEqual({
+      success: true,
+      data: {
+        status: 'skipped',
+        flag: 'GIS_SERVICE_UNAVAILABLE',
+        message: 'County GIS service timed out or unavailable; check skipped',
+        parcel: null,
+      },
+    });
+  });
+
+  // Criterion 5:
+  // ArcGIS error payloads are treated as GIS service outages
+  // and return GIS_SERVICE_UNAVAILABLE. 
+  it('SCRUM-20-T-1 returns skipped when GIS returns an error payload', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        error: {
+          code: 500,
+        },
+      }),
+    } as Response);
+    const result = await evaluateGisQuery({
+      address: '530 High St',
+    });
+    expect(result).toEqual({
+      success: true,
+      data: {
+        status: 'skipped',
+        flag: 'GIS_SERVICE_UNAVAILABLE',
+        message: 'County GIS service timed out or unavailable; check skipped',
+        parcel: null,
+      },
+    });
   });
 });

@@ -47,3 +47,21 @@ Serves SCRUM-20 (verify listing address exists and is designated for residential
 5. An external request timeout (5000ms) or HTTP error returns status: "skipped" and flag GIS_SERVICE_UNAVAILABLE without crashing the server process.
 
 6. Non-string data types are rejected with { success: false } and a descriptive error message without crashing the server process.
+
+## Tests
+
+File: `server/tests/SCRUM-20-T-1_gisQuery.test.ts`
+
+Setup for all: Offline unit tests directly invoking the exported GIS evaluation service with mocked ArcGIS responses and zero external network dependencies.
+
+- Criterion 1: SCRUM-20-T-1 returns compliant when a parcel is found — mocks a successful ArcGIS parcel response, asserts status "compliant", flag null, message "Address verified in county parcel records", and verifies parcel APN, use code, use description, and address fields are extracted.
+
+- Criterion 2: SCRUM-20-T-1 removes apartment numbers, SCRUM-20-T-1 removes hash unit identifiers, and SCRUM-20-T-1 normalizes whitespace and capitalization — evaluates apartment-designated, hash-designated, and irregularly formatted addresses, asserting normalization produces a parcel-searchable base address.
+
+- Criterion 3: SCRUM-20-T-1 returns warning when no parcel is found — mocks an ArcGIS response containing zero matching features, asserts status "warning", flag "UNVERIFIED_ADDRESS", and parcel null.
+
+- Criterion 4: SCRUM-20-T-1 returns skipped when input is undefined, SCRUM-20-T-1 returns skipped when address is null, SCRUM-20-T-1 returns skipped when address is empty, and SCRUM-20-T-1 returns skipped when address is whitespace only — evaluates missing and blank address inputs, asserts status "skipped", flag null, and message "Address not specified; check skipped".
+
+- Criterion 5: SCRUM-20-T-1 returns skipped when GIS service returns an HTTP error and SCRUM-20-T-1 returns skipped when GIS service throws an error — mocks HTTP failures and network/timeout failures, asserts status "skipped", flag "GIS_SERVICE_UNAVAILABLE", and parcel null.
+
+- Criterion 6: SCRUM-20-T-1 rejects invalid address input values and SCRUM-20-T-1 schema rejects non-string address values — evaluates invalid address types such as numeric values, asserts { success: false, error: "Invalid address input value" } without throwing unhandled exceptions.

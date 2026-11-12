@@ -21,7 +21,7 @@ flowchart TD
 Before an item can be considered complete, all code must meet repository quality standards:
 
 1. **Google JS/TS Style Adherence:**  
-   Code must comply with [docs/style-guide.md](./style-guide.md), including 2-space indentation, mandatory semicolons, single quotes, mandatory braces for all control flow, strict equality (`===`), and no `any` types.
+   Code must comply with [docs/style-guide.md](./style-guide.md), including 2-space indentation, mandatory semicolons, single quotes, mandatory braces for all control flow, strict equality (`===`, with `== null` exception per §1.2), and no `any` types.
 2. **ESLint Compliance:**  
    Code must pass ESLint with **zero warnings and zero errors**:
    ```bash

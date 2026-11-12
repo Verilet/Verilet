@@ -45,7 +45,7 @@ The team's formatting rules are configured in [`.prettierrc`](file:///c:/Users/a
 
 - **Equality Checks:**
   - Always use strict equality (`===`) and strict inequality (`!==`).
-  - Never use loose equality (`==` or `!=`).
+  - **Exception:** In accordance with Google JavaScript Style Guide §5.1.2, comparing with `== null` and `!= null` is permitted solely to test whether a value is either `null` or `undefined`. Loose equality is forbidden for all other types and values.
 
 - **Control Flow & Early Exits:**  
   Prefer guard clauses and early returns to avoid deep nesting:

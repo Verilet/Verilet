@@ -1,4 +1,5 @@
 import mongoose, { Schema } from 'mongoose';
+import { getRentDbName } from '../config/rentDatabase.js';
 
 /** One average-rent record in the averagePrice.santaCruz collection. */
 export interface RentBaseline {
@@ -21,8 +22,8 @@ const rentBaselineSchema = new Schema<RentBaseline>({
   source: { type: String, required: true },
 });
 
-// The rent data lives in the averagePricedatabase
-const averagePriceDb = mongoose.connection.useDb('averagePrice', { useCache: true });
+// The rent data lives in the database named by RENT_DB_NAME (averagePrice by default)
+const averagePriceDb = mongoose.connection.useDb(getRentDbName(), { useCache: true });
 
 /**
  * Query Santa Cruz County rents.

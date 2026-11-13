@@ -1,16 +1,13 @@
-//paymentFlags.ts
-
-//Top of File; Important constants for subtask 1
+//Docstring for the file:
 const CATEGORIES_OF_PAYMENT =[
 
     {
-        payment_id: 'wire', //not sure if this will be used by team, but here as placeholder for now
+        payment_id: 'wire', 
         payment_terms: ['western Union', 'MoneyGram', 'wire transfer'],
         payment_title: 'A wire transfer payment has been requested.',
         explanation: "Wire transfer payments are almost impossible to recover " +
         "once they have been sent. Avoid sending money through this method, " +
         "and see the property before signing any lease."
-
     },
 
     {
@@ -20,7 +17,6 @@ const CATEGORIES_OF_PAYMENT =[
         explanation: "Cryptocurrent payments are irreversible and untraceable " +
         "to the recipient. Landlords usually accept traceable payments such as bank transfers or checks."
         + " Avoid sending money through this method, and see the property before signing any lease." 
-
     },
 
     {
@@ -29,9 +25,8 @@ const CATEGORIES_OF_PAYMENT =[
         suffix: 'gift[\\s-]?cards?',
         payment_title: 'A gift card payment has been requested.',
         explanation: "Legimate landlords do not accept gift cards as a form of payment. " + 
-        "Gift card payments irreviersible and untraceable." +
+        "Gift card payments are irreversible and untraceable." +
         " Avoid sending money through this method, and see the property before signing any lease."
-
     },
 ];
 

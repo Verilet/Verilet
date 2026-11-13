@@ -77,27 +77,30 @@ export type GisQueryResult =
       readonly error: string;
     };
 
-/** Removes apartment, suite, unit, and/or similar designators so
+/**
+ * Removes apartment, suite, unit, and/or similar designators so
  * parcel matching is performed on base address.
  *
  * @param address Address to normalize.
  * @return Address without unit designators.
  */
 function stripUnitDesignator(address: string): string {
-  return address.replace(/\s+(APT\.?|APARTMENT|UNIT|STE\.?|SUITE)\s+\S+.*$/i, '');
+  return address.replace(/,?\s+(APT\.?|APARTMENT|UNIT|STE\.?|SUITE)\s+\S+.*$/i, '').trim();
 }
 
-/** Removes hash-style unit identifiers
+/**
+ * Removes hash-style unit identifiers
  * "123 High St #42" becomes "123 High St".
  *
  * @param address Address to normalize.
  * @return Address without hash-style unit identifiers.
  */
 function stripHashUnit(address: string): string {
-  return address.replace(/\s+#\s*\S+.*$/i, '');
+  return address.replace(/,?\s+#\s*\S+.*$/i, '').trim();
 }
 
-/** Builds the ArcGIS query URL for a normalized address.
+/**
+ * Builds the ArcGIS query URL for a normalized address.
  *
  * @param normalizedAddress Normalized address to query.
  * @return Fully constructed ArcGIS query URL.
@@ -113,7 +116,8 @@ function buildQueryUrl(normalizedAddress: string): string {
   return `${GIS_QUERY_URL}?${params.toString()}`;
 }
 
-/** Normalizes address for GIS parcel lookup
+/**
+ * Normalizes address for GIS parcel lookup
  * "123 High St #42" becomes "123 HIGH ST"
  * "123 High St Apt 3B" becomes "123 HIGH ST"
  * "123   High      St " becomes "123 HIGH ST".
@@ -122,7 +126,11 @@ function buildQueryUrl(normalizedAddress: string): string {
  * @return Uppercase normalized parcel-searchable address.
  */
 export function normalizeAddress(address: string): string {
-  return stripHashUnit(stripUnitDesignator(address)).trim().replace(/\s+/g, ' ').toUpperCase();
+  return stripHashUnit(stripUnitDesignator(address))
+    .trim()
+    .replace(/\s*,\s*/g, ', ')
+    .replace(/\s+/g, ' ')
+    .toUpperCase();
 }
 
 /** Return when an address is missing and GIS check cannot be done. */
@@ -136,7 +144,8 @@ const SKIPPED_RESULT: GisQueryResult = Object.freeze({
   }),
 });
 
-/** Evaluates a listing address against Santa Cruz county GIS records.
+/**
+ * Evaluates a listing address against Santa Cruz county GIS records.
  *
  * @param input Address information to evaluate.
  * @return GIS verification results.

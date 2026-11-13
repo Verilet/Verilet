@@ -3,7 +3,7 @@ import {
   GisQueryInputSchema,
   normalizeAddress,
   evaluateGisQuery,
-} from '../src/services/gisQuery.service.ts';
+} from '../src/services/gisQuery.service.js';
 
 afterEach(() => {
   vi.restoreAllMocks();

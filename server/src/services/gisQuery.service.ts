@@ -19,7 +19,7 @@ export type GisFlag = 'UNVERIFIED_ADDRESS' | 'GIS_SERVICE_UNAVAILABLE';
 const GIS_QUERY_URL =
   'https://sccgis.santacruzcountyca.gov/server/rest/services/data/MapServer/2/query';
 
-/** Parcel information returned from county GIS records.*/
+/** Parcel information returned from county GIS records. */
 export interface GisParcel {
   /** Assessor parcel number. */
   readonly apn: string;
@@ -144,6 +144,17 @@ const SKIPPED_RESULT: GisQueryResult = Object.freeze({
   }),
 });
 
+/** Return when the county GIS service is unavailable. */
+const GIS_SERVICE_UNAVAILABLE_RESULT: GisQueryResult = Object.freeze({
+  success: true,
+  data: Object.freeze({
+    status: 'skipped',
+    flag: 'GIS_SERVICE_UNAVAILABLE',
+    message: 'County GIS service timed out or unavailable; check skipped',
+    parcel: null,
+  }),
+});
+
 /**
  * Evaluates a listing address against Santa Cruz county GIS records.
  *
@@ -175,27 +186,11 @@ export async function evaluateGisQuery(input?: GisQueryInput | null): Promise<Gi
       signal: AbortSignal.timeout(5000),
     });
     if (!response.ok) {
-      return {
-        success: true,
-        data: {
-          status: 'skipped',
-          flag: 'GIS_SERVICE_UNAVAILABLE',
-          message: 'County GIS service timed out or unavailable; check skipped',
-          parcel: null,
-        },
-      };
+      return GIS_SERVICE_UNAVAILABLE_RESULT;
     }
     const result = (await response.json()) as GisApiResponse;
     if (result.error || !result.features) {
-      return {
-        success: true,
-        data: {
-          status: 'skipped',
-          flag: 'GIS_SERVICE_UNAVAILABLE',
-          message: 'County GIS service timed out or unavailable; check skipped',
-          parcel: null,
-        },
-      };
+      return GIS_SERVICE_UNAVAILABLE_RESULT;
     }
     const feature = result.features[0];
     if (!feature?.attributes) {
@@ -227,14 +222,6 @@ export async function evaluateGisQuery(input?: GisQueryInput | null): Promise<Gi
       },
     };
   } catch {
-    return {
-      success: true,
-      data: {
-        status: 'skipped',
-        flag: 'GIS_SERVICE_UNAVAILABLE',
-        message: 'County GIS service timed out or unavailable; check skipped',
-        parcel: null,
-      },
-    };
+    return GIS_SERVICE_UNAVAILABLE_RESULT;
   }
 }

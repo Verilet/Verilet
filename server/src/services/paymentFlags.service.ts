@@ -123,5 +123,4 @@ function detectUntraceablePayment(description: unknown): PaymentViolation[] {
     }
     return violations;
 }   
-
 export {detectUntraceablePayment, CATEGORIES_OF_PAYMENT};

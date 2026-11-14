@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { detectUntraceablePayment } from '../src/services/paymentFlags.js';
+import { detectUntraceablePayment } from '../src/services/paymentFlags.service.js';
 
 //start of test cases for 1st subtask
 describe('detectUntraceablePayment: Samples of Scamming', () => {

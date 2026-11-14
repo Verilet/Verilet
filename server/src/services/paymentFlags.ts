@@ -1,10 +1,34 @@
-//Docstring for the file:
+import { z } from 'zod';
+
+/**Zod schema for the categories of payment. */
+export const paymentViolationSchema = z.object({
+    /** Identifies the kind of violation. */
+    code: z.literal('UNTRACEABLE_PAYMENT'),
+    /** How serious the violation is. */
+    severity: z.literal('critical'),
+    /** Short heading shown to the student. */
+    title: z.string(),
+    /** Why the payment method is risky. */
+    explanation: z.string(),
+    /** The exact text that triggered the flag. */
+    evidence: z.string(),
+});
+
+export type paymentViolation = z.infer<typeof paymentViolationSchema>;
+
+export const paymentFlagsInputSchema = z.string().trim().min(1);
+
+/**An array of objects that define diffrent categories od untraceable payment methods. */
 const CATEGORIES_OF_PAYMENT =[
 
     {
+        /** The identifier for the payment method. */
         payment_id: 'wire', 
+        /** An array of strings representing the terms associated with the respective payment method. */
         payment_terms: ['western Union', 'MoneyGram', 'wire transfer'],
+        /** The title for the payment method. */
         payment_title: 'A wire transfer payment has been requested.',
+        /** A description of the payment method and its risks. */
         explanation: "Wire transfer payments are almost impossible to recover " +
         "once they have been sent. Avoid sending money through this method, " +
         "and see the property before signing any lease."
@@ -30,12 +54,7 @@ const CATEGORIES_OF_PAYMENT =[
     },
 ];
 
-//end of Important constants for subtask 1
 
-//Start of Helper Functions/Actions for Scrum-18-T-1
-
-//helper function for Regex checking
-//makes special characters in the string safe for regex matching
 function escape_SpecChar_regex(s: string): string {
     return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
@@ -64,16 +83,24 @@ const Categories_N_Patterns = CATEGORIES_OF_PAYMENT.map(category => ({
 
 
 //Main Function for Scrum-18-T-1
-function detectUntraceablePayment(description: string){
+function detectUntraceablePayment(description: unknown): paymentViolation[] {
 
+
+    /*
     //if the description is not a string or if its empty, return empty array
     if (typeof description !== 'string' || description.trim() === '') 
         return [];
+    */
+
+    const parsedDescription = paymentFlagsInputSchema.safeParse(description);
+    if (!parsedDescription.success) {
+        return [];
+    }
 
     const violations = [];
 
     for (const {payment_title, explanation, payment_pattern} of Categories_N_Patterns) {
-        const reg_match_found = description.match(payment_pattern);
+        const reg_match_found = parsedDescription.data.match(payment_pattern);
 
         if (reg_match_found) {
             violations.push({code: 'UNTRACEABLE_PAYMENT',

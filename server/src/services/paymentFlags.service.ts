@@ -1,5 +1,5 @@
 import { z } from 'zod';
-
+//test
 /** Zod schema for the type of payment violation. */
 export const PaymentViolationSchema = z.object({
     /** Identifies the kind of violation. */
@@ -123,4 +123,8 @@ function detectUntraceablePayment(description: unknown): PaymentViolation[] {
     }
     return violations;
 }   
+<<<<<<< HEAD
+=======
+
+>>>>>>> 33e74854a558810373d9d6c9e70c97e8ca28db4a
 export {detectUntraceablePayment, CATEGORIES_OF_PAYMENT};

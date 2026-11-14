@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 /**Zod schema for the categories of payment. */
-export const paymentViolationSchema = z.object({
+export const PaymentViolationSchema = z.object({
     /** Identifies the kind of violation. */
     code: z.literal('UNTRACEABLE_PAYMENT'),
     /** How serious the violation is. */
@@ -14,9 +14,9 @@ export const paymentViolationSchema = z.object({
     evidence: z.string(),
 });
 
-export type paymentViolation = z.infer<typeof paymentViolationSchema>;
+export type PaymentViolation = z.infer<typeof PaymentViolationSchema>;
 
-export const paymentFlagsInputSchema = z.string().trim().min(1);
+export const PaymentFlagsInputSchema = z.string().trim().min(1);
 
 /**An array of objects that define diffrent categories od untraceable payment methods. */
 const CATEGORIES_OF_PAYMENT =[
@@ -83,7 +83,7 @@ const Categories_N_Patterns = CATEGORIES_OF_PAYMENT.map(category => ({
 
 
 //Main Function for Scrum-18-T-1
-function detectUntraceablePayment(description: unknown): paymentViolation[] {
+function detectUntraceablePayment(description: unknown): PaymentViolation[] {
 
 
     /*
@@ -92,12 +92,12 @@ function detectUntraceablePayment(description: unknown): paymentViolation[] {
         return [];
     */
 
-    const parsedDescription = paymentFlagsInputSchema.safeParse(description);
+    const parsedDescription = PaymentFlagsInputSchema.safeParse(description);
     if (!parsedDescription.success) {
         return [];
     }
 
-    const violations = [];
+    const violations: PaymentViolation[] = [];
 
     for (const {payment_title, explanation, payment_pattern} of Categories_N_Patterns) {
         const reg_match_found = parsedDescription.data.match(payment_pattern);
@@ -105,7 +105,7 @@ function detectUntraceablePayment(description: unknown): paymentViolation[] {
         if (reg_match_found) {
             violations.push({code: 'UNTRACEABLE_PAYMENT',
                 severity: 'critical',
-                payment_title,
+                title: payment_title,
                 explanation,
                 evidence: reg_match_found[0],
             });

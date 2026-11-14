@@ -22,7 +22,7 @@ describe('detectUntraceablePayment: Samples of Scamming', () => {
   });
 
   it.each([
-    ['MoneyGram', 'Please pay landloard via MoneyGram to reserve the property.'],
+    ['MoneyGram', 'Please pay landlord via MoneyGram to reserve the property.'],
     [
       'wire transfer',
       'To hold the property for the first month, please wire transfer your deposit.',
@@ -74,7 +74,7 @@ describe('detectUntraceablePayment: Samples of Scamming', () => {
     expect(lower_case[0].evidence).toBe('bitcoin');
   });
 
-  it('Testing to see if one violation per category is retuend with multiple categories matching', () => {
+  it('Testing to see if one violation per category is returned with multiple categories matching', () => {
     const one_violation_per_category = detectUntraceablePayment(
       'Please send your deposit with USDT or wire transfer to secure the property.',
     );
@@ -84,7 +84,7 @@ describe('detectUntraceablePayment: Samples of Scamming', () => {
     expect(the_evidence).toEqual(expect.arrayContaining(['USDT', 'wire transfer']));
   });
 
-  it('Testing to if a single violation is returned when it matches multiple terms in a description', () => {
+  it('Testing to see if a single violation is returned when it matches multiple terms in a description', () => {
     const one_violation_only = detectUntraceablePayment(
       'Please pay your deposit via Bitcoin, Ethereum, or BTC.',
     );
@@ -112,7 +112,7 @@ describe('detectUntraceablePayment: Samples of Clean Data (no scams)', () => {
 
   it('Testing to verify that terms do NOT match within longer words', () => {
     const no_term_in_longer_words = detectUntraceablePayment(
-      'The prperty resides on Bitcoiner Avenue, and is a small BTCXABC apartment.',
+      'The property resides on Bitcoiner Avenue, and is a small BTCXABC apartment.',
     );
     expect(no_term_in_longer_words).toEqual([]);
   });

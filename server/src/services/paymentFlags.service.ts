@@ -14,15 +14,14 @@ export const PaymentViolationSchema = z.object({
     evidence: z.string(),
 });
 
-/** The Zod Schema for payment violation flag*/
+/** The Zod Schema for a payment violation. */
 export type PaymentViolation = z.infer<typeof PaymentViolationSchema>;
 
-/** A warning is returned when an untraceable payment method is detected*/
+/** Zod schema for the input to the payment flags service. */
 export const PaymentFlagsInputSchema = z.string().trim().min(1);
 
-/**An array of objects that define different categories of untraceable payment methods. */
+/** An array of objects that define different categories of untraceable payment methods. */
 const CATEGORIES_OF_PAYMENT =[
-
     {
         /** The identifier for the payment method. */
         paymentId: 'wire', 
@@ -35,7 +34,6 @@ const CATEGORIES_OF_PAYMENT =[
         "once they have been sent. Avoid sending money through this method, " +
         "and see the property before signing any lease."
     },
-
     {
         paymentId: 'crypto',
         paymentTerms: ['Bitcoin', 'BTC', 'Ethereum', 'USDT'],
@@ -44,7 +42,6 @@ const CATEGORIES_OF_PAYMENT =[
         "to the recipient. Landlords usually accept traceable payments such as bank transfers or checks."
         + " Avoid sending money through this method, and see the property before signing any lease." 
     },
-
     {
         paymentId: 'giftcard',
         paymentTerms: ['Apple', 'Steam', 'Vanilla Visa'],
@@ -82,11 +79,11 @@ const termToRegex = (term: string): string =>
  * Converts a category of untraceable payment methods into a regex pattern.
  * 
  * @param category, the paymentTerms and suffix fields of a category of untraceable payment methods
- * @returns a regex expression matching any of the payment terms, followed by suffix if there is one
+ * @return a regex expression matching any of the payment terms, followed by suffix if there is one
  */
 function categoryToRegex({paymentTerms, suffix}: {paymentTerms: string[], suffix?: string}): RegExp {
     const jointTerms = paymentTerms.map(termToRegex).join('|');
-    const suffixEnd = suffix ? `\\s+${suffix}` : '';                   // one line if/else statement: condition ? valueIfTrue : ValueIfFalse
+    const suffixEnd = suffix ? `\\s+${suffix}` : '';                   // if there is a suffix, add it to the regex pattern with whitespace before it
     return new RegExp(`\\b(?:${jointTerms})${suffixEnd}\\b`, 'i');
 }
 
@@ -97,11 +94,10 @@ const categoriesNPatterns = CATEGORIES_OF_PAYMENT.map(category => ({
 }));
 
 /**
- * Detects untraceable payment methods like wire transfers, cryptocurrency, and gift cards in a given description.
- * from a listing description.
+ * Detects untraceable payment methods like wire transfers, cryptocurrency, and gift cards in a given listing description.
  * 
  * @param description, the listing description where untraceable payment methods may or may not be detected.
- * @returns an array of payment violation objects, each representing a detected untraceable category of payment, or [] none are detected.
+ * @return an array of payment violation objects, each representing a detected untraceable category of payment, or [] none are detected.
  * 
  */
 function detectUntraceablePayment(description: unknown): PaymentViolation[] {
@@ -129,5 +125,3 @@ function detectUntraceablePayment(description: unknown): PaymentViolation[] {
 }   
 
 export {detectUntraceablePayment, CATEGORIES_OF_PAYMENT};
-
-

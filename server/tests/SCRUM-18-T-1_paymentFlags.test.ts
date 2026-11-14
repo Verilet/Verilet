@@ -124,5 +124,4 @@ describe('detectUntraceablePayment: Samples of Clean Data (no scams)', () => {
     },
   );
 });
-// hello
 // end of test cases for 1st subtask

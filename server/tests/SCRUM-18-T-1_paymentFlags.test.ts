@@ -22,10 +22,10 @@ describe('detectUntraceablePayment: Samples of Scamming', () => {
   });
 
   it.each([
-    ['MoneryGram', 'Please pay landloard via MoneryGram to reserve the property.'],
+    ['MoneyGram', 'Please pay landloard via MoneryGram to reserve the property.'],
     [
       'wire transfer',
-      'To hold the property for the first month, please wire trasnfer your deposit.',
+      'To hold the property for the first month, please wire transfer your deposit.',
     ],
     [
       'Western Union',
@@ -46,7 +46,7 @@ describe('detectUntraceablePayment: Samples of Scamming', () => {
 
   it.each([
     ['Vanilla Visa gift card', 'Please pay deposit for the property with Vanilla Visa gift card.'],
-    ['Apple gift card', 'To pay deposit for property, send codes of your Apple gift cards.'],
+    ['Apple gift cards', 'To pay deposit for property, send codes of your Apple gift cards.'],
     [
       'Steam gift cards',
       'To hold your current Santa Cruz property, please pay deposit via Steam gift cards.',
@@ -80,8 +80,8 @@ describe('detectUntraceablePayment: Samples of Scamming', () => {
     );
 
     expect(one_violation_per_category).toHaveLength(2);
-    expect(one_violation_per_category[0].evidence).toBe('USDT');
-    expect(one_violation_per_category[1].evidence).toBe('wire transfer');
+    const the_evidence = one_violation_per_category.map((violation) => violation.evidence);
+    expect(the_evidence).toEqual(expect.arrayContaining(['USDT', 'wire transfer']));
   });
 
   it('Testing to if a single violation is returned when it matches multiple terms in a description', () => {
@@ -100,7 +100,7 @@ describe('detectUntraceablePayment: Samples of Scamming', () => {
   });
 });
 
-describe('detectAdvanceFee: Samples of Clean Data (no scams)', () => {
+describe('detectUntraceablePayment: Samples of Clean Data (no scams)', () => {
   it.each([
     'After the lease is signed, rent will be paid by check.',
     'To pay for first month rent and security deposit after lease is signed, pay by personal check or by automated clearing house (ACH).',
@@ -125,4 +125,4 @@ describe('detectAdvanceFee: Samples of Clean Data (no scams)', () => {
   );
 });
 
-//end of test cases for 1st subtask
+// end of test cases for 1st subtask

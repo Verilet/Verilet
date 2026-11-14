@@ -1,5 +1,5 @@
 import { z } from 'zod';
-
+//test
 /**Zod schema for the categories of payment. */
 export const PaymentViolationSchema = z.object({
     /** Identifies the kind of violation. */

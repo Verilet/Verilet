@@ -66,10 +66,15 @@ Detect-Housing-Scam/
 │   │   ├── app.ts              # Express setup & middleware (no port binding)
 │   │   └── index.ts            # Entry point: DB connection & HTTP listener
 │   └── tests/                  # Server endpoint and integration tests (Vitest + Supertest)
-└── docs/                       # Architectural specifications and sprint plans
+└── docs/                       # Architectural specifications, governance, and sprint records
     ├── architecture.md         # This system architecture guide
     ├── ci-cd.md                # CI/CD pipelines, Git hooks, and branch checks
-    └── tasks/                  # CSE 115A sprint task specification files
+    ├── style-guide.md          # Google JS/TS coding standards & API conventions
+    ├── definition-of-done.md   # Definition of Done checklist
+    ├── acceptance-criteria-guide.md # Acceptance criteria guidelines & ticket templates
+    ├── sprint-review/          # Sprint reviews and retrospective reports
+    ├── sprint-planning/        # Sprint backlog plans and capacity targets
+    └── tasks/                  # sprint task specification files
 ```
 
 ---
@@ -131,7 +136,7 @@ Agents and contributors must maintain the following architectural rules:
      - **Success:** `{ "success": true, "data": { ... } }`
      - **Error:** `{ "success": false, "error": "Message", "details": ... }`
 4. **Timeouts and Fault Tolerance:**
-   - All outgoing external requests (scrapers, external APIs) must specify an explicit timeout (e.g. 5000ms).
+   - All outgoing external requests must specify an explicit timeout.
    - Downstream scrape failures or anti-bot blocks must never crash the Node.js server. The API must catch errors and return a graceful failure payload so the client can fall back to manual form entry.
 5. **Testing Isolation:**
    - Unit tests in `client/tests/` and `server/tests/` must never make live external network requests.

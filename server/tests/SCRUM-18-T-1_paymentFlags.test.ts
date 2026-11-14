@@ -22,7 +22,7 @@ describe('detectUntraceablePayment: Samples of Scamming', () => {
   });
 
   it.each([
-    ['MoneyGram', 'Please pay landloard via MoneryGram to reserve the property.'],
+    ['MoneyGram', 'Please pay landloard via MoneyGram to reserve the property.'],
     [
       'wire transfer',
       'To hold the property for the first month, please wire transfer your deposit.',

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-//test
+
 /**Zod schema for the categories of payment. */
 export const PaymentViolationSchema = z.object({
     /** Identifies the kind of violation. */
@@ -14,8 +14,10 @@ export const PaymentViolationSchema = z.object({
     evidence: z.string(),
 });
 
+/** The Zod Schema for paymment violation flag*/
 export type PaymentViolation = z.infer<typeof PaymentViolationSchema>;
 
+/** A warning is returned when an untraceable payment method is detected*/
 export const PaymentFlagsInputSchema = z.string().trim().min(1);
 
 /**An array of objects that define diffrent categories od untraceable payment methods. */
@@ -54,43 +56,54 @@ const CATEGORIES_OF_PAYMENT =[
     },
 ];
 
-
+/**
+ * Make certain special characters in a string safe for regex matching.
+ * 
+ * @param s, the string to be escaped for regex matching
+ * @return the string with special characters escaped for regex matching (compatible for regex)
+ */
 function escape_SpecChar_regex(s: string): string {
     return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 }
 
-//calling the helper function: escape_SpecChar_regex() 
+/**
+ * Converts a single payment term into a regex textual pattern
+ * that ensures special characters are valid for the regex matching 
+ * and spaces are replaced with whitespace match.
+ * 
+ * @param term, the single payment term, e.g. 'wire transfer'
+ * @return the term converted into a regex pattern, e.g. 'wire[\s+]transfer'
+ */
 const termToRegex = (term: string): string => 
     escape_SpecChar_regex(term).replace(/ /g, '[\\s+]');
 
-
-
+/**
+ * 
+ * @param param
+ * @returns 
+ */
 function categoryToRegex({payment_terms, suffix}: {payment_terms: string[], suffix?: string}): RegExp {
     const jointTerms = payment_terms.map(termToRegex).join('|');
     const sufix_end = suffix ? `|${suffix}` : '';                   //one line if/else statement: condition ? valueIfTrue : ValueIfFalse
       return new RegExp(`\\b(?:${jointTerms}${sufix_end})\\b`, 'i');
 }
 
-//construct a new array with same info from CATEGORIES_OF_PAYMENT
-//but with an additional field 'pattern' containing the regex pattern for each category
+//**Constructs new array with same info from CATEGORIES_OF_PAYMENT plus regex pattern for each category*/
 const Categories_N_Patterns = CATEGORIES_OF_PAYMENT.map(category => ({
     ...category,
     payment_pattern: categoryToRegex(category),
 }));
 
-//End of helper functions for Scrum-18-T-1
-
-
-//Main Function for Scrum-18-T-1
+/**
+ * Detects untraceable payment methods like wire transfers, cryptocurrency, and gift cards in a given description.
+ * from a listing description.
+ * 
+ * @param description, the listing desciption where untraceable payment methods may or may not be detected.
+ * @returns an array of payment violation objects, each representing a detected untraceable category of payment, or [] none are detected.
+ * 
+ */
 function detectUntraceablePayment(description: unknown): PaymentViolation[] {
-
-
-    /*
-    //if the description is not a string or if its empty, return empty array
-    if (typeof description !== 'string' || description.trim() === '') 
-        return [];
-    */
 
     const parsedDescription = PaymentFlagsInputSchema.safeParse(description);
     if (!parsedDescription.success) {

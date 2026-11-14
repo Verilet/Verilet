@@ -119,7 +119,7 @@ describe('detectAdvanceFee: Samples of Clean Data (no scams)', () => {
 
   it.each([[67], [''], ['  '], [undefined], [null], [{}]])(
     'Testing to see if [] is returned for empty or invalid inputs (%s)',
-    (description: any) => {
+    (description: unknown) => {
       expect(detectUntraceablePayment(description)).toEqual([]);
     },
   );

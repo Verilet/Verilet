@@ -8,18 +8,21 @@ describe('detectUntraceablePayment: Samples of Scamming', () => {
     ['USDT', 'Pay your deposit via USDT, will provide wallet after your reply'],
     ['Bitcoin', 'To reserve this property in Santa Cruz, deposit via Bitcoin will be acceptable'],
     ['Ethereum', 'Please send your deposit via Ethereum to secure the property.'],
-  ])('[Criterion 1] Detecting crypto payment methods (%s)', (method: string, description: string) => {
-    const testResult = detectUntraceablePayment(description);
+  ])(
+    '[Criterion 1] Detecting crypto payment methods (%s)',
+    (method: string, description: string) => {
+      const testResult = detectUntraceablePayment(description);
 
-    expect(testResult).toHaveLength(1);
-    expect(testResult[0]).toMatchObject({
-      code: 'UNTRACEABLE_PAYMENT',
-      severity: 'critical',
-      title: expect.any(String),
-      explanation: expect.any(String),
-      evidence: method,
-    });
-  });
+      expect(testResult).toHaveLength(1);
+      expect(testResult[0]).toMatchObject({
+        code: 'UNTRACEABLE_PAYMENT',
+        severity: 'critical',
+        title: expect.any(String),
+        explanation: expect.any(String),
+        evidence: method,
+      });
+    },
+  );
 
   it.each([
     ['MoneyGram', 'Please pay landlord via MoneyGram to reserve the property.'],
@@ -31,18 +34,21 @@ describe('detectUntraceablePayment: Samples of Scamming', () => {
       'Western Union',
       'The landlord is abroad and require payment via Western Union to secure the property.',
     ],
-  ])('[Criterion 2] Detecting wire transfer payment methods (%s)', (method: string, description: string) => {
-    const testResult = detectUntraceablePayment(description);
+  ])(
+    '[Criterion 2] Detecting wire transfer payment methods (%s)',
+    (method: string, description: string) => {
+      const testResult = detectUntraceablePayment(description);
 
-    expect(testResult).toHaveLength(1);
-    expect(testResult[0]).toMatchObject({
-      code: 'UNTRACEABLE_PAYMENT',
-      severity: 'critical',
-      title: expect.any(String),
-      explanation: expect.any(String),
-      evidence: method,
-    });
-  });
+      expect(testResult).toHaveLength(1);
+      expect(testResult[0]).toMatchObject({
+        code: 'UNTRACEABLE_PAYMENT',
+        severity: 'critical',
+        title: expect.any(String),
+        explanation: expect.any(String),
+        evidence: method,
+      });
+    },
+  );
 
   it.each([
     ['Vanilla Visa gift card', 'Please pay deposit for the property with Vanilla Visa gift card.'],
@@ -51,18 +57,21 @@ describe('detectUntraceablePayment: Samples of Scamming', () => {
       'Steam gift cards',
       'To hold your current Santa Cruz property, please pay deposit via Steam gift cards.',
     ],
-  ])('[Criterion 3] Detecting Gift Card paying methods (%s)', (method: string, description: string) => {
-    const testResult = detectUntraceablePayment(description);
+  ])(
+    '[Criterion 3] Detecting Gift Card paying methods (%s)',
+    (method: string, description: string) => {
+      const testResult = detectUntraceablePayment(description);
 
-    expect(testResult).toHaveLength(1);
-    expect(testResult[0]).toMatchObject({
-      code: 'UNTRACEABLE_PAYMENT',
-      severity: 'critical',
-      title: expect.any(String),
-      explanation: expect.any(String),
-      evidence: method,
-    });
-  });
+      expect(testResult).toHaveLength(1);
+      expect(testResult[0]).toMatchObject({
+        code: 'UNTRACEABLE_PAYMENT',
+        severity: 'critical',
+        title: expect.any(String),
+        explanation: expect.any(String),
+        evidence: method,
+      });
+    },
+  );
 
   it('[Criterion 4] Testing for any letter case matches', () => {
     const uppAndLowCase = detectUntraceablePayment('wIrE tRAnSFer');
@@ -126,15 +135,17 @@ describe('detectUntraceablePayment: Samples of Clean Data (no scams)', () => {
   );
   */
 
-  it.each([[''], [' ']])( '[Criterion 6] Testing to verify if [] is returned for empty or whitespace-only inputs (%s)', 
+  it.each([[''], [' ']])(
+    '[Criterion 6] Testing to verify if [] is returned for empty or whitespace-only inputs (%s)',
     (description: string) => {
       expect(detectUntraceablePayment(description)).toEqual([]);
-    }
+    },
   );
 
-  it.each([[67], [undefined], [null], [{}]])('[Criterion 6] Testing to verify that non-string inputs will throw (%s)',
+  it.each([[67], [undefined], [null], [{}]])(
+    '[Criterion 6] Testing to verify that non-string inputs will return [] (%s)',
     (description: unknown) => {
-      expect(() => detectUntraceablePayment(description as string)).toThrow();
-    }
+      expect(() => detectUntraceablePayment(description as string)).toEqual([]);
+    },
   );
 });

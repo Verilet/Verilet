@@ -1,8 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { detectUntraceablePayment } from '../src/services/paymentFlags.service.js';
+import {
+  detectUntraceablePayment,
+  type PaymentFlagInput,
+} from '../src/services/paymentFlags.service.js';
 
 /** Non string values that are used to test invalid listing descriptions. */
-type InvalidStringInput = number | null | undefined | Record<string, unknown>;
+type InvalidStringInput = PaymentFlagInput | number | null | undefined | Record<string, unknown>;
 
 // Start of test cases for 1st subtask
 describe('detectUntraceablePayment: Samples of Scamming', () => {
@@ -139,7 +142,7 @@ describe('detectUntraceablePayment: Samples of Clean Data (no scams)', () => {
   it.each([[67], [undefined], [null], [{}]])(
     '[Criterion 6] Testing to verify that non-string inputs will return [] (%s)',
     (description: InvalidStringInput) => {
-      expect(detectUntraceablePayment(description as unknown as string)).toEqual([]);
+      expect(detectUntraceablePayment(description as PaymentFlagInput)).toEqual([]);
     },
   );
 });

@@ -43,7 +43,9 @@ describe('SCRUM-48-T-7 landing page', () => {
     renderAt(<App />, '/');
     const links = screen.getAllByRole('link', { name: 'Check a listing' });
     expect(links).toHaveLength(2);
-    for (const link of links) expect(link).toHaveAttribute('href', '/check');
+    for (const link of links) {
+      expect(link).toHaveAttribute('href', '/check');
+    }
   });
 
   it('SCRUM-48-T-7 how it works link', () => {
@@ -92,7 +94,9 @@ describe('SCRUM-48-T-7 landing page', () => {
     renderAt(<App initialScans={[scan]} />, `/results/${scan.id}`);
     fireEvent.click(screen.getByRole('button', { name: 'More details' }));
     expect(screen.getByRole('heading', { name: GUIDE.legendHeading })).toBeInTheDocument();
-    for (const item of GUIDE.legend) expect(screen.getByText(item.text)).toBeInTheDocument();
+    for (const item of GUIDE.legend) {
+      expect(screen.getByText(item.text)).toBeInTheDocument();
+    }
   });
 
   it('SCRUM-48-T-7 choosing a check highlights the listing', () => {
@@ -285,7 +289,9 @@ describe('SCRUM-48-T-7 landing motion', () => {
     fireEvent.click(checkLinks()[0]);
     unmount();
     expect(animations).toHaveLength(3);
-    for (const animation of animations) expect(animation.cancel).toHaveBeenCalled();
+    for (const animation of animations) {
+      expect(animation.cancel).toHaveBeenCalled();
+    }
   });
 
   it('SCRUM-48-T-7 the road stays on screen when the section runs past the fold', () => {
@@ -347,7 +353,9 @@ describe('SCRUM-48-T-7 landing motion', () => {
     expect(
       screen.getByRole('region', { name: /Check a rental listing/ }).closest('.reveal'),
     ).toBeNull();
-    for (const reveal of reveals) expect(reveal).toHaveAttribute('data-shown', 'false');
+    for (const reveal of reveals) {
+      expect(reveal).toHaveAttribute('data-shown', 'false');
+    }
 
     scrollIntoView((element) => element === reveals[0]);
 

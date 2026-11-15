@@ -60,11 +60,11 @@ const CHECKS: GuideCheck[] = [
     status: 'Looking at how the landlord asks to be paid',
   },
   {
-    id: 'landlord',
-    title: 'Landlord check',
-    what: 'We look for records or reports about the landlord.',
-    why: 'No record does not mean safe. We tell you when we could not check.',
-    status: 'Looking for records about the landlord',
+    id: 'contact',
+    title: 'Contact info',
+    what: 'We check if the phone number has a local area code and the email is from a trusted domain.',
+    why: 'Scammers often use out-of-area numbers and throwaway email addresses.',
+    status: 'Checking the phone number and email',
   },
   {
     id: 'details',
@@ -115,7 +115,7 @@ export const GUIDE = {
     description: 'Available now. Must rent this week. No viewings, the owner is overseas.',
     rent: '$1,200 / month',
     location: 'Santa Cruz, CA',
-    poster: 'Posted by Sam',
+    poster: 'Posted by Sam · (305) 555-0142',
     message: '“Send a $200 gift card today and it’s yours.”',
   },
   disclaimer: 'A score is a rating, not a guarantee. Always visit in person before you pay.',
@@ -139,7 +139,11 @@ export const GUIDE = {
         detail: 'Landlord asks for payment by gift card',
         status: 'FLAG',
       },
-      { title: 'Landlord check', detail: 'No record found for this landlord', status: 'UNKNOWN' },
+      {
+        title: 'Contact info',
+        detail: 'Phone number is not from a local area code',
+        status: 'FLAG',
+      },
     ],
   },
   legend: [

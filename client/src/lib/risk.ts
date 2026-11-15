@@ -2,8 +2,12 @@ import type { Rating } from '../types';
 
 /** The rating band for a 0 to 100 risk score. */
 export function ratingFromScore(score: number): Rating {
-  if (score >= 70) return 'HIGH';
-  if (score >= 40) return 'MEDIUM';
+  if (score >= 70) {
+    return 'HIGH';
+  }
+  if (score >= 40) {
+    return 'MEDIUM';
+  }
   return 'LOW';
 }
 

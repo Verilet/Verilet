@@ -30,6 +30,8 @@ export interface CarArrivalInfo {
 /** Reads the router state, which comes back from browser history and so can't be trusted. */
 export function readCarArrival(state: unknown): CarArrivalInfo | null {
   const morph = carArrivalStateSchema.safeParse(state);
-  if (morph.success) return { from: morph.data.carArrivalFrom };
+  if (morph.success) {
+    return { from: morph.data.carArrivalFrom };
+  }
   return driveArrivalStateSchema.safeParse(state).success ? { from: null } : null;
 }

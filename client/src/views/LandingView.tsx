@@ -24,14 +24,18 @@ function ExampleResult() {
   const [score, setScore] = useState(animated ? 0 : target);
 
   useEffect(() => {
-    if (!animated || !inView) return;
+    if (!animated || !inView) {
+      return;
+    }
     let frame = 0;
     let startTime: number | null = null;
     const step = (now: number) => {
       startTime ??= now;
       const progress = Math.min(1, (now - startTime) / SCORE_COUNT_MS);
       setScore(Math.round(target * (1 - (1 - progress) ** 3)));
-      if (progress < 1) frame = requestAnimationFrame(step);
+      if (progress < 1) {
+        frame = requestAnimationFrame(step);
+      }
     };
     frame = requestAnimationFrame(step);
     return () => cancelAnimationFrame(frame);
@@ -118,7 +122,7 @@ function WhatWeCheck() {
             {demo.rent}
             <span className="listing-demo__location">{demo.location}</span>
           </p>
-          <p className="listing-demo__part" data-highlight={highlight('landlord')}>
+          <p className="listing-demo__part" data-highlight={highlight('contact')}>
             {demo.poster}
           </p>
           <p
@@ -140,7 +144,9 @@ function StepsTrip() {
   const [tripStep, setTripStep] = useState<number | null>(null);
 
   useEffect(() => {
-    if (!animated || !inView) return;
+    if (!animated || !inView) {
+      return;
+    }
     const timers = GUIDE.steps.map((_step, index) =>
       setTimeout(() => setTripStep(index), TRIP_START_MS + index * TRIP_LEG_MS),
     );

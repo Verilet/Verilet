@@ -44,7 +44,9 @@ describe('validateListingForm', () => {
   it('reports an error for each empty required field and allows an empty landlord', () => {
     const result = validateListingForm(EMPTY_FORM);
     expect(result.success).toBe(false);
-    if (result.success) return;
+    if (result.success) {
+      return;
+    }
     expect(Object.keys(result.errors).sort()).toEqual([
       'bedrooms',
       'listingUrl',
@@ -59,14 +61,18 @@ describe('validateListingForm', () => {
     (link) => {
       const result = validateListingForm({ ...valid, listingUrl: link });
       expect(result.success).toBe(false);
-      if (!result.success) expect(result.errors.listingUrl).toBeDefined();
+      if (!result.success) {
+        expect(result.errors.listingUrl).toBeDefined();
+      }
     },
   );
 
   it.each(['abc', '0', '-5', '12,34', '1.234'])('rejects the rent %s', (rent) => {
     const result = validateListingForm({ ...valid, rent });
     expect(result.success).toBe(false);
-    if (!result.success) expect(result.errors.rent).toBeDefined();
+    if (!result.success) {
+      expect(result.errors.rent).toBeDefined();
+    }
   });
 
   it.each([
@@ -97,7 +103,9 @@ describe('validateListingForm', () => {
   ] as const)('rejects %s set to %s', (field, value) => {
     const result = validateListingForm({ ...valid, [field]: value });
     expect(result.success).toBe(false);
-    if (!result.success) expect(result.errors[field]).toBeDefined();
+    if (!result.success) {
+      expect(result.errors[field]).toBeDefined();
+    }
   });
 
   it('accepts a formatted phone number', () => {
@@ -120,7 +128,9 @@ describe('validateListingForm', () => {
     for (const photos of rejected) {
       const result = validateListingForm({ ...valid, photos });
       expect(result.success).toBe(false);
-      if (!result.success) expect(result.errors.photos).toBeDefined();
+      if (!result.success) {
+        expect(result.errors.photos).toBeDefined();
+      }
     }
   });
 

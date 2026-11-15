@@ -41,7 +41,9 @@ export default function CarFlightLink({
 
   useEffect(() => {
     const veil = veilRef.current;
-    if (!flight || !veil) return;
+    if (!flight || !veil) {
+      return;
+    }
 
     const pageFade = veil.animate([{ opacity: 0 }, { opacity: 1 }], {
       duration: PAGE_FADE_MS,
@@ -57,10 +59,14 @@ export default function CarFlightLink({
       event.button === 0 && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey;
     const link = event.currentTarget;
     const car = startFrom.current?.getBoundingClientRect();
-    if (!plainClick || !car || typeof link.animate !== 'function' || prefersReducedMotion()) return;
+    if (!plainClick || !car || typeof link.animate !== 'function' || prefersReducedMotion()) {
+      return;
+    }
 
     event.preventDefault();
-    if (flight) return;
+    if (flight) {
+      return;
+    }
 
     const width = car.width || CAR_WIDTH;
     const height = width * (CAR_HEIGHT / CAR_WIDTH);

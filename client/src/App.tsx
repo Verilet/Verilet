@@ -77,7 +77,9 @@ function App({ initialScans, checkListing = defaultCheckListing }: AppProps) {
   // Every new page starts at the top. Back and forward keep the browser's saved position. This
   // runs before page effects, so the How it works car starts from the top of the road.
   useLayoutEffect(() => {
-    if (navigationType !== NavigationType.Pop) window.scrollTo(0, 0);
+    if (navigationType !== NavigationType.Pop) {
+      window.scrollTo(0, 0);
+    }
   }, [location.pathname, navigationType]);
 
   const carArrival = useMemo(() => readCarArrival(location.state), [location.state]);

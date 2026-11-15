@@ -88,7 +88,9 @@ function manualFrames() {
     pending: () => queue.length,
     step,
     runUntilIdle: () => {
-      for (let guard = 0; queue.length > 0 && guard < 1000; guard += 1) step();
+      for (let guard = 0; queue.length > 0 && guard < 1000; guard += 1) {
+        step();
+      }
     },
   };
 }
@@ -103,7 +105,9 @@ function manualFramesPositions(
   start();
   const positions: (string | undefined)[] = [];
   for (let frame = 0; frames.pending() > 0 && frame < 1000; frame += 1) {
-    if (frame === 5) midDrive?.();
+    if (frame === 5) {
+      midDrive?.();
+    }
     frames.step();
     positions.push(car?.style.transform);
   }
@@ -143,7 +147,7 @@ describe('SCRUM-48-T-8 how it works page', () => {
       'Paste the link',
       'Rent vs. area price',
       'Payment method',
-      'Landlord check',
+      'Contact info',
       'Listing details',
       'Your risk rating',
     ]);
@@ -320,7 +324,9 @@ describe('SCRUM-48-T-8 how it works page', () => {
       scrollPast(4);
       for (let guard = 0; frames.pending() > 0 && guard < 1000; guard += 1) {
         frames.step();
-        if (visited[visited.length - 1] !== activePosition()) visited.push(activePosition());
+        if (visited[visited.length - 1] !== activePosition()) {
+          visited.push(activePosition());
+        }
       }
 
       expect(visited).toEqual([1, 2, 3, 4]);
@@ -345,7 +351,9 @@ describe('SCRUM-48-T-8 how it works page', () => {
 
       // Parking at each stop on the way would drop the speed to almost nothing mid-drive.
       const middle = steps.slice(Math.floor(steps.length * 0.15), Math.ceil(steps.length * 0.85));
-      for (const step of middle) expect(step).toBeGreaterThan(1);
+      for (const step of middle) {
+        expect(step).toBeGreaterThan(1);
+      }
       expect(steps.length).toBeLessThanOrEqual(1400 / 16 + 2);
       expect(activePosition()).toBe(4);
     });
@@ -356,14 +364,18 @@ describe('SCRUM-48-T-8 how it works page', () => {
       const car = container.querySelector<HTMLElement>('.road__car');
 
       scrollPast(2);
-      for (let step = 0; step < 20; step += 1) frames.step();
+      for (let step = 0; step < 20; step += 1) {
+        frames.step();
+      }
       scrollPast(4);
       const further = recordDrive(frames, car);
       expect(Math.max(...further.map(Math.abs))).toBeLessThan(60);
       expect(activePosition()).toBe(4);
 
       scrollPast(3);
-      for (let step = 0; step < 10; step += 1) frames.step();
+      for (let step = 0; step < 10; step += 1) {
+        frames.step();
+      }
       scrollPast(1);
       const back = recordDrive(frames, car);
       expect(Math.max(...back.map(Math.abs))).toBeLessThan(60);

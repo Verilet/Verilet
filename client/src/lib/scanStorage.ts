@@ -38,7 +38,9 @@ const storedScansSchema = z.array(
 export function loadScans(): ScanResult[] | null {
   try {
     const stored = sessionStorage.getItem(STORAGE_KEY);
-    if (!stored) return null;
+    if (!stored) {
+      return null;
+    }
     const scans = storedScansSchema.parse(JSON.parse(stored));
     return scans.length > 0 ? scans.map((scan) => ({ ...scan, photos: [] })) : null;
   } catch {

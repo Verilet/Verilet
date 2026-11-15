@@ -67,7 +67,9 @@ function destinationStop(layout: RoadLayout, currentStop: number): number {
   const scrolled = viewport * TRIGGER_LINE - (roadTop - window.scrollY);
   let destination = AT_START;
   stopCentres.forEach((centre, index) => {
-    if (centre <= scrolled) destination = index;
+    if (centre <= scrolled) {
+      destination = index;
+    }
   });
   // Stay put near the line so small scrolls back and forth don't restart the drive.
   if (
@@ -96,7 +98,9 @@ export default function AboutView() {
   const [carFlying, setCarFlying] = useState(false);
 
   useEffect(() => {
-    if (prefersReducedMotion()) return;
+    if (prefersReducedMotion()) {
+      return;
+    }
 
     let layout = null as RoadLayout | null;
     let currentStop = AT_START;
@@ -109,7 +113,9 @@ export default function AboutView() {
     function measure() {
       const road = roadRef.current;
       const car = carRef.current;
-      if (!road || !car) return;
+      if (!road || !car) {
+        return;
+      }
 
       const roadBox = road.getBoundingClientRect();
       const carHeight = car.getBoundingClientRect().height || CAR_HEIGHT;
@@ -166,7 +172,9 @@ export default function AboutView() {
 
     function tick(now: number) {
       frameQueued = false;
-      if (!layout) return;
+      if (!layout) {
+        return;
+      }
 
       const destination = destinationStop(layout, drive ? drive.toStop : currentStop);
       if (drive && destination !== drive.toStop) {
@@ -202,14 +210,18 @@ export default function AboutView() {
     }
 
     function queueFrame() {
-      if (frameQueued) return;
+      if (frameQueued) {
+        return;
+      }
       frameQueued = true;
       frame = requestAnimationFrame(tick);
     }
 
     function remeasure() {
       measure();
-      if (drive && layout) drive.to = centreOf(layout, drive.toStop);
+      if (drive && layout) {
+        drive.to = centreOf(layout, drive.toStop);
+      }
       queueFrame();
     }
 
@@ -229,7 +241,9 @@ export default function AboutView() {
       window.removeEventListener('scroll', queueFrame);
       window.removeEventListener('resize', remeasure);
       pageSize?.disconnect();
-      if (frameQueued) cancelAnimationFrame(frame);
+      if (frameQueued) {
+        cancelAnimationFrame(frame);
+      }
     };
   }, []);
 

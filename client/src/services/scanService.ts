@@ -91,9 +91,11 @@ export function scoreListing(input: ListingInput): Pick<ScanResult, 'score' | 'c
   }
 
   checks.push({
-    id: 'landlord',
-    title: 'Landlord check',
-    detail: input.landlord ? 'No record found for this landlord' : 'No landlord name was given',
+    id: 'contact',
+    title: 'Contact info',
+    detail: input.contactPhone
+      ? 'Could not confirm the phone number is local'
+      : 'No phone number was given',
     status: 'UNKNOWN',
   });
   score += 10;

@@ -63,7 +63,9 @@ export default function ListingForm({
   const arrivingByCar = carArrival !== null;
 
   useEffect(() => {
-    if (arrivingByCar) linkInputRef.current?.focus();
+    if (arrivingByCar) {
+      linkInputRef.current?.focus();
+    }
   }, [arrivingByCar]);
 
   const idFor = (field: FormField) => `${baseId}-${field}`;
@@ -91,7 +93,9 @@ export default function ListingForm({
 
   /** Fills only the blank fields, so nothing the student already typed is overwritten. */
   async function handleAutofill() {
-    if (autofilling) return;
+    if (autofilling) {
+      return;
+    }
     const link = listingFormSchema.shape.listingUrl.safeParse(values.listingUrl);
     if (!link.success) {
       setErrors((current) => ({ ...current, listingUrl: link.error.issues[0].message }));
@@ -120,12 +124,16 @@ export default function ListingForm({
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (submitting) return;
+    if (submitting) {
+      return;
+    }
     const result = validateListingForm(values);
     if (!result.success) {
       setErrors(result.errors);
       const firstInvalid = FIELD_ORDER.find((field) => result.errors[field]);
-      if (firstInvalid) fieldRefs.current[firstInvalid]?.focus();
+      if (firstInvalid) {
+        fieldRefs.current[firstInvalid]?.focus();
+      }
       return;
     }
     setErrors({});

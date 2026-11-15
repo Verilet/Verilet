@@ -38,7 +38,9 @@ export default function CarDriveLink({ to, className, children }: CarDriveLinkPr
     const veil = veilRef.current;
     const road = roadRef.current;
     const car = carRef.current;
-    if (roadTop === null || !veil || !road || !car) return;
+    if (roadTop === null || !veil || !road || !car) {
+      return;
+    }
 
     const drive = car.animate(
       [
@@ -78,10 +80,14 @@ export default function CarDriveLink({ to, className, children }: CarDriveLinkPr
     const plainClick =
       event.button === 0 && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey;
     const link = event.currentTarget;
-    if (!plainClick || typeof link.animate !== 'function' || prefersReducedMotion()) return;
+    if (!plainClick || typeof link.animate !== 'function' || prefersReducedMotion()) {
+      return;
+    }
 
     event.preventDefault();
-    if (roadTop !== null) return;
+    if (roadTop !== null) {
+      return;
+    }
 
     const area = link.closest('section')?.getBoundingClientRect() ?? link.getBoundingClientRect();
     const lowest = window.innerHeight - ROAD_HEIGHT - ROAD_EDGE_MARGIN;

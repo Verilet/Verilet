@@ -11,7 +11,9 @@ export function useInView<T extends Element>() {
 
   useEffect(() => {
     const element = ref.current;
-    if (inView || !element) return;
+    if (inView || !element) {
+      return;
+    }
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries.some((entry) => entry.isIntersecting)) {

@@ -1,6 +1,5 @@
 import { z } from 'zod';
 
-
 /** The interface for a payment violation detected in listing description. */
 export interface PaymentViolation {
   code: 'UNTRACEABLE_PAYMENT';
@@ -21,9 +20,6 @@ export const PaymentFlagInputSchema = z.string().trim();
 
 /** A listing description where untraceable payment methods may be scanned from. */
 export type PaymentFlagInput = z.infer<typeof PaymentFlagInputSchema>;
-
-/** Zod schema for the input to the payment flags service. */
-export const PaymentFlagsInputSchema = z.string().trim().min(1);
 
 /** An array of objects that define different categories of untraceable payment methods. */
 const CATEGORIES_OF_PAYMENT = [
@@ -87,7 +83,7 @@ function categoryToRegex(category: PaymentCategoryPattern): RegExp {
   // sort the payment terms by length in descending order to ensure longer terms are matched first
   const jointTerms = [...category.paymentTerms].sort((a, b) => b.length - a.length).map(termToRegex).join('|');
   // if there is a suffix, add it to the regex pattern with whitespace before it
-  const suffixEnd = category.suffix ? `[\\s-]+${category.suffix}` : ''; 
+  const suffixEnd = category.suffix ? `[\\s-]+${category.suffix}` : '';
   return new RegExp(`\\b(?:${jointTerms})${suffixEnd}\\b`, 'i');
 }
 
@@ -102,6 +98,7 @@ const CATEGORIES_AND_PATTERNS = CATEGORIES_OF_PAYMENT.map((category) => ({
  *
  * @param description The listing description where untraceable payment methods may or may not be detected.
  * @return An array of payment violation objects, each representing a detected untraceable category of payment, or [] none are detected.
+ * @throws ZodError If the description is not a string.
  */
 function detectUntraceablePayment(description: PaymentFlagInput): PaymentViolation[] {
   const parsedDescription = PaymentFlagsInputSchema.parse(description);

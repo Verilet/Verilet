@@ -145,7 +145,7 @@ describe('detectUntraceablePayment: Samples of Clean Data (no scams)', () => {
   it.each([[67], [undefined], [null], [{}]])(
     '[Criterion 6] Testing to verify that non-string inputs will return [] (%s)',
     (description: unknown) => {
-      expect(() => detectUntraceablePayment(description as string)).toEqual([]);
+      expect(detectUntraceablePayment(description as string)).toEqual([]);
     },
   );
 });

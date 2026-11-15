@@ -71,7 +71,8 @@ function escapeRegexSpecialCharacters(s: string): string {
  * @param term The single payment term, e.g. 'wire transfer'.
  * @return The term converted into a regex pattern, e.g. 'wire\s+transfer'.
  */
-const termToRegex = (term: string): string => escapeRegexSpecialCharacters(term).replace(/ /g, '\\s+');
+const termToRegex = (term: string): string =>
+  escapeRegexSpecialCharacters(term).replace(/ /g, '\\s+');
 
 /**
  * Converts a category of untraceable payment methods into a regex pattern.
@@ -81,7 +82,10 @@ const termToRegex = (term: string): string => escapeRegexSpecialCharacters(term)
  */
 function categoryToRegex(category: PaymentCategoryPattern): RegExp {
   // sort the payment terms by length in descending order to ensure longer terms are matched first
-  const jointTerms = [...category.paymentTerms].sort((a, b) => b.length - a.length).map(termToRegex).join('|');
+  const jointTerms = [...category.paymentTerms]
+    .sort((a, b) => b.length - a.length)
+    .map(termToRegex)
+    .join('|');
   // if there is a suffix, add it to the regex pattern with whitespace before it
   const suffixEnd = category.suffix ? `[\\s-]+${category.suffix}` : '';
   return new RegExp(`\\b(?:${jointTerms})${suffixEnd}\\b`, 'i');

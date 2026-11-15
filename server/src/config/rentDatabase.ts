@@ -7,7 +7,8 @@ export const DEFAULT_RENT_DB_NAME = 'averagePrice';
 export const RentDbNameSchema = z
   .string()
   .max(63)
-  .regex(/^[^/\\. "$*<>:|?]+$/);
+  .regex(/^[^/\\.\s"$*<>:|?]+$/)
+  .refine((name) => !name.includes('\0'));
 
 /**
  * Gets the name of the database that holds rent data.

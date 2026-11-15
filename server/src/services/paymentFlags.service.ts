@@ -105,14 +105,14 @@ const CATEGORIES_AND_PATTERNS = CATEGORIES_OF_PAYMENT.map((category) => ({
  */
 function detectUntraceablePayment(description: PaymentFlagInput): PaymentViolation[] {
   const parsedDescription = PaymentFlagsInputSchema.parse(description);
-  if (!parsedDescription.success) {
+  if (parsedDescription.success === '') {
     return [];
   }
 
   const violations: PaymentViolation[] = [];
 
   for (const { paymentTitle, explanation, paymentPattern } of CATEGORIES_AND_PATTERNS) {
-    const regMatchFound = parsedDescription.data.match(paymentPattern);
+    const regMatchFound = parsedDescription.match(paymentPattern);
 
     if (regMatchFound) {
       violations.push({

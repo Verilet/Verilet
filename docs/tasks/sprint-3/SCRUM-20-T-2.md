@@ -44,9 +44,9 @@ Serves SCRUM-20 (verify listing address exists and is designated for residential
 
 3. A vacant lot, unbuilt parcel, or common area use code returns status: "warning" and triggers flag VACANT_OR_UNBUILT_PARCEL.
 
-4. Missing, null, undefined, empty, or whitespace-only use code or description inputs return status: "skipped" without throwing errors or generating false positive flags.
+4. Missing, null, undefined, empty, or whitespace-only use-code or description inputs return status "skipped" without throwing errors or generating false-positive flags. If the use code is unrecognized but the description matches a recognized land-use category, the service uses the description to determine the classification. If neither the code nor description can be classified, it returns status "skipped".
 
-5. Non-string data types are rejected with { success: false } and a descriptive error message without crashing the server process.
+5. The Zod input schema accepts valid string and null land-use values and rejects non-string data types. Invalid inputs return { success: false, error: "Invalid land use input values" } without crashing the server process.
 
 ## Tests
 
@@ -60,8 +60,6 @@ Setup for all: Offline unit tests directly invoking the exported land-use evalua
 
 - Criterion 3: SCRUM-20-T-2 returns warning for vacant and unbuilt land-use codes — evaluates codes 010 (Vacant Lot), 830 (Token Value), and 090 (Common Area), asserting status "warning", flag "VACANT_OR_UNBUILT_PARCEL", message "Property is classified as vacant land or unbuilt parcel", and category "vacant".
 
-- Criterion 4: SCRUM-20-T-2 returns skipped when input is undefined, SCRUM-20-T-2 returns skipped when input is null, SCRUM-20-T-2 returns skipped when use code is missing, SCRUM-20-T-2 returns skipped when use description is missing, SCRUM-20-T-2 returns skipped when either field is null, and SCRUM-20-T-2 returns skipped when land-use values are empty or whitespace only — evaluates missing and blank land-use inputs, asserting status "skipped", flag null, message "Land use code not specified; check skipped", and category null.
+- Criterion 4: SCRUM-20-T-2 returns skipped for missing or unrecognized land-use information — evaluates undefined and null inputs, missing use codes or descriptions, null fields, empty values, and whitespace-only values, asserting status "skipped", flag null, message "Land use code not specified; check skipped", and category null. Also verifies that an unrecognized code with a recognized description uses description-based classification, while an unrecognized code with an unrecognized description returns status "skipped".
 
-- Criterion 5: SCRUM-20-T-2 rejects invalid land-use input values and SCRUM-20-T-2 schema rejects non-string land-use values — evaluates invalid input types such as numeric use codes, asserting { success: false, error: "Invalid land use input values" } without throwing unhandled exceptions.
-
-- Criterion 6: SCRUM-20-T-2 classifies land use using its description when the code is unknown and SCRUM-20-T-2 returns skipped for unknown land-use information — evaluates an unrecognized use code with a recognized residential description, asserting the appropriate residential classification, and evaluates an unrecognized code with an unrecognized description, asserting status "skipped", flag null, and category null.
+- Criterion 5: SCRUM-20-T-2 validates land-use input values — verifies that the Zod schema accepts valid string and null values, rejects non-string values, and that invalid inputs, such as numeric use codes, return { success: false, error: "Invalid land use input values" } without throwing unhandled exceptions.

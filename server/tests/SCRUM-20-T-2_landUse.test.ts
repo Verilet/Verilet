@@ -209,6 +209,43 @@ describe('SCRUM-20-T-2 Land Use Service', () => {
   });
 
   // Criterion 4:
+  // Recognized land-use descriptions can classify an
+  // otherwise unrecognized land-use code.
+  it('SCRUM-20-T-2 classifies land use using its description when code is unknown', () => {
+    const result = evaluateLandUse({
+      useCode: '999',
+      useDescription: 'Single Residence',
+    });
+    expect(result).toEqual({
+      success: true,
+      data: {
+        status: 'compliant',
+        flag: null,
+        message: 'Complies with lawful residential land use',
+        category: 'residential',
+      },
+    });
+  });
+
+  // Criterion 4:
+  // Unknown codes and descriptions return skipped status.
+  it('SCRUM-20-T-2 returns skipped for unknown land-use information', () => {
+    const result = evaluateLandUse({
+      useCode: '999',
+      useDescription: 'Unknown Property Type',
+    });
+    expect(result).toEqual({
+      success: true,
+      data: {
+        status: 'skipped',
+        flag: null,
+        message: 'Land use code not specified; check skipped',
+        category: null,
+      },
+    });
+  });
+
+  // Criterion 4:
   // Whitespace-only land-use values return skipped status.
   it('SCRUM-20-T-2 returns skipped when land-use values contain only whitespace', () => {
     const result = evaluateLandUse({
@@ -248,43 +285,6 @@ describe('SCRUM-20-T-2 Land Use Service', () => {
     expect(result).toEqual({
       success: false,
       error: 'Invalid land use input values',
-    });
-  });
-
-  // Criterion 6:
-  // Recognized land-use descriptions can classify an
-  // otherwise unrecognized land-use code.
-  it('SCRUM-20-T-2 classifies land use using its description when code is unknown', () => {
-    const result = evaluateLandUse({
-      useCode: '999',
-      useDescription: 'Single Residence',
-    });
-    expect(result).toEqual({
-      success: true,
-      data: {
-        status: 'compliant',
-        flag: null,
-        message: 'Complies with lawful residential land use',
-        category: 'residential',
-      },
-    });
-  });
-
-  // Criterion 6:
-  // Unknown codes and descriptions return skipped status.
-  it('SCRUM-20-T-2 returns skipped for unknown land-use information', () => {
-    const result = evaluateLandUse({
-      useCode: '999',
-      useDescription: 'Unknown Property Type',
-    });
-    expect(result).toEqual({
-      success: true,
-      data: {
-        status: 'skipped',
-        flag: null,
-        message: 'Land use code not specified; check skipped',
-        category: null,
-      },
     });
   });
 });

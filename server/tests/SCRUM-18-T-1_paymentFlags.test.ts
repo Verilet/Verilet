@@ -1,7 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import { detectUntraceablePayment } from '../src/services/paymentFlags.service.js';
 
-//start of test cases for 1st subtask
+/** Non string values that are used to test invalid listing descriptions. */
+type InvalidStringInput = number | null | undefined | Record<string, unknown>;
+
+// Start of test cases for 1st subtask
 describe('detectUntraceablePayment: Samples of Scamming', () => {
   it.each([
     ['BTC', 'Send money via BTC to reserve the property.'],
@@ -17,8 +20,8 @@ describe('detectUntraceablePayment: Samples of Scamming', () => {
       expect(testResult[0]).toMatchObject({
         code: 'UNTRACEABLE_PAYMENT',
         severity: 'critical',
-        title: expect.any(String),
-        explanation: expect.any(String),
+        title: expect.stringContaining('cryptocurrency'),
+        explanation: expect.stringContaining('Cryptocurrency payments'),
         evidence: method,
       });
     },
@@ -43,8 +46,8 @@ describe('detectUntraceablePayment: Samples of Scamming', () => {
       expect(testResult[0]).toMatchObject({
         code: 'UNTRACEABLE_PAYMENT',
         severity: 'critical',
-        title: expect.any(String),
-        explanation: expect.any(String),
+        title: expect.stringContaining('wire transfer'),
+        explanation: expect.stringContaining('Wire transfer payments'),
         evidence: method,
       });
     },
@@ -66,8 +69,8 @@ describe('detectUntraceablePayment: Samples of Scamming', () => {
       expect(testResult[0]).toMatchObject({
         code: 'UNTRACEABLE_PAYMENT',
         severity: 'critical',
-        title: expect.any(String),
-        explanation: expect.any(String),
+        title: expect.stringContaining('gift card'),
+        explanation: expect.stringContaining('gift cards'),
         evidence: method,
       });
     },
@@ -135,8 +138,8 @@ describe('detectUntraceablePayment: Samples of Clean Data (no scams)', () => {
 
   it.each([[67], [undefined], [null], [{}]])(
     '[Criterion 6] Testing to verify that non-string inputs will return [] (%s)',
-    (description: unknown) => {
-      expect(detectUntraceablePayment(description as string)).toEqual([]);
+    (description: InvalidStringInput) => {
+      expect(detectUntraceablePayment(description as unknown as string)).toEqual([]);
     },
   );
 });

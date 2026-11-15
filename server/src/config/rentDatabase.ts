@@ -10,12 +10,17 @@ export const RentDbNameSchema = z
   .regex(/^[^/\\. "$*<>:|?]+$/);
 
 /**
- * Returns the database that holds rent data: RENT_DB_NAME without surrounding spaces,
- * or averagePrice when it is unset or empty. Throws if the name is not a valid database name.
+ * Gets the name of the database that holds rent data.
+ *
+ * @param env Environment variables to read RENT_DB_NAME from.
+ * @return The trimmed RENT_DB_NAME, or averagePrice when it is unset or empty.
+ * @throws Error if RENT_DB_NAME is not a valid MongoDB database name.
  */
 export function getRentDbName(env: NodeJS.ProcessEnv = process.env): string {
   const name = env.RENT_DB_NAME?.trim();
-  if (!name) return DEFAULT_RENT_DB_NAME;
+  if (!name) {
+    return DEFAULT_RENT_DB_NAME;
+  }
 
   const parsed = RentDbNameSchema.safeParse(name);
   if (!parsed.success) {

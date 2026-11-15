@@ -5,7 +5,8 @@ Welcome! We’re excited to have you here and appreciate your contributions to *
 - [Development Setup](#setup)
 - [Submission Guidelines](#submit)
 - [CSE 115A Sprint Task Workflow](#cse115a)
-- [Coding Rules](#rules)
+- [Coding Rules & Engineering Standards](#rules)
+- [Definition of Done & Acceptance Criteria](#quality-standards)
 - [Commit Message Format](#commit)
 
 ## <a name="setup"></a> Setup and Development
@@ -137,13 +138,20 @@ For graded sprint tasks submitted to the Repo Metrics app, follow this exact seq
    ```
 8. **Submit in Repo Metrics App:** Paste the merged PR link into your assignment card.
 
-## <a name="rules"></a> Coding Rules
+## <a name="rules"></a> Coding Rules & Engineering Standards
+
+Our repository adheres to the [**Google JavaScript Style Guide**](https://google.github.io/styleguide/jsguide.html) and [**Google TypeScript Style Guide**](https://google.github.io/styleguide/tsguide.html). Detailed coding standards, language invariants, naming rules, and architectural patterns are documented in:
+
+- **[`docs/style-guide.md`](./docs/style-guide.md)**: Full Google JS/TS coding standards, React 19 UI guidelines, Express 5 response envelopes, and Prettier rules.
+- **[`docs/architecture.md`](./docs/architecture.md)**: System architecture, component boundaries, and 3-tier scraper data flows.
 
 To ensure consistency throughout the source code, keep these rules in mind as you are working:
 
 - All new features or bug fixes should include corresponding tests in `client/tests/` or `server/tests/` (`*.test.tsx` or `*.test.ts`).
-- Code formatting is enforced automatically on commit via **Husky** and **Prettier** (100-character line width, single quotes, semicolons).
+- Code formatting is enforced automatically on commit via **Husky** and **Prettier** (100-character line width, single quotes, semicolons, 2-space indentation).
 - All code must pass **ESLint** (`npm --prefix client run lint` and `npm --prefix server run lint`) with zero errors.
+- Mandatory braces: Every `if`, `else`, `for`, `while` block must use curly braces `{ ... }`.
+- No `any`: Strict typing is required across both packages. Use `unknown` and Zod schema inference.
 
 ### Backend Architecture Standards (`server/src/`)
 
@@ -156,6 +164,13 @@ To keep code modular, adhere to the following directory responsibilities:
 - **`config/`**: App-level and database configuration (`database.ts`).
 - **`app.ts`**: Express configuration and middleware only. Do not bind ports or initiate database connections here.
 - **`index.ts`**: Application entry point that handles environment loading, database connection, and graceful shutdown.
+
+## <a name="quality-standards"></a> Definition of Done & Acceptance Criteria
+
+Before submitting pull requests or writing task specifications, contributors must consult:
+
+- **[`docs/definition-of-done.md`](./docs/definition-of-done.md)**: The 4-tier Definition of Done (Code & Google Style Quality, Automated Offline Testing, CSE 115A Process Points, and PR Integration).
+- **[`docs/acceptance-criteria-guide.md`](./docs/acceptance-criteria-guide.md)**: Guidelines for writing Given-When-Then story criteria and numbered task invariants with 1-to-1 test mapping.
 
 ## <a name="commit"></a> Commit Message Format
 

@@ -6,7 +6,10 @@
     "prettier": "^3.9.10"
   },
   "scripts": {
-    "prepare": "husky"
+    "prepare": "husky",
+    "format": "prettier --write \"client/**/*.{ts,tsx,js,jsx}\" \"server/**/*.{ts,js}\" \"**/*.{json,md,yml,yaml}\"",
+    "format:check": "prettier --check \"client/**/*.{ts,tsx,js,jsx}\" \"server/**/*.{ts,js}\" \"**/*.{json,md,yml,yaml}\"",
+    "lint": "npm --prefix client run lint && npm --prefix server run lint"
   },
   "lint-staged": {
     "client/**/*.{ts,tsx,js,jsx}": [

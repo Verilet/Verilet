@@ -122,7 +122,7 @@ _The following items were planned for Sprint 1 but not completed before the Octo
 
 ## Sprint Burnup Chart
 
-![Sprint 1 Burnup Chart](./assets/Completed%20Hours%20and%20Total%20Scope%20Hours.svg)
+![Sprint 1 Burnup Chart](./assets/sprint_1_burnup_chart.svg)
 
 - **Total Planned Scope:** 25.75 Ideal Work Hours (11 User Stories)
 - **Completed Work:** 21.75 Ideal Work Hours (10 User Stories)

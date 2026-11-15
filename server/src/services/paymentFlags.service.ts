@@ -102,11 +102,10 @@ const CATEGORIES_AND_PATTERNS = CATEGORIES_OF_PAYMENT.map((category) => ({
  *
  * @param description The listing description where untraceable payment methods may or may not be detected.
  * @return An array of payment violation objects, each representing a detected untraceable category of payment, or [] if none are detected.
- * @throws ZodError If the description is not a string.
  */
 function detectUntraceablePayment(description: PaymentFlagInput): PaymentViolation[] {
   const parsedDescription = PaymentFlagInputSchema.safeParse(description);
-  if (parsedDescription === '') {
+  if (!parsedDescription.success || parsedDescription.data === '') {
     return [];
   }
 

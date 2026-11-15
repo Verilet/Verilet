@@ -9,10 +9,12 @@ estimate_hours: 6
 # Implement Regex Payment Worker Scanner
 
 ## Description
-This serves SCRUM-18 covers a student wanting to be alerted if the lister for a property requests payment through high risk payment methods, so they avoid sendind money through unsafe methods. This task only focuses implements a Regex Payment Worker Scanner, scanning a listing description for irreversible payment channels, and returning an array of violations: SCRUM-18-T-1: Flag untraceable payment terms (crypto, wire transfers, gift cards) in listing text. Out of scope: cash-app advance-fee detection and payment checkbox checks (SCRUM-18-T-2), the HTTP route, and the warning UI.
+
+This serves SCRUM-18 which covers a student wanting to be alerted if the lister for a property requests payment through high-risk payment methods, so they avoid sending money through unsafe methods. This task only focuses on implementing a Regex Payment Worker Scanner, scanning a listing description for irreversible payment channels, and returning an array of violations: SCRUM-18-T-1: Flag untraceable payment terms (crypto, wire transfers, gift cards) in listing text. Out of scope: cash-app advance-fee detection and payment checkbox checks (SCRUM-18-T-2), the HTTP route, and the warning UI.
 
 ## Specs
-- detectUntraceablePayment(description) in server/services/paymentFlags.js returns an array of violations.
+
+- detectUntraceablePayment(description) in server/services/paymentFlags.service.js returns an array of violations.
 
 - Each violation is { code: 'UNTRACEABLE_PAYMENT', severity: 'critical', title, explanation, evidence }, where evidence is the exact matched text.
 
@@ -48,15 +50,13 @@ This serves SCRUM-18 covers a student wanting to be alerted if the lister for a 
 
 6. Empty or null input returns [], and a clean post-lease payment description returns [].
 
-7. Tests include at least 4 scam samples and 2 clean samples.
-
 ## Tests
 
-File: 'server/tests/SCRUM-18-T-1_paymentFlags.test.ts
+File: `server/tests/SCRUM-18-T-1_paymentFlags.test.ts`
 
-Setup for all: Offline unit tests via Veritest, directly calling the exported `detectUntraceablePayment` function with listing description strings. No other dependencies needed.
+Setup for all: Offline unit tests via Vitest, directly calling the exported `detectUntraceablePayment` function with listing description strings. No other dependencies needed.
 
-- Criterion 1: SCRUM-18-T-1 returns a critical UNTRACEABLE_PAYMENT violation for cryptocurrency terms when given a listing description mentioning one of the terms being BTC, USDT, Bitcoin, and Ethereum, asserts exactly one violation with fields: code "UNTRACEABLE_PAYMENT", severity "critical", string title and explanation, and evidence equal that is equal to the matched term. 
+- Criterion 1: SCRUM-18-T-1 returns a critical UNTRACEABLE_PAYMENT violation for cryptocurrency terms when given a listing description mentioning one of the terms being BTC, USDT, Bitcoin, and Ethereum, asserts exactly one violation with fields: code "UNTRACEABLE_PAYMENT", severity "critical", string title and explanation, and evidence that is equal to the matched term.
 
 - Criterion 2: SCRUM-18-T-1 returns a violation for wire transfer terms when given a listing description each mentioning one of terms being MoneyGram, wire transfer, and Western Union, asserts exactly one violation with fields: code "UNTRACEABLE_PAYMENT", severity "critical", string title and explanation, and evidence that is equal to the matched term.
 

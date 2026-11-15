@@ -97,12 +97,12 @@ const CATEGORIES_AND_PATTERNS = CATEGORIES_OF_PAYMENT.map((category) => ({
  * Detects untraceable payment methods like wire transfers, cryptocurrency, and gift cards in a given listing description.
  *
  * @param description The listing description where untraceable payment methods may or may not be detected.
- * @return An array of payment violation objects, each representing a detected untraceable category of payment, or [] none are detected.
+ * @return An array of payment violation objects, each representing a detected untraceable category of payment, or [] if none are detected.
  * @throws ZodError If the description is not a string.
  */
 function detectUntraceablePayment(description: PaymentFlagInput): PaymentViolation[] {
-  const parsedDescription = PaymentFlagsInputSchema.parse(description);
-  if (parsedDescription.success === '') {
+  const parsedDescription = PaymentFlagInputSchema.parse(description);
+  if (parsedDescription === '') {
     return [];
   }
 

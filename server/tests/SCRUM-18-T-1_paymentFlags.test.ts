@@ -9,10 +9,10 @@ describe('detectUntraceablePayment: Samples of Scamming', () => {
     ['Bitcoin', 'To reserve this property in Santa Cruz, deposit via Bitcoin will be acceptable'],
     ['Ethereum', 'Please send your deposit via Ethereum to secure the property.'],
   ])('Detecting crypto payment methods (%s)', (method: string, description: string) => {
-    const test_result = detectUntraceablePayment(description);
+    const testResult = detectUntraceablePayment(description);
 
-    expect(test_result).toHaveLength(1);
-    expect(test_result[0]).toMatchObject({
+    expect(testResult).toHaveLength(1);
+    expect(testResult[0]).toMatchObject({
       code: 'UNTRACEABLE_PAYMENT',
       severity: 'critical',
       title: expect.any(String),
@@ -32,10 +32,10 @@ describe('detectUntraceablePayment: Samples of Scamming', () => {
       'The landlord is abroad and require payment via Western Union to secure the property.',
     ],
   ])('Detecting wire transfer payment methods (%s)', (method: string, description: string) => {
-    const test_result = detectUntraceablePayment(description);
+    const testResult = detectUntraceablePayment(description);
 
-    expect(test_result).toHaveLength(1);
-    expect(test_result[0]).toMatchObject({
+    expect(testResult).toHaveLength(1);
+    expect(testResult[0]).toMatchObject({
       code: 'UNTRACEABLE_PAYMENT',
       severity: 'critical',
       title: expect.any(String),
@@ -52,10 +52,10 @@ describe('detectUntraceablePayment: Samples of Scamming', () => {
       'To hold your current Santa Cruz property, please pay deposit via Steam gift cards.',
     ],
   ])('Detecting Gift Card paying methods (%s)', (method: string, description: string) => {
-    const test_result = detectUntraceablePayment(description);
+    const testResult = detectUntraceablePayment(description);
 
-    expect(test_result).toHaveLength(1);
-    expect(test_result[0]).toMatchObject({
+    expect(testResult).toHaveLength(1);
+    expect(testResult[0]).toMatchObject({
       code: 'UNTRACEABLE_PAYMENT',
       severity: 'critical',
       title: expect.any(String),
@@ -65,38 +65,38 @@ describe('detectUntraceablePayment: Samples of Scamming', () => {
   });
 
   it('Testing for any letter case matches', () => {
-    const upp_and_low_case = detectUntraceablePayment('wIrE tRAnSFer');
-    const upper_case = detectUntraceablePayment('PAY WITH WESTERN UNION');
-    const lower_case = detectUntraceablePayment('bitcoin only');
+    const uppAndLowCase = detectUntraceablePayment('wIrE tRAnSFer');
+    const upperCase = detectUntraceablePayment('PAY WITH WESTERN UNION');
+    const lowerCase = detectUntraceablePayment('bitcoin only');
 
-    expect(upp_and_low_case[0].evidence).toBe('wIrE tRAnSFer');
-    expect(upper_case[0].evidence).toBe('WESTERN UNION');
-    expect(lower_case[0].evidence).toBe('bitcoin');
+    expect(uppAndLowCase[0].evidence).toBe('wIrE tRAnSFer');
+    expect(upperCase[0].evidence).toBe('WESTERN UNION');
+    expect(lowerCase[0].evidence).toBe('bitcoin');
   });
 
   it('Testing to see if one violation per category is returned with multiple categories matching', () => {
-    const one_violation_per_category = detectUntraceablePayment(
+    const oneViolationPerCategory = detectUntraceablePayment(
       'Please send your deposit with USDT or wire transfer to secure the property.',
     );
 
-    expect(one_violation_per_category).toHaveLength(2);
-    const the_evidence = one_violation_per_category.map((violation) => violation.evidence);
-    expect(the_evidence).toEqual(expect.arrayContaining(['USDT', 'wire transfer']));
+    expect(oneViolationPerCategory).toHaveLength(2);
+    const theEvidence = oneViolationPerCategory.map((violation) => violation.evidence);
+    expect(theEvidence).toEqual(expect.arrayContaining(['USDT', 'wire transfer']));
   });
 
   it('Testing to see if a single violation is returned when it matches multiple terms in a description', () => {
-    const one_violation_only = detectUntraceablePayment(
+    const oneViolationOnly = detectUntraceablePayment(
       'Please pay your deposit via Bitcoin, Ethereum, or BTC.',
     );
-    expect(one_violation_only).toHaveLength(1);
-    expect(one_violation_only[0].evidence).toBe('Bitcoin');
+    expect(oneViolationOnly).toHaveLength(1);
+    expect(oneViolationOnly[0].evidence).toBe('Bitcoin');
   });
 
   it('Testing to see if 3 violations are returned when all 3 categories are matched in a description', () => {
-    const three_violations_test = detectUntraceablePayment(
+    const threeViolationsTest = detectUntraceablePayment(
       'For paying your deposit, Steam gift card, Bitcoin, or Western Union are acceptable payment methods.',
     );
-    expect(three_violations_test).toHaveLength(3);
+    expect(threeViolationsTest).toHaveLength(3);
   });
 });
 
@@ -111,10 +111,10 @@ describe('detectUntraceablePayment: Samples of Clean Data (no scams)', () => {
   });
 
   it('Testing to verify that terms do NOT match within longer words', () => {
-    const no_term_in_longer_words = detectUntraceablePayment(
+    const noTermInLongerWords = detectUntraceablePayment(
       'The property resides on Bitcoiner Avenue, and is a small BTCXABC apartment.',
     );
-    expect(no_term_in_longer_words).toEqual([]);
+    expect(noTermInLongerWords).toEqual([]);
   });
 
   it.each([[67], [''], ['  '], [undefined], [null], [{}]])(
@@ -124,4 +124,3 @@ describe('detectUntraceablePayment: Samples of Clean Data (no scams)', () => {
     },
   );
 });
-// end of test cases for 1st subtask

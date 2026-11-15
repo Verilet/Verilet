@@ -1,0 +1,32 @@
+/* Status and rating chips. */
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  padding: 5px 12px;
+  border-radius: var(--radius-pill);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.chip--danger {
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+}
+
+.chip--warn {
+  background: var(--color-warn-bg);
+  color: var(--color-warn);
+}
+
+.chip--ok {
+  background: var(--color-ok-bg);
+  color: var(--color-ok);
+}
+
+.chip--neutral {
+  background: var(--color-neutral-bg);
+  color: var(--color-muted);
+}

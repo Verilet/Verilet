@@ -9,9 +9,11 @@ estimate_hours: 4
 # Implement GIS address query service
 
 ## Description
+
 Serves SCRUM-20 (verify listing address exists and is designated for residential living). This task implements the backend service in server/src/services/gisQuery.service.ts to query the Santa Cruz County Assessor parcel MapServer (data/MapServer/2). The service normalizes incoming listing addresses, strips unit designators, and executes ArcGIS REST queries with an explicit timeout, distinguishing between verified parcels, unverified addresses, and service outages. Out of scope: land use code classification (-T-2) and API route integration.
 
 ## Specs
+
 - The service exposes an evaluation function and Zod input schema (GisQueryInputSchema): { address: string | null | undefined }.
 
 - When address is missing, null, or undefined, the service returns { success: true, data: { status: "skipped", flag: null, message: "Address not specified; check skipped", parcel: null } }.
@@ -25,6 +27,7 @@ Serves SCRUM-20 (verify listing address exists and is designated for residential
 - Negative numbers, non-string types, or invalid data types are rejected cleanly with { success: false, error: "Invalid address input value" } without throwing unhandled exceptions.
 
 ## Requirements
+
 - Service must be implemented in server/src/services/gisQuery.service.ts.
 
 - Input validation and derived types must use Zod (z.infer<typeof ...>) colocated in the service file.
@@ -36,6 +39,7 @@ Serves SCRUM-20 (verify listing address exists and is designated for residential
 - No database migrations, routes, or frontend modifications in this task.
 
 ## Acceptance criteria
+
 1. A valid Santa Cruz address resolves to a county parcel, returns status: "compliant" with zero red flags, and extracts parcel APN and use code description.
 
 2. An address containing an apartment or unit number (e.g. "530 High St Apt 4B") normalizes cleanly and resolves to the base parcel.

@@ -16,7 +16,7 @@ interface PaymentCategoryPattern {
 }
 
 /** The Zod schema for the input to the payment flags service. */
-export const PaymentFlagInputSchema = z.string().trim().min(1).nullish();
+export const PaymentFlagInputSchema = z.string().trim();
 
 /** A listing description where untraceable payment methods may be scanned from. */
 export type PaymentFlagInput = z.infer<typeof PaymentFlagInputSchema>;
@@ -105,10 +105,6 @@ const CATEGORIES_AND_PATTERNS = CATEGORIES_OF_PAYMENT.map((category) => ({
  * @return An array of payment violation objects, each representing a detected untraceable category of payment, or [] if none are detected.
  */
 export function detectUntraceablePayment(description: PaymentFlagInput): PaymentViolation[] {
-  if (description === null) {
-    return [];
-  }
-
   const parsedDescription = PaymentFlagInputSchema.safeParse(description);
   if (!parsedDescription.success || parsedDescription.data === '') {
     return [];

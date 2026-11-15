@@ -25,7 +25,7 @@ export type PaymentFlagInput = z.infer<typeof PaymentFlagInputSchema>;
 const CATEGORIES_OF_PAYMENT = [
   {
     paymentId: 'wire',
-    paymentTerms: ['Western Union', 'MoneyGram', 'Wire transfer'],
+    paymentTerms: ['Western Union', 'MoneyGram', 'wire transfer'],
     paymentTitle: 'A wire transfer payment has been requested.',
     explanation:
       'Wire transfer payments are almost impossible to recover ' +
@@ -105,7 +105,7 @@ const CATEGORIES_AND_PATTERNS = CATEGORIES_OF_PAYMENT.map((category) => ({
  * @throws ZodError If the description is not a string.
  */
 function detectUntraceablePayment(description: PaymentFlagInput): PaymentViolation[] {
-  const parsedDescription = PaymentFlagInputSchema.parse(description);
+  const parsedDescription = PaymentFlagInputSchema.safeParse(description);
   if (parsedDescription === '') {
     return [];
   }
@@ -113,7 +113,7 @@ function detectUntraceablePayment(description: PaymentFlagInput): PaymentViolati
   const violations: PaymentViolation[] = [];
 
   for (const { paymentTitle, explanation, paymentPattern } of CATEGORIES_AND_PATTERNS) {
-    const regMatchFound = parsedDescription.match(paymentPattern);
+    const regMatchFound = parsedDescription.data.match(paymentPattern);
 
     if (regMatchFound) {
       violations.push({

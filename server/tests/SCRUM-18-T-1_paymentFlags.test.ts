@@ -126,15 +126,6 @@ describe('detectUntraceablePayment: Samples of Clean Data (no scams)', () => {
     expect(noTermInLongerWords).toEqual([]);
   });
 
-  /*
-  it.each([[67], [''], ['  '], [undefined], [null], [{}]])(
-    'Testing to see if [] is returned for empty or invalid inputs (%s)',
-    (description: unknown) => {
-      expect(detectUntraceablePayment(description)).toEqual([]);
-    },
-  );
-  */
-
   it.each([[''], [' ']])(
     '[Criterion 6] Testing to verify if [] is returned for empty or whitespace-only inputs (%s)',
     (description: string) => {

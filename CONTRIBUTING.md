@@ -70,6 +70,17 @@ npm --prefix server run dev
 
 You can verify the backend health check at `http://localhost:5000/api/health`.
 
+#### The dev Preview bar
+
+Under `npm --prefix client run dev`, a **Preview** bar sits at the bottom right of the app (`client/src/components/DevNav.tsx`). It lets you see the signed-in screens without a Clerk account:
+
+- **Check** or **Home**: the listing form.
+- **Results**: a sample result from `client/src/data/mockScans.ts`.
+- **My scans**: the scan table (logged in only).
+- **Logged out** or **Logged in**: switches between the two sets of screens. Opening the app with `?loggedIn=true` does the same, and it lasts for that browser tab (`?loggedIn=false` turns it off). Previewed scans stay in the browser tab, not your account.
+
+`App.tsx` only renders the bar when `import.meta.env.MODE` is `development`, so it never appears in production builds or tests.
+
 ### <a name="testing-the-application"></a> Testing the Application
 
 We use **Vitest** for unit and API testing across the client and server. Place new test files alongside the code they test (`*.test.tsx` or `*.test.ts`).

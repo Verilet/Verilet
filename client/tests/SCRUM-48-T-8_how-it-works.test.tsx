@@ -48,10 +48,10 @@ function mockGeometry() {
   });
 }
 
-function renderPage() {
+function renderPage({ loggedIn = false } = {}) {
   return render(
     <MemoryRouter initialEntries={['/how-it-works']}>
-      <App />
+      <App loggedIn={loggedIn} initialScans={[]} />
     </MemoryRouter>,
   );
 }
@@ -488,9 +488,20 @@ describe('SCRUM-48-T-8 how it works page', () => {
       Reflect.deleteProperty(HTMLElement.prototype, 'animate');
     });
 
+    it('SCRUM-48-T-8 a signed-out visitor’s car turns into the check form’s link box', () => {
+      const { animations } = stubAnimate();
+      const { container } = renderPage();
+      fireEvent.click(checkLink());
+      act(() => animations[0].onfinish?.());
+      expect(screen.getByLabelText('Listing link')).toHaveFocus();
+      expect(container.querySelector('.car-arrival__body')).not.toBeNull();
+      act(() => animations[animations.length - 1].onfinish?.());
+      expect(container.querySelector('.car-arrival')).toBeNull();
+    });
+
     it('SCRUM-48-T-8 check link morphs the car into the listing link', () => {
       const { animate, finishLatest } = stubAnimate();
-      const { container } = renderPage();
+      const { container } = renderPage({ loggedIn: true });
 
       fireEvent.click(checkLink());
 
@@ -518,7 +529,7 @@ describe('SCRUM-48-T-8 how it works page', () => {
     it('SCRUM-48-T-8 reduced motion skips the car flight', () => {
       const { animate } = stubAnimate();
       mockMotion(true);
-      const { container } = renderPage();
+      const { container } = renderPage({ loggedIn: true });
 
       fireEvent.click(checkLink());
 
@@ -529,7 +540,7 @@ describe('SCRUM-48-T-8 how it works page', () => {
 
     it('SCRUM-48-T-8 modified click skips the car flight', () => {
       const { animate } = stubAnimate();
-      const { container } = renderPage();
+      const { container } = renderPage({ loggedIn: true });
 
       fireEvent.click(checkLink(), { ctrlKey: true });
 
@@ -539,7 +550,7 @@ describe('SCRUM-48-T-8 how it works page', () => {
 
     it('SCRUM-48-T-8 clicking again during the flight does not restart it', () => {
       const { animate } = stubAnimate();
-      renderPage();
+      renderPage({ loggedIn: true });
       fireEvent.click(checkLink());
       fireEvent.click(checkLink());
       expect(animate).toHaveBeenCalledTimes(1);
@@ -547,7 +558,7 @@ describe('SCRUM-48-T-8 how it works page', () => {
 
     it('SCRUM-48-T-8 the road car hides while its copy takes off', () => {
       stubAnimate();
-      const { container } = renderPage();
+      const { container } = renderPage({ loggedIn: true });
       const car = container.querySelector('.road__car');
       expect(car).not.toHaveAttribute('data-flying');
       fireEvent.click(checkLink());
@@ -556,7 +567,7 @@ describe('SCRUM-48-T-8 how it works page', () => {
 
     it('SCRUM-48-T-8 leaving the page cancels the car flight', () => {
       const { animations } = stubAnimate();
-      const { unmount } = renderPage();
+      const { unmount } = renderPage({ loggedIn: true });
 
       fireEvent.click(checkLink());
       unmount();
@@ -568,7 +579,7 @@ describe('SCRUM-48-T-8 how it works page', () => {
   it('SCRUM-48-T-8 at the top of the page the car waits at the start', () => {
     // The road starts far below the trigger line, so no stop has been crossed.
     scrollY = -1000;
-    const { container } = renderPage();
+    const { container } = renderPage({ loggedIn: true });
     const car = container.querySelector<HTMLElement>('.road__car');
 
     expect(car?.style.transform).toBe('translate3d(0, 0.00px, 0)');
@@ -601,7 +612,7 @@ describe('SCRUM-48-T-8 how it works page', () => {
     const heightSpy = vi
       .spyOn(document.documentElement, 'scrollHeight', 'get')
       .mockReturnValue(1000);
-    renderPage();
+    renderPage({ loggedIn: true });
 
     scrollTo(300);
 
@@ -610,7 +621,7 @@ describe('SCRUM-48-T-8 how it works page', () => {
   });
 
   it('SCRUM-48-T-8 road positions are measured on resize, not every frame', () => {
-    renderPage();
+    renderPage({ loggedIn: true });
     const measure = vi.mocked(HTMLElement.prototype.getBoundingClientRect);
     measure.mockClear();
 
@@ -624,7 +635,7 @@ describe('SCRUM-48-T-8 how it works page', () => {
   });
 
   it('SCRUM-48-T-8 resizing keeps the car on its stop', () => {
-    const { container } = renderPage();
+    const { container } = renderPage({ loggedIn: true });
     const car = container.querySelector<HTMLElement>('.road__car');
     const before = car?.style.transform;
     const active = activeStops()[0];
@@ -641,7 +652,7 @@ describe('SCRUM-48-T-8 how it works page', () => {
     const request = vi.fn();
     vi.stubGlobal('requestAnimationFrame', request);
     mockMotion(true);
-    renderPage();
+    renderPage({ loggedIn: true });
     scrollTo(1000);
     expect(request).not.toHaveBeenCalled();
   });

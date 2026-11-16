@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   Link,
   Navigate,
@@ -10,17 +10,30 @@ import {
   useNavigationType,
   useParams,
 } from 'react-router-dom';
+import { AUTH_PATHS, useAuthState } from './auth/authState';
+import DevNav from './components/DevNav';
 import Header from './components/Header';
+import { MOCK_SCANS } from './data/mockScans';
 import { readCarArrival } from './lib/carArrival';
 import { loadScans, saveScans } from './lib/scanStorage';
+import { isLoggedInFromUrl } from './lib/session';
+import { copyShareText } from './lib/share';
 import { checkListing as defaultCheckListing, type CheckListing } from './services/scanService';
 import type { ListingInput, ScanResult } from './types';
 import AboutView from './views/AboutView';
+import AuthView from './views/AuthView';
 import CheckView from './views/CheckView';
+import HomeView from './views/HomeView';
 import LandingView from './views/LandingView';
 import ResultsView from './views/ResultsView';
+import ScansView from './views/ScansView';
 
 interface AppProps {
+  /**
+   * Preview the logged-in screens without an account, using sample scans kept in this tab.
+   * Defaults to the `?loggedIn=true` URL flag, which only works on the dev server.
+   */
+  loggedIn?: boolean;
   initialScans?: ScanResult[];
   /** Injectable for tests; defaults to the placeholder scan service. */
   checkListing?: CheckListing;
@@ -42,12 +55,25 @@ function NotFound({ title, text }: { title: string; text: string }) {
   );
 }
 
-interface ResultsRouteProps {
-  scans: ScanResult[];
-  goTo: (path: string) => void;
+function Loading() {
+  return (
+    <main className="main main--center">
+      <p className="intro__text" role="status">
+        Loading…
+      </p>
+    </main>
+  );
 }
 
-function ResultsRoute({ scans, goTo }: ResultsRouteProps) {
+interface ResultsRouteProps {
+  scans: ScanResult[];
+  loggedIn: boolean;
+  goTo: (path: string) => void;
+  onShare: (scan: ScanResult) => void;
+  shareStatus: { id: string; ok: boolean } | null;
+}
+
+function ResultsRoute({ scans, loggedIn, goTo, onShare, shareStatus }: ResultsRouteProps) {
   const { scanId } = useParams();
   const scan = scans.find((candidate) => candidate.id === scanId);
   if (!scan) {
@@ -62,14 +88,24 @@ function ResultsRoute({ scans, goTo }: ResultsRouteProps) {
     <ResultsView
       key={scan.id}
       scan={scan}
-      backLabel="← Check another listing"
-      onBack={() => goTo('/check')}
-      onCheckAnother={() => goTo('/check')}
+      loggedIn={loggedIn}
+      backLabel={loggedIn ? '← My scans' : '← Check another listing'}
+      onBack={() => goTo(loggedIn ? '/scans' : '/check')}
+      onCheckAnother={() => goTo(loggedIn ? '/' : '/check')}
+      onShare={() => onShare(scan)}
+      shareLabel={
+        shareStatus?.id === scan.id ? (shareStatus.ok ? 'Copied' : "Couldn't copy") : 'Share result'
+      }
+      defaultExpanded={loggedIn}
     />
   );
 }
 
-function App({ initialScans, checkListing = defaultCheckListing }: AppProps) {
+function App({
+  loggedIn: initialLoggedIn = import.meta.env.DEV && isLoggedInFromUrl(),
+  initialScans,
+  checkListing = defaultCheckListing,
+}: AppProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const navigationType = useNavigationType();
@@ -83,9 +119,21 @@ function App({ initialScans, checkListing = defaultCheckListing }: AppProps) {
   }, [location.pathname, navigationType]);
 
   const carArrival = useMemo(() => readCarArrival(location.state), [location.state]);
-  const [scans, setScans] = useState<ScanResult[]>(() => initialScans ?? loadScans() ?? []);
+  const auth = useAuthState();
+  const [previewLoggedIn, setPreviewLoggedIn] = useState(initialLoggedIn);
+  const loggedIn = previewLoggedIn || auth.isSignedIn;
+  const authPending = auth.configured && !auth.isLoaded;
+
+  // Scans are kept in this browser tab for now, whether signed in or previewing.
+  const [scans, setScans] = useState<ScanResult[]>(
+    () => initialScans ?? loadScans() ?? (initialLoggedIn ? MOCK_SCANS : []),
+  );
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [shareStatus, setShareStatus] = useState<{ id: string; ok: boolean } | null>(null);
+  const shareTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  useEffect(() => () => clearTimeout(shareTimer.current), []);
 
   useEffect(() => saveScans(scans), [scans]);
 
@@ -108,31 +156,105 @@ function App({ initialScans, checkListing = defaultCheckListing }: AppProps) {
     }
   }
 
+  async function handleShare(scan: ScanResult) {
+    const ok = await copyShareText(scan);
+    setShareStatus({ id: scan.id, ok });
+    clearTimeout(shareTimer.current);
+    shareTimer.current = setTimeout(() => setShareStatus(null), 2000);
+  }
+
+  function previewResults() {
+    const sample = MOCK_SCANS[0];
+    setScans((current) =>
+      current.some((scan) => scan.id === sample.id) ? current : [sample, ...current],
+    );
+    goTo(`/results/${sample.id}`);
+  }
+
+  function toggleLoggedIn() {
+    setPreviewLoggedIn((current) => !current);
+    goTo('/');
+  }
+
+  /** Pages that need an account send signed-out visitors to log in, keeping any car transition. */
+  function requireAccount(page: ReactNode) {
+    if (authPending) {
+      return <Loading />;
+    }
+    if (loggedIn) {
+      return page;
+    }
+    return <Navigate to={AUTH_PATHS.signIn} replace state={location.state} />;
+  }
+
+  const home = (
+    <HomeView
+      scans={scans}
+      onSubmit={handleSubmit}
+      submitting={submitting}
+      submitError={submitError}
+      carArrival={carArrival}
+      onViewScan={(scanId) => goTo(`/results/${scanId}`)}
+      onViewAll={() => goTo('/scans')}
+    />
+  );
+  const checkForm = (
+    <CheckView
+      onSubmit={handleSubmit}
+      submitting={submitting}
+      submitError={submitError}
+      carArrival={carArrival}
+    />
+  );
+
+  const warm = !loggedIn;
+
   return (
-    <div className="app theme-warm">
-      <Header />
+    <div className={warm ? 'app theme-warm' : 'app'}>
+      <Header loggedIn={loggedIn} />
       <Routes>
-        <Route path="/" element={<LandingView />} />
+        <Route path="/" element={loggedIn ? home : <LandingView />} />
+        <Route path="/check" element={authPending ? <Loading /> : loggedIn ? home : checkForm} />
+        <Route path={`${AUTH_PATHS.signIn}/*`} element={<AuthView mode="sign-in" />} />
+        <Route path={`${AUTH_PATHS.signUp}/*`} element={<AuthView mode="sign-up" />} />
+        <Route path="/how-it-works" element={<AboutView />} />
         <Route
-          path="/check"
+          path="/scans"
+          element={requireAccount(
+            <ScansView
+              scans={scans}
+              onViewScan={(scanId) => goTo(`/results/${scanId}`)}
+              onShareScan={handleShare}
+              shareStatus={shareStatus}
+            />,
+          )}
+        />
+        <Route
+          path="/results/:scanId"
           element={
-            <CheckView
-              onSubmit={handleSubmit}
-              submitting={submitting}
-              submitError={submitError}
-              carArrival={carArrival}
+            <ResultsRoute
+              scans={scans}
+              loggedIn={loggedIn}
+              goTo={goTo}
+              onShare={handleShare}
+              shareStatus={shareStatus}
             />
           }
         />
-        <Route path="/how-it-works" element={<AboutView />} />
-        {/* Old links to the signed-in scans page land on the home page. */}
-        <Route path="/scans" element={<Navigate to="/" replace />} />
-        <Route path="/results/:scanId" element={<ResultsRoute scans={scans} goTo={goTo} />} />
         <Route
           path="*"
           element={<NotFound title="Page not found" text="That page doesn't exist or has moved." />}
         />
       </Routes>
+      {import.meta.env.MODE === 'development' && (
+        <DevNav
+          loggedIn={loggedIn}
+          onToggleLoggedIn={toggleLoggedIn}
+          onShowCheck={() => goTo(loggedIn ? '/' : '/check')}
+          onShowResults={previewResults}
+          onShowScans={() => goTo('/scans')}
+        />
+      )}
     </div>
   );
 }

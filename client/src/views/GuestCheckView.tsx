@@ -1,8 +1,9 @@
 import ListingForm from '../components/ListingForm';
+import { GUIDE } from '../content/guide';
 import type { CarArrivalInfo } from '../lib/carArrival';
 import type { ListingInput } from '../types';
 
-interface CheckViewProps {
+interface GuestCheckViewProps {
   onSubmit: (input: ListingInput) => void;
   submitting: boolean;
   submitError: string | null;
@@ -10,20 +11,18 @@ interface CheckViewProps {
   carArrival?: CarArrivalInfo | null;
 }
 
-/** The listing form page for logged-out visitors. */
-export default function CheckView({
+/** The listing form for visitors without an account. Their result isn't saved. */
+export default function GuestCheckView({
   onSubmit,
   submitting,
   submitError,
   carArrival,
-}: CheckViewProps) {
+}: GuestCheckViewProps) {
   return (
     <main className="main main--center">
       <div className="intro">
-        <h1 className="intro__title">Check a rental listing before you pay</h1>
-        <p className="intro__text">
-          Paste a link and add a few details. Verilet checks the listing for common scam signals.
-        </p>
+        <h1 className="intro__title">{GUIDE.guest.formTitle}</h1>
+        <p className="intro__text">{GUIDE.guest.formText}</p>
       </div>
       <section className="card card--form" aria-label="Check a listing">
         <ListingForm
@@ -33,7 +32,7 @@ export default function CheckView({
           carArrival={carArrival}
         />
       </section>
-      <p className="footnote">Verilet gives a risk rating, not a guarantee.</p>
+      <p className="footnote">{GUIDE.footnote}</p>
     </main>
   );
 }

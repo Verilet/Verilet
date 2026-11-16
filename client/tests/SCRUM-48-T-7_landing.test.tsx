@@ -29,8 +29,9 @@ describe('SCRUM-48-T-7 landing page', () => {
       'href',
       '/how-it-works',
     );
+    expect(header.getByRole('link', { name: 'Log in' })).toHaveAttribute('href', '/login');
     expect(header.queryByText('About')).not.toBeInTheDocument();
-    expect(header.getAllByRole('link')).toHaveLength(2);
+    expect(header.getAllByRole('link')).toHaveLength(3);
   });
 
   it('SCRUM-48-T-7 check route shows the form', () => {
@@ -91,8 +92,9 @@ describe('SCRUM-48-T-7 landing page', () => {
       id: 'scan-1',
       createdAt: new Date().toISOString(),
     };
-    renderAt(<App initialScans={[scan]} />, `/results/${scan.id}`);
-    fireEvent.click(screen.getByRole('button', { name: 'More details' }));
+    // Results need an account; a signed-in student's details panel starts open.
+    renderAt(<App loggedIn initialScans={[scan]} />, `/results/${scan.id}`);
+    expect(screen.getByRole('button', { name: 'Hide details' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: GUIDE.legendHeading })).toBeInTheDocument();
     for (const item of GUIDE.legend) {
       expect(screen.getByText(item.text)).toBeInTheDocument();
@@ -476,14 +478,14 @@ describe('SCRUM-48-T-7 page routes', () => {
   });
 
   it('SCRUM-48-T-7 unknown scan id shows a not-found message', () => {
-    renderAt(<App />, '/results/does-not-exist');
+    renderAt(<App loggedIn initialScans={[]} />, '/results/does-not-exist');
     expect(screen.getByRole('heading', { name: "We couldn't find that scan" })).toBeInTheDocument();
   });
 
-  it('SCRUM-48-T-7 scans route redirects to the landing page when logged out', () => {
-    renderAt(<App />, '/scans');
+  it('SCRUM-48-T-7 scans route asks signed-out visitors to log in', () => {
+    renderAt(<App loggedIn={false} />, '/scans');
     expect(
-      screen.getByRole('heading', { level: 1, name: 'Check a rental listing before you pay' }),
+      screen.getByRole('heading', { level: 1, name: GUIDE.auth.signIn.title }),
     ).toBeInTheDocument();
   });
 });

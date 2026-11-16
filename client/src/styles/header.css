@@ -10,6 +10,13 @@
   border-bottom: 1px solid var(--color-border);
 }
 
+/* Logo plus the signed-in links, side by side. */
+.header__left {
+  display: flex;
+  align-items: center;
+  gap: 48px;
+}
+
 .logo {
   text-decoration: none;
   display: flex;
@@ -62,11 +69,51 @@
   color: var(--color-ink);
 }
 
+.header__right {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+}
+
+.header__login {
+  height: 40px;
+  padding: 0 18px;
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.header__login:hover {
+  border-color: var(--color-muted);
+}
+
+.avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-pill);
+  display: grid;
+  place-items: center;
+  background: var(--color-neutral-bg);
+  color: var(--color-muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+
 .theme-warm .logo__mark {
   background: var(--color-accent);
 }
 
 @media (max-width: 720px) {
+  .header__left {
+    gap: 20px;
+  }
+
   .nav {
     gap: 16px;
   }
@@ -77,5 +124,18 @@
 
   .header {
     padding: 0 16px;
+  }
+}
+
+/* Narrow phones: keep the signed-in links on one line next to the logo. */
+@media (max-width: 420px) {
+  .header__left,
+  .nav {
+    gap: 12px;
+  }
+
+  .nav__link {
+    font-size: 14px;
+    white-space: nowrap;
   }
 }

@@ -108,6 +108,38 @@ export const GUIDE = {
   ctaLabel: 'Check a listing',
   howLabel: 'See how it works',
   tripLinkLabel: 'See every stop on the road',
+  guest: {
+    formTitle: 'Check a rental listing',
+    formText:
+      'Paste a link and add a few details. No account needed. Log in to save your checks and see the full breakdown.',
+    flagsHeading: 'Red flags',
+    noFlags: 'No red flags in the checks we ran.',
+    ctaTitle: 'See the full breakdown and save this check',
+    ctaText:
+      'Log in to see every check and why it matters. This check is saved to your account, so you can come back to it.',
+    signUpLabel: 'Create a free account',
+  },
+  auth: {
+    eyebrow: 'VERILET ACCOUNT',
+    signIn: {
+      title: 'Log in to Verilet',
+      text: 'Log in to check a listing and keep your results.',
+    },
+    signUp: {
+      title: 'Create your Verilet account',
+      text: 'It takes a minute. You need an account to check a listing.',
+    },
+    points: [
+      'Every check is saved to your account.',
+      'Come back to a result any time, on any device.',
+      'Verilet never sees or stores your password.',
+    ],
+    unavailableTitle: "Sign-in isn't available",
+    unavailableText: 'Sign-in is unavailable right now. Please try again later.',
+    unavailableDevText:
+      'Sign-in is not set up yet. Add VITE_CLERK_PUBLISHABLE_KEY to client/.env and restart the dev server.',
+    logInLabel: 'Log in',
+  },
   legendHeading: 'How to read your result',
   listingDemo: {
     label: 'EXAMPLE LISTING',

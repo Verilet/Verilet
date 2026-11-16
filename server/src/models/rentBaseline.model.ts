@@ -22,7 +22,7 @@ const rentBaselineSchema = new Schema<RentBaseline>({
   source: { type: String, required: true },
 });
 
-// The rent data lives in the database named by RENT_DB_NAME (averagePrice by default)
+/** Database that holds the rent data, named by RENT_DB_NAME (averagePrice by default). */
 const averagePriceDb = mongoose.connection.useDb(getRentDbName(), { useCache: true });
 
 /**

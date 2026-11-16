@@ -10,19 +10,24 @@ import {
   useNavigationType,
   useParams,
 } from 'react-router-dom';
-import { AUTH_PATHS, useAuthState } from './auth/authState';
 import DevNav from './components/DevNav';
 import Header from './components/Header';
 import { MOCK_SCANS } from './data/mockScans';
+import { AUTH_PATHS, useAuthState } from './auth/authState';
 import { readCarArrival } from './lib/carArrival';
+import { clearGuestCheck, loadGuestCheck, saveGuestCheck } from './lib/guestCheckStorage';
+import { copyShareText } from './lib/share';
 import { loadScans, saveScans } from './lib/scanStorage';
 import { isLoggedInFromUrl } from './lib/session';
-import { copyShareText } from './lib/share';
-import { checkListing as defaultCheckListing, type CheckListing } from './services/scanService';
+import { useAccountScans, type ScansStatus } from './lib/useAccountScans';
+import type { GuestCheck } from './schemas/scan';
+import { checkAsGuest, createScansApi, toPayload } from './services/scansApi';
+import { checkListing as previewCheckListing, type CheckListing } from './services/scanService';
 import type { ListingInput, ScanResult } from './types';
 import AboutView from './views/AboutView';
 import AuthView from './views/AuthView';
-import CheckView from './views/CheckView';
+import GuestCheckView from './views/GuestCheckView';
+import GuestResultView from './views/GuestResultView';
 import HomeView from './views/HomeView';
 import LandingView from './views/LandingView';
 import ResultsView from './views/ResultsView';
@@ -35,7 +40,7 @@ interface AppProps {
    */
   loggedIn?: boolean;
   initialScans?: ScanResult[];
-  /** Injectable for tests; defaults to the placeholder scan service. */
+  /** Injectable for tests. Defaults to the scans API when signed in, or the preview scorer. */
   checkListing?: CheckListing;
 }
 
@@ -67,20 +72,61 @@ function Loading() {
 
 interface ResultsRouteProps {
   scans: ScanResult[];
+  scansStatus: ScansStatus;
+  /** Fetches a scan that isn't in the loaded list. */
+  loadScan?: (id: string) => Promise<ScanResult | null>;
   loggedIn: boolean;
   goTo: (path: string) => void;
   onShare: (scan: ScanResult) => void;
   shareStatus: { id: string; ok: boolean } | null;
 }
 
-function ResultsRoute({ scans, loggedIn, goTo, onShare, shareStatus }: ResultsRouteProps) {
-  const { scanId } = useParams();
-  const scan = scans.find((candidate) => candidate.id === scanId);
+function ResultsRoute({
+  scans,
+  scansStatus,
+  loadScan,
+  loggedIn,
+  goTo,
+  onShare,
+  shareStatus,
+}: ResultsRouteProps) {
+  const { scanId = '' } = useParams();
+  const known = scans.find((candidate) => candidate.id === scanId);
+  const [fetched, setFetched] = useState<{ id: string; scan: ScanResult | null } | null>(null);
+  const waitingForList = scansStatus === 'loading';
+
+  useEffect(() => {
+    if (known || waitingForList || !loadScan) {
+      return;
+    }
+    let active = true;
+    loadScan(scanId).then(
+      (scan) => {
+        if (active) {
+          setFetched({ id: scanId, scan });
+        }
+      },
+      () => {
+        if (active) {
+          setFetched({ id: scanId, scan: null });
+        }
+      },
+    );
+    return () => {
+      active = false;
+    };
+  }, [known, waitingForList, loadScan, scanId]);
+
+  const lookedUp = fetched?.id === scanId ? fetched.scan : undefined;
+  const scan = known ?? lookedUp;
+  if (!scan && (waitingForList || (loadScan && lookedUp === undefined))) {
+    return <Loading />;
+  }
   if (!scan) {
     return (
       <NotFound
         title="We couldn't find that scan"
-        text="Scans are only kept in the browser tab they were made in, so this one can't be opened here."
+        text="It may have been deleted, or it belongs to another account."
       />
     );
   }
@@ -89,9 +135,9 @@ function ResultsRoute({ scans, loggedIn, goTo, onShare, shareStatus }: ResultsRo
       key={scan.id}
       scan={scan}
       loggedIn={loggedIn}
-      backLabel={loggedIn ? '← My scans' : '← Check another listing'}
-      onBack={() => goTo(loggedIn ? '/scans' : '/check')}
-      onCheckAnother={() => goTo(loggedIn ? '/' : '/check')}
+      backLabel="← My scans"
+      onBack={() => goTo('/scans')}
+      onCheckAnother={() => goTo('/')}
       onShare={() => onShare(scan)}
       shareLabel={
         shareStatus?.id === scan.id ? (shareStatus.ok ? 'Copied' : "Couldn't copy") : 'Share result'
@@ -104,7 +150,7 @@ function ResultsRoute({ scans, loggedIn, goTo, onShare, shareStatus }: ResultsRo
 function App({
   loggedIn: initialLoggedIn = import.meta.env.DEV && isLoggedInFromUrl(),
   initialScans,
-  checkListing = defaultCheckListing,
+  checkListing: checkListingOverride,
 }: AppProps) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -124,10 +170,21 @@ function App({
   const loggedIn = previewLoggedIn || auth.isSignedIn;
   const authPending = auth.configured && !auth.isLoaded;
 
-  // Scans are kept in this browser tab for now, whether signed in or previewing.
-  const [scans, setScans] = useState<ScanResult[]>(
+  // Signed-in students' scans live on the server. The development preview keeps them in this tab.
+  const accountApi = useMemo(
+    () => (auth.configured && auth.isSignedIn ? createScansApi(auth.getToken) : null),
+    [auth.configured, auth.isSignedIn, auth.getToken],
+  );
+  const usingAccount = accountApi !== null && !previewLoggedIn;
+  const account = useAccountScans(usingAccount ? accountApi : null);
+  const [previewScans, setPreviewScans] = useState<ScanResult[]>(
     () => initialScans ?? loadScans() ?? (initialLoggedIn ? MOCK_SCANS : []),
   );
+  const scans = usingAccount ? account.scans : previewScans;
+  const scansStatus: ScansStatus = usingAccount ? account.status : 'ready';
+
+  const [guestCheck, setGuestCheck] = useState<GuestCheck | null>(loadGuestCheck);
+  const carriedOver = useRef(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [shareStatus, setShareStatus] = useState<{ id: string; ok: boolean } | null>(null);
@@ -135,19 +192,76 @@ function App({
 
   useEffect(() => () => clearTimeout(shareTimer.current), []);
 
-  useEffect(() => saveScans(scans), [scans]);
+  useEffect(() => {
+    if (!usingAccount) {
+      saveScans(previewScans);
+    }
+  }, [usingAccount, previewScans]);
+
+  // A guest who signs in gets their last check saved to the new account, then sees it in full.
+  useEffect(() => {
+    if (!usingAccount || !accountApi || account.status === 'loading' || carriedOver.current) {
+      return;
+    }
+    const pending = loadGuestCheck();
+    if (!pending) {
+      return;
+    }
+    carriedOver.current = true;
+    clearGuestCheck();
+    accountApi.save(pending.listing).then(
+      (scan) => {
+        account.add(scan);
+        setGuestCheck(null);
+        navigate(`/results/${scan.id}`, { replace: true });
+      },
+      () => {
+        saveGuestCheck(pending);
+        setSubmitError("We couldn't save your earlier check. Check it again to save it.");
+      },
+    );
+  }, [usingAccount, accountApi, account, navigate]);
 
   function goTo(path: string) {
     setSubmitError(null);
     navigate(path);
   }
 
-  async function handleSubmit(input: ListingInput) {
+  async function handleGuestSubmit(input: ListingInput) {
     setSubmitting(true);
     setSubmitError(null);
     try {
-      const scan = await checkListing(input);
-      setScans((current) => [scan, ...current]);
+      const listing = toPayload(input);
+      const check = { listing, ...(await checkAsGuest(listing)) };
+      saveGuestCheck(check);
+      setGuestCheck(check);
+      navigate('/check/result');
+    } catch {
+      setSubmitError(SUBMIT_ERROR);
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  function checkAnotherAsGuest() {
+    clearGuestCheck();
+    setGuestCheck(null);
+    goTo('/check');
+  }
+
+  async function handleSubmit(input: ListingInput) {
+    const check =
+      checkListingOverride ??
+      (usingAccount && accountApi ? accountApi.create : previewCheckListing);
+    setSubmitting(true);
+    setSubmitError(null);
+    try {
+      const scan = await check(input);
+      if (usingAccount) {
+        account.add(scan);
+      } else {
+        setPreviewScans((current) => [scan, ...current]);
+      }
       navigate(`/results/${scan.id}`);
     } catch {
       setSubmitError(SUBMIT_ERROR);
@@ -165,7 +279,7 @@ function App({
 
   function previewResults() {
     const sample = MOCK_SCANS[0];
-    setScans((current) =>
+    setPreviewScans((current) =>
       current.some((scan) => scan.id === sample.id) ? current : [sample, ...current],
     );
     goTo(`/results/${sample.id}`);
@@ -190,20 +304,13 @@ function App({
   const home = (
     <HomeView
       scans={scans}
+      scansStatus={scansStatus}
       onSubmit={handleSubmit}
       submitting={submitting}
       submitError={submitError}
       carArrival={carArrival}
       onViewScan={(scanId) => goTo(`/results/${scanId}`)}
       onViewAll={() => goTo('/scans')}
-    />
-  );
-  const checkForm = (
-    <CheckView
-      onSubmit={handleSubmit}
-      submitting={submitting}
-      submitError={submitError}
-      carArrival={carArrival}
     />
   );
 
@@ -214,7 +321,33 @@ function App({
       <Header loggedIn={loggedIn} />
       <Routes>
         <Route path="/" element={loggedIn ? home : <LandingView />} />
-        <Route path="/check" element={authPending ? <Loading /> : loggedIn ? home : checkForm} />
+        <Route
+          path="/check"
+          element={
+            authPending ? (
+              <Loading />
+            ) : loggedIn ? (
+              home
+            ) : (
+              <GuestCheckView
+                onSubmit={handleGuestSubmit}
+                submitting={submitting}
+                submitError={submitError}
+                carArrival={carArrival}
+              />
+            )
+          }
+        />
+        <Route
+          path="/check/result"
+          element={
+            !loggedIn && guestCheck ? (
+              <GuestResultView check={guestCheck} onCheckAnother={checkAnotherAsGuest} />
+            ) : (
+              <Navigate to="/check" replace />
+            )
+          }
+        />
         <Route path={`${AUTH_PATHS.signIn}/*`} element={<AuthView mode="sign-in" />} />
         <Route path={`${AUTH_PATHS.signUp}/*`} element={<AuthView mode="sign-up" />} />
         <Route path="/how-it-works" element={<AboutView />} />
@@ -223,6 +356,7 @@ function App({
           element={requireAccount(
             <ScansView
               scans={scans}
+              scansStatus={scansStatus}
               onViewScan={(scanId) => goTo(`/results/${scanId}`)}
               onShareScan={handleShare}
               shareStatus={shareStatus}
@@ -231,15 +365,17 @@ function App({
         />
         <Route
           path="/results/:scanId"
-          element={
+          element={requireAccount(
             <ResultsRoute
               scans={scans}
+              scansStatus={scansStatus}
+              loadScan={usingAccount ? accountApi?.get : undefined}
               loggedIn={loggedIn}
               goTo={goTo}
               onShare={handleShare}
               shareStatus={shareStatus}
-            />
-          }
+            />,
+          )}
         />
         <Route
           path="*"

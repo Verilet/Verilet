@@ -3,10 +3,13 @@ import ListingForm from '../components/ListingForm';
 import type { CarArrivalInfo } from '../lib/carArrival';
 import { formatScanDate, scanShortTitle } from '../lib/format';
 import { ratingFromScore } from '../lib/risk';
+import type { ScansStatus } from '../lib/useAccountScans';
 import type { ListingInput, ScanResult } from '../types';
 
 interface HomeViewProps {
   scans: ScanResult[];
+  /** Whether saved scans are still loading or failed to load. */
+  scansStatus?: ScansStatus;
   onSubmit: (input: ListingInput) => void;
   submitting: boolean;
   submitError: string | null;
@@ -21,6 +24,7 @@ const RECENT_COUNT = 4;
 /** The logged-in home page, with the listing form and recent scans. */
 export default function HomeView({
   scans,
+  scansStatus = 'ready',
   onSubmit,
   submitting,
   submitError,
@@ -58,7 +62,15 @@ export default function HomeView({
               View all
             </button>
           </div>
-          {recent.length === 0 ? (
+          {scansStatus === 'loading' ? (
+            <p className="empty" role="status">
+              Loading your scans…
+            </p>
+          ) : scansStatus === 'error' ? (
+            <p className="empty" role="alert">
+              We couldn't load your scans. Refresh the page to try again.
+            </p>
+          ) : recent.length === 0 ? (
             <p className="empty">No scans yet. Check a listing and it will show up here.</p>
           ) : (
             <ul className="recent-list">

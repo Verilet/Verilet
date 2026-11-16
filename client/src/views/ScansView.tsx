@@ -2,12 +2,15 @@ import { useState } from 'react';
 import { RatingChip } from '../components/Chip';
 import { formatScanDate, listingHost, scanTitle } from '../lib/format';
 import { ratingFromScore, ratingTone } from '../lib/risk';
+import type { ScansStatus } from '../lib/useAccountScans';
 import type { Rating, ScanResult } from '../types';
 
 type Filter = 'ALL' | Rating;
 
 interface ScansViewProps {
   scans: ScanResult[];
+  /** Whether saved scans are still loading or failed to load. */
+  scansStatus?: ScansStatus;
   onViewScan: (scanId: string) => void;
   onShareScan: (scan: ScanResult) => void;
   /** Outcome of the most recent share attempt, for brief feedback on that row. */
@@ -22,7 +25,13 @@ const FILTERS: { value: Filter; label: string }[] = [
 ];
 
 /** The logged-in table of past scans, with rating filters. */
-export default function ScansView({ scans, onViewScan, onShareScan, shareStatus }: ScansViewProps) {
+export default function ScansView({
+  scans,
+  scansStatus = 'ready',
+  onViewScan,
+  onShareScan,
+  shareStatus,
+}: ScansViewProps) {
   const [filter, setFilter] = useState<Filter>('ALL');
   const visible =
     filter === 'ALL' ? scans : scans.filter((scan) => ratingFromScore(scan.score) === filter);
@@ -48,7 +57,15 @@ export default function ScansView({ scans, onViewScan, onShareScan, shareStatus 
         ))}
       </div>
 
-      {scans.length === 0 ? (
+      {scansStatus === 'loading' ? (
+        <p className="empty empty--panel" role="status">
+          Loading your scans…
+        </p>
+      ) : scansStatus === 'error' ? (
+        <p className="empty empty--panel" role="alert">
+          We couldn't load your scans. Refresh the page to try again.
+        </p>
+      ) : scans.length === 0 ? (
         <p className="empty empty--panel">You haven&rsquo;t checked any listings yet.</p>
       ) : visible.length === 0 ? (
         <p className="empty empty--panel">No scans with this rating.</p>

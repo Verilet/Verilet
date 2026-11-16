@@ -12,6 +12,10 @@ import routes from './routes/index.js';
  */
 const app = express();
 
+// Render puts one proxy in front of the server. Trusting it gives each visitor's own address to
+// the guest check's rate limit, instead of the proxy's.
+app.set('trust proxy', 1);
+
 app.use(cors());
 app.use(express.json());
 

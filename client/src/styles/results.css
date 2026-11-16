@@ -162,6 +162,54 @@
   justify-content: center;
 }
 
+/* The short result for guests. */
+.guest-flags {
+  width: 100%;
+  margin-top: 8px;
+  padding-top: 20px;
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.guest-flags__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.guest-flags__item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 15px;
+}
+
+.guest-flags__none {
+  font-size: 15px;
+  color: var(--color-muted);
+}
+
+.guest-cta {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.guest-cta__title {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.guest-cta__text {
+  font-size: 15px;
+  color: var(--color-muted);
+}
+
 /* Score colours for the number and bar. */
 .score--danger {
   color: var(--color-danger) !important;

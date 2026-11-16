@@ -108,6 +108,17 @@ export const GUIDE = {
   ctaLabel: 'Check a listing',
   howLabel: 'See how it works',
   tripLinkLabel: 'See every stop on the road',
+  guest: {
+    formTitle: 'Check a rental listing',
+    formText:
+      'Paste a link and add a few details. No account needed. Log in to save your checks and see the full breakdown.',
+    flagsHeading: 'Red flags',
+    noFlags: 'No red flags in the checks we ran.',
+    ctaTitle: 'See the full breakdown and save this check',
+    ctaText:
+      'Log in to see every check and why it matters. This check is saved to your account, so you can come back to it.',
+    signUpLabel: 'Create a free account',
+  },
   auth: {
     eyebrow: 'VERILET ACCOUNT',
     signIn: {

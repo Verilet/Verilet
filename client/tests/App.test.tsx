@@ -4,6 +4,7 @@ import { MemoryRouter } from 'react-router-dom';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import App from '../src/App';
+import { GUIDE } from '../src/content/guide';
 import type { CheckListing } from '../src/services/scanService';
 import { scoreListing } from '../src/services/scanService';
 import type { ListingInput, ScanResult } from '../src/types';
@@ -52,7 +53,7 @@ async function fillAndSubmit(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByRole('button', { name: 'Check listing' }));
 }
 
-/** Renders the app at `/check` (the form page for both logged-out and logged-in users). */
+/** Renders the app at `/check`, the form page for signed-in students. */
 function renderApp(ui: ReactElement, path = '/check') {
   return render(<MemoryRouter initialEntries={[path]}>{ui}</MemoryRouter>);
 }
@@ -60,38 +61,46 @@ function renderApp(ui: ReactElement, path = '/check') {
 describe('page refresh', () => {
   it('reopens a checked listing from the same browser tab after a refresh', async () => {
     const user = userEvent.setup();
-    const first = renderApp(<App loggedIn={false} checkListing={fakeCheck} />);
+    const first = renderApp(<App loggedIn initialScans={[]} checkListing={fakeCheck} />);
     await fillAndSubmit(user);
-    await screen.findByRole('button', { name: 'More details' });
+    await screen.findByRole('button', { name: 'Hide details' });
     first.unmount();
 
-    renderApp(<App loggedIn={false} checkListing={fakeCheck} />, '/results/scan-new');
+    renderApp(<App loggedIn checkListing={fakeCheck} />, '/results/scan-new');
 
-    expect(screen.getByRole('button', { name: 'More details' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Hide details' })).toBeInTheDocument();
     expect(screen.queryByText("We couldn't find that scan")).not.toBeInTheDocument();
   });
 
   it('ignores saved scans it cannot read', () => {
     sessionStorage.setItem('verilet:scans', '{not json');
-    renderApp(<App loggedIn={false} />, '/results/scan-new');
+    renderApp(<App loggedIn />, '/results/scan-new');
     expect(screen.getByRole('heading', { name: "We couldn't find that scan" })).toBeInTheDocument();
   });
 });
 
-describe('logged-out flow', () => {
-  it('shows the check page with its headline and form', () => {
-    renderApp(<App loggedIn={false} />);
-    expect(
-      screen.getByRole('heading', { level: 1, name: 'Check a rental listing before you pay' }),
-    ).toBeInTheDocument();
+describe('checking a listing', () => {
+  it.each(['/scans', '/results/scan-new'])(
+    'sends a signed-out visitor from %s to log in',
+    (path) => {
+      renderApp(<App loggedIn={false} />, path);
+      expect(
+        screen.getByRole('heading', { level: 1, name: GUIDE.auth.signIn.title }),
+      ).toBeInTheDocument();
+      expect(screen.queryByLabelText('Listing link')).not.toBeInTheDocument();
+    },
+  );
+
+  it('shows the form to a signed-in student', () => {
+    renderApp(<App loggedIn initialScans={[]} />);
+    expect(screen.getByRole('heading', { level: 1, name: 'Welcome back' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Check listing' })).toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: 'My scans' })).not.toBeInTheDocument();
   });
 
   it('shows errors and does not check the listing when the form is invalid', async () => {
     const user = userEvent.setup();
     const check = vi.fn(fakeCheck);
-    renderApp(<App loggedIn={false} checkListing={check} />);
+    renderApp(<App loggedIn initialScans={[]} checkListing={check} />);
 
     await user.type(screen.getByLabelText('Listing link'), 'not a link');
     await user.click(screen.getByRole('button', { name: 'Check listing' }));
@@ -109,7 +118,7 @@ describe('logged-out flow', () => {
   it('checks a valid listing, shows the result, and toggles details', async () => {
     const user = userEvent.setup();
     const check = vi.fn(fakeCheck);
-    renderApp(<App loggedIn={false} checkListing={check} />);
+    renderApp(<App loggedIn initialScans={[]} checkListing={check} />);
 
     await fillAndSubmit(user);
 
@@ -124,23 +133,22 @@ describe('logged-out flow', () => {
       ).getByText('HIGH RISK'),
     ).toBeInTheDocument();
 
-    const toggle = screen.getByRole('button', { name: 'More details' });
-    expect(toggle).toHaveAttribute('aria-expanded', 'false');
-    expect(screen.queryByText('What we checked')).not.toBeVisible();
-
-    await user.click(toggle);
-    expect(screen.getByRole('button', { name: 'Hide details' })).toHaveAttribute(
-      'aria-expanded',
-      'true',
-    );
+    const toggle = screen.getByRole('button', { name: 'Hide details' });
+    expect(toggle).toHaveAttribute('aria-expanded', 'true');
     expect(screen.getByText('What we checked')).toBeVisible();
     expect(screen.getByText('Landlord asks for payment by gift card')).toBeVisible();
-    expect(screen.queryByRole('button', { name: 'Share result' })).not.toBeInTheDocument();
+
+    await user.click(toggle);
+    expect(screen.getByRole('button', { name: 'More details' })).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    );
+    expect(screen.queryByText('What we checked')).not.toBeVisible();
   });
 
   it('returns to a blank form from the results page', async () => {
     const user = userEvent.setup();
-    renderApp(<App loggedIn={false} checkListing={fakeCheck} />);
+    renderApp(<App loggedIn initialScans={[]} checkListing={fakeCheck} />);
     await fillAndSubmit(user);
     await screen.findByRole('heading', { level: 1, name: /scam signals/i });
 
@@ -151,7 +159,7 @@ describe('logged-out flow', () => {
   it('shows an error and keeps the form values when the check fails', async () => {
     const user = userEvent.setup();
     const failing: CheckListing = () => Promise.reject(new Error('boom'));
-    renderApp(<App loggedIn={false} checkListing={failing} />);
+    renderApp(<App loggedIn initialScans={[]} checkListing={failing} />);
 
     await fillAndSubmit(user);
 

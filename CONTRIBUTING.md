@@ -116,7 +116,7 @@ Before you submit your Pull Request (PR), follow these steps:
 
 For graded sprint tasks submitted to the Repo Metrics app, follow this exact sequence to protect your **Process point**:
 
-1. **Write the task spec:** Create `docs/tasks/sprint-N/<task-id>.md` (with Front Matter, Description, Specs, Requirements, Acceptance criteria, Tests).
+1. **Write the task spec:** Create `docs/tasks/sprint-N/<task-id>.md` (with Front Matter, Description, Specs, Requirements, Acceptance criteria, and Tests).
 2. **Branch from main:** `git switch -c task/US-1-T-1`
 3. **Commit the spec ALONE (no code):**
    ```bash
@@ -129,7 +129,7 @@ For graded sprint tasks submitted to the Repo Metrics app, follow this exact seq
    git push origin task/US-1-T-1 US-1-T-1-base
    ```
 5. **Implement and test:** Write the implementation and test files on the branch.
-6. **Open PR:** Title must be `<task-id>: <title>` (e.g. `US-1-T-1: Reject a non-university email on login`). Within `docs/tasks/`, only your task spec file may be changed.
+6. **Open PR:** Title must be `<task-id>: <title>` (e.g. `US-1-T-1: Reject a non-university email on login`). Within `docs/tasks/`, only your task spec file may be changed. The PR is expected to touch all necessary implementation files across the stack (services, controllers, routes, schemas, React components, and tests).
 7. **Merge and tag done:** After CI passes and teammates review:
    ```bash
    git fetch origin
@@ -142,7 +142,7 @@ For graded sprint tasks submitted to the Repo Metrics app, follow this exact seq
 
 Our repository adheres to the [**Google JavaScript Style Guide**](https://google.github.io/styleguide/jsguide.html) and [**Google TypeScript Style Guide**](https://google.github.io/styleguide/tsguide.html). Detailed coding standards, language invariants, naming rules, and architectural patterns are documented in:
 
-- **[`docs/style-guide.md`](./docs/style-guide.md)**: Full Google JS/TS coding standards, React 19 UI guidelines, Express 5 response envelopes, and Prettier rules.
+- **[`docs/style-guide.md`](./docs/style-guide.md)**: Full Google JS/TS coding standards, React 19 UI guidelines, Express 5 response envelopes, Prettier rules, and unit test naming conventions (§3.2).
 - **[`docs/architecture.md`](./docs/architecture.md)**: System architecture, component boundaries, and 3-tier scraper data flows.
 
 To ensure consistency throughout the source code, keep these rules in mind as you are working:
@@ -169,7 +169,7 @@ To keep code modular, adhere to the following directory responsibilities:
 
 Before submitting pull requests or writing task specifications, contributors must consult:
 
-- **[`docs/definition-of-done.md`](./docs/definition-of-done.md)**: The 4-tier Definition of Done (Code & Google Style Quality, Automated Offline Testing, CSE 115A Process Points, and PR Integration).
+- **[`docs/definition-of-done.md`](./docs/definition-of-done.md)**: The two-scope Definition of Done for Sprint Tasks (PR level) and User Stories (Jira level).
 - **[`docs/acceptance-criteria-guide.md`](./docs/acceptance-criteria-guide.md)**: Guidelines for writing Given-When-Then story criteria and numbered task invariants with 1-to-1 test mapping.
 
 ## <a name="commit"></a> Commit Message Format

@@ -130,6 +130,41 @@ Google Style treats multi-character acronyms as standard words, capitalizing onl
 - Write `htmlFixture`, **not** `HTMLFixture`.
 - Write `listingUrl`, **not** `listingURL`.
 
+### 3.2 Unit Test Naming Conventions
+
+All automated tests in the repository use **Vitest** and must adhere to standardized naming patterns across files, test suites, and assertions:
+
+#### 1. Test File Naming & Location
+
+- **CSE 115A Sprint Tasks:** Name task test files using the pattern `<task-id>_<descriptor>.test.ts` (or `.test.tsx`).
+  - Backend: `server/tests/SCRUM-18-T-1_paymentFlags.test.ts`
+  - Frontend: `client/tests/SCRUM-48-T-7_landing.test.tsx`
+- **Modular Component & Service Tests:** Name test files using the component or module name followed by `.test.ts` (or `.test.tsx`).
+  - Backend: `server/tests/app.test.ts`, `server/tests/database.test.ts`
+  - Frontend: `client/tests/ListingForm.test.tsx`, `client/tests/carArrival.test.ts`
+- **Directory Placement:** Frontend tests must reside strictly under `client/tests/`; backend tests must reside strictly under `server/tests/`. Colocating test files inside `src/` is forbidden to maintain clean build distributions.
+
+#### 2. Test Suite (`describe`) Conventions
+
+- Group tests logically with a descriptive name identifying the unit under test and task/feature context:
+  ```ts
+  // Sprint tasks:
+  describe('SCRUM-18-T-1: detectUntraceablePayment regex scanner', () => { ... });
+
+  // General services or components:
+  describe('ListingForm Component', () => { ... });
+  ```
+
+#### 3. Test Case (`it` / `test`) Conventions
+
+- **Acceptance Criteria Verification:** When verifying criteria from a task specification, prefix the test case description with the explicit criterion tag:
+  ```ts
+  it('[Criterion 1] returns status "compliant" when deposit is <= 1x rent', () => { ... });
+  it('[Criterion 2] flags UNTRACEABLE_PAYMENT when crypto payment is requested', () => { ... });
+  ```
+- **Behavioral Phrasing:** Test case names must communicate the _condition_ and the _expected outcome_ using declarative statements (e.g., `'returns status "violation" and triggers flag NON_RESIDENTIAL_LAND_USE for commercial use codes'`).
+- **Prohibited Phrasing:** Vague or placeholder descriptions such as `'test 1'`, `'works'`, `'handles errors'`, or `'renders properly'` are strictly forbidden.
+
 ---
 
 ## 4. Backend Standards (`server/src/`)

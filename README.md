@@ -37,10 +37,8 @@ cp client/.env.example client/.env
 ```text
 Detect-Housing-Scam/
 ├── client/                     # React frontend (Vite + TypeScript)
-│   ├── src/
-│   │   ├── assets/             # Static graphics and icons
-│   │   ├── App.tsx             # Root React component
-│   │   └── App.test.tsx        # Client unit tests
+│   ├── src/                    # Components, pages, hooks, and schemas
+│   ├── tests/                  # Client component & unit tests (Vitest)
 │   └── .env.example            # Frontend environment template
 ├── server/                     # Express REST API (Node 22 + TypeScript)
 │   ├── src/
@@ -51,6 +49,7 @@ Detect-Housing-Scam/
 │   │   ├── services/           # Business logic and external API integrations
 │   │   ├── app.ts              # Express app configuration & middleware
 │   │   └── index.ts            # Server entry point & startup lifecycle
+│   ├── tests/                  # Server endpoint & service tests (Vitest)
 │   └── .env.example            # Backend environment template
 ├── docs/                       # Specifications and architecture docs
 └── .github/workflows/          # CI and CD GitHub Actions pipelines
@@ -72,7 +71,7 @@ The backend health check is accessible at `http://localhost:5000/api/health`.
 
 ## Testing & Linting
 
-Tests are run using Vitest. Test files reside adjacent to the source modules they test (`*.test.tsx` or `*.test.ts`).
+Tests are run using Vitest. Test files reside strictly under `client/tests/` and `server/tests/` (`*.test.tsx` or `*.test.ts`) per our [Style Guide](./docs/style-guide.md#32-unit-test-naming-conventions); colocating test files inside `src/` is forbidden.
 
 ```bash
 # Run test suites
@@ -88,5 +87,9 @@ npm run format # Formats all client, server, and doc files (same as pre-commit h
 ## Documentation
 
 - [CONTRIBUTING.md](./CONTRIBUTING.md): Branch naming, Jira linkage, commit format, and PR rules.
+- [docs/style-guide.md](./docs/style-guide.md): Google JS/TS coding standards, API response envelopes, and test naming conventions.
+- [docs/definition-of-done.md](./docs/definition-of-done.md): Two-scope Definition of Done for sprint tasks (PR level) and user stories (Jira level).
+- [docs/architecture.md](./docs/architecture.md): System architecture, component boundaries, and 3-tier scraper data flows.
+- [docs/acceptance-criteria-guide.md](./docs/acceptance-criteria-guide.md): Story-level Given-When-Then criteria, task-level invariants, and 1-to-1 test mapping.
 - [docs/ci-cd.md](./docs/ci-cd.md): Detailed CI/CD workflow mechanics, job breakdowns, and troubleshooting.
 - [AGENTS.md](./AGENTS.md): Operational boundaries and constraints for AI coding assistants.

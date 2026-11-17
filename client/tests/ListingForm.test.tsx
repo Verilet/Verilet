@@ -1,3 +1,4 @@
+import '@testing-library/jest-dom/vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
@@ -29,7 +30,7 @@ describe('ListingForm autofill', () => {
     await user.type(screen.getByLabelText('Listing link'), LINK);
     await user.click(autofillButton());
 
-    expect(await screen.findByRole('status')).toHaveTextContent(/We filled in what we could find/);
+    expect(await screen.findByRole('status')).toHaveTextContent(/Details filled/);
     expect(screen.queryByText(/Autofill can find the rent/)).not.toBeInTheDocument();
   });
 
@@ -45,7 +46,7 @@ describe('ListingForm autofill', () => {
     await user.click(autofillButton());
 
     expect(autofill).toHaveBeenCalledWith(LINK);
-    expect(await screen.findByText(/We filled in what we could find/)).toBeInTheDocument();
+    expect(await screen.findByText(/Details filled/)).toBeInTheDocument();
     expect(screen.getByLabelText('Monthly rent')).toHaveValue('1,200');
     expect(screen.getByLabelText('City or address')).toHaveValue('Santa Cruz, CA');
     expect(screen.getByLabelText('Description and messages (optional)')).toHaveValue('Sunny room');
@@ -79,17 +80,73 @@ describe('ListingForm autofill', () => {
     expect(screen.getByLabelText('Listing link')).toHaveFocus();
   });
 
-  it.each<[string, AutofillListing]>([
-    ['finds nothing', async () => ({})],
-    ['fails', () => Promise.reject(new Error('blocked'))],
-  ])('asks the student to fill the details in when autofill %s', async (_name, autofill) => {
-    const { user } = renderForm(autofill);
+  it('asks the student to fill details in when autofill finds nothing', async () => {
+    const { user } = renderForm(async () => ({}));
 
     await user.type(screen.getByLabelText('Listing link'), LINK);
     await user.click(autofillButton());
 
-    expect(await screen.findByText(/couldn't read details from that link/)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/Couldn't read link\. Please enter details below\./i),
+    ).toBeInTheDocument();
     expect(autofillButton()).toBeEnabled();
+  });
+
+  it('shows a server error message when autofill fails', async () => {
+    const { user } = renderForm(() => Promise.reject(new Error('blocked')));
+
+    await user.type(screen.getByLabelText('Listing link'), LINK);
+    await user.click(autofillButton());
+
+    expect(await screen.findByText(/Server error\. Please try again\./i)).toBeInTheDocument();
+    expect(autofillButton()).toBeEnabled();
+  });
+
+  it('cleanly replaces previous autofilled values when doing another listing scan', async () => {
+    const mockAutofill = vi
+      .fn<AutofillListing>()
+      .mockResolvedValueOnce({
+        rent: '1,200',
+        location: 'Santa Cruz, CA',
+        description: 'First studio',
+      })
+      .mockResolvedValueOnce({
+        rent: '2,400',
+        location: 'Capitola, CA',
+        description: 'Second apartment',
+      });
+
+    const { user } = renderForm(mockAutofill);
+
+    // First scan
+    await user.type(screen.getByLabelText('Listing link'), LINK);
+    await user.click(autofillButton());
+
+    expect(await screen.findByText(/Details filled/)).toBeInTheDocument();
+    expect(screen.getByLabelText('Monthly rent')).toHaveValue('1,200');
+    expect(screen.getByLabelText('City or address')).toHaveValue('Santa Cruz, CA');
+    expect(screen.getByLabelText('Description and messages (optional)')).toHaveValue(
+      'First studio',
+    );
+
+    // User edits link to do another listing
+    const linkInput = screen.getByLabelText('Listing link');
+    await user.clear(linkInput);
+    await user.type(linkInput, 'https://example.com/listing/2');
+
+    // Message cleared when editing link
+    expect(screen.queryByText(/Details filled/)).not.toBeInTheDocument();
+    expect(screen.getByText(/Autofill can find the rent/)).toBeInTheDocument();
+
+    // Second scan
+    await user.click(autofillButton());
+
+    expect(await screen.findByText(/Details filled/)).toBeInTheDocument();
+    expect(screen.getByLabelText('Monthly rent')).toHaveValue('2,400');
+    expect(screen.getByLabelText('City or address')).toHaveValue('Capitola, CA');
+    expect(screen.getByLabelText('Description and messages (optional)')).toHaveValue(
+      'Second apartment',
+    );
   });
 });
 

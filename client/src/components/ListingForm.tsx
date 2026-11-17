@@ -42,8 +42,10 @@ const FIELD_ORDER: FormField[] = [
   'photos',
 ];
 
-const AUTOFILL_DONE = 'We filled in what we could find. Check it and add anything missing.';
-const AUTOFILL_EMPTY = "We couldn't read details from that link. Please fill them in below.";
+const AUTOFILL_READING = 'Reading listing details…';
+const AUTOFILL_DONE = 'Details filled. Please review below.';
+const AUTOFILL_EMPTY = "Couldn't read link. Please enter details below.";
+const AUTOFILL_SERVER_ERROR = 'Server error. Please try again.';
 
 export default function ListingForm({
   onSubmit,
@@ -58,6 +60,8 @@ export default function ListingForm({
   const [autofilling, setAutofilling] = useState(false);
   const [autofillMessage, setAutofillMessage] = useState<string | null>(null);
   const fieldRefs = useRef<Partial<Record<FormField, HTMLElement | null>>>({});
+  const userTypedFields = useRef<Set<string>>(new Set());
+  const autofilledFields = useRef<Set<string>>(new Set());
 
   const linkInputRef = useRef<HTMLInputElement>(null);
   const arrivingByCar = carArrival !== null;
@@ -82,6 +86,16 @@ export default function ListingForm({
       const value = event.target.value;
       setValues((current) => ({ ...current, [field]: value }));
       clearError(field);
+      if (field === 'listingUrl') {
+        setAutofillMessage(null);
+      } else {
+        if (value.trim()) {
+          userTypedFields.current.add(field);
+        } else {
+          userTypedFields.current.delete(field);
+        }
+        autofilledFields.current.delete(field);
+      }
     };
   }
 
@@ -91,7 +105,7 @@ export default function ListingForm({
     clearError('photos');
   }
 
-  /** Fills only the blank fields, so nothing the student already typed is overwritten. */
+  /** Fills blank or previously autofilled fields, preserving anything the student manually typed. */
   async function handleAutofill() {
     if (autofilling) {
       return;
@@ -103,20 +117,63 @@ export default function ListingForm({
       fieldRefs.current.listingUrl?.focus();
       return;
     }
+    clearError('listingUrl');
     setAutofilling(true);
-    setAutofillMessage(null);
+    setAutofillMessage(AUTOFILL_READING);
     try {
       const found = await autofillListing(link.data);
-      setValues((current) => ({
-        ...current,
-        rent: current.rent || (found.rent ?? ''),
-        location: current.location || (found.location ?? ''),
-        description: current.description || (found.description ?? ''),
-      }));
+      setValues((current) => {
+        const nextRent = userTypedFields.current.has('rent')
+          ? current.rent
+          : (found.rent ?? (autofilledFields.current.has('rent') ? '' : current.rent));
+
+        const nextLocation = userTypedFields.current.has('location')
+          ? current.location
+          : (found.location ?? (autofilledFields.current.has('location') ? '' : current.location));
+
+        const nextDescription = userTypedFields.current.has('description')
+          ? current.description
+          : (found.description ??
+            (autofilledFields.current.has('description') ? '' : current.description));
+
+        return {
+          ...current,
+          rent: nextRent,
+          location: nextLocation,
+          description: nextDescription,
+        };
+      });
+
+      // Track newly autofilled fields
+      if (found.rent) {
+        autofilledFields.current.add('rent');
+      } else {
+        autofilledFields.current.delete('rent');
+      }
+      if (found.location) {
+        autofilledFields.current.add('location');
+      } else {
+        autofilledFields.current.delete('location');
+      }
+      if (found.description) {
+        autofilledFields.current.add('description');
+      } else {
+        autofilledFields.current.delete('description');
+      }
+
+      // Clear prior validation errors for successfully populated fields
+      setErrors((current) => {
+        const updated = { ...current };
+        if (found.rent) delete updated.rent;
+        if (found.location) delete updated.location;
+        if (found.description) delete updated.description;
+        return updated;
+      });
+
       const foundAnything = Boolean(found.rent || found.location || found.description);
       setAutofillMessage(foundAnything ? AUTOFILL_DONE : AUTOFILL_EMPTY);
     } catch {
-      setAutofillMessage(AUTOFILL_EMPTY);
+      setAutofillMessage(AUTOFILL_SERVER_ERROR);
     } finally {
       setAutofilling(false);
     }
@@ -128,7 +185,7 @@ export default function ListingForm({
       return;
     }
     const result = validateListingForm(values);
-    if (!result.success) {
+    if (result.success === false) {
       setErrors(result.errors);
       const firstInvalid = FIELD_ORDER.find((field) => result.errors[field]);
       if (firstInvalid) {

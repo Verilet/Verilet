@@ -53,6 +53,24 @@ const CATEGORIES_OF_PAYMENT = [
   },
 ] as const;
 
+/** An array of terms for P2P payment apps. */
+const p2pPaymenntApps = ['Venmo', 'Chime', 'CashApp', 'Zelle', 'Cash App'];
+/** An array of terms for in-advance payments. */
+const inAdvancePaymentTerms = ['deposit', 'before tour', 'before viweing', 'holding fee'];
+/** The max number of characters allowed between a P2P payment app term AND an in-advance payment term. */
+const p2pToDepositRange = 80;
+
+// use Record<string, string> to resolve key error
+const HIGH_RISK_PAYMENTS: Record<string, string> = {
+  crypto: 'Cryptocurrency',
+  wire_transfer: 'Wire Transfer',
+  gift_card: 'Gift Card',
+  zelle: 'Zelle',
+  venmo: 'Venmo',
+  cashapp: 'Cash App',
+  chime: 'Chime',
+};
+
 /**
  * Make certain special characters in a string safe for regex matching.
  *
@@ -133,3 +151,86 @@ export function detectUntraceablePayment(description: PaymentFlagInput): Payment
   }
   return violations;
 }
+
+function createRegexFromTerms(terms: readonly string[]) {
+  return `(?:${terms.map(termToRegex).join('|')})`;
+}
+
+const p2pPayAppRegex = createRegexFromTerms(p2pPaymenntApps);
+const inAdvancePaymentRegex = createRegexFromTerms(inAdvancePaymentTerms);
+const gapBetween = `[\\s\\S]{0,${p2pToDepositRange}}?`;
+
+const InAdvance_Fee_Pattern = new RegExp(
+  `\\b${p2pPayAppRegex}\\b${gapBetween}\\b${inAdvancePaymentRegex}\\b|\\b${inAdvancePaymentRegex}\\b${gapBetween}\\b${p2pPayAppRegex}\\b`,
+  'i',
+);
+
+function detectAdvanceFee(description: string) {
+  if (typeof description !== 'string' || description.trim() === '') return [];
+
+  const advanceFeeFound = description.match(InAdvance_Fee_Pattern);
+
+  if (!advanceFeeFound) return [];
+
+  return [
+    {
+      code: 'ADVANCE_FEE_DEPOSIT',
+      severity: 'critical',
+      title: 'An in advance deposit fee has been requested prior to tour.',
+      explanation:
+        'No legitimate landload requests non-refundable funds prior to a tour/viewing. ' +
+        'Scammers tend to use P2P apps like Cash App, Venmo, Zelle, Chime, etc. to ask for deposits before touring the property. ' +
+        'These types of transctions are irreversible and untraceable. ' +
+        'Make sure to avoid these types of payment methods and see the property before signing a lease.',
+      evidence: advanceFeeFound[0],
+    },
+  ];
+}
+
+const createKey = (payMethod: string) =>
+  payMethod
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/g, '_');
+
+//Second function of Scrum-18-T-2: detectHighRiskPayment()
+function detectHighRiskSelections(paymentMethods: string[]) {
+  if (!Array.isArray(paymentMethods)) return [];
+
+  const violations_detected = [];
+  const reported_values = new Set();
+  const no_methods = paymentMethods.length;
+
+  for (let i = 0; i < no_methods; i++) {
+    const method = paymentMethods[i];
+    if (typeof method !== 'string' || method.trim() === '') continue;
+
+    const key = createKey(method);
+
+    //using Object the built-in Javascript constrcutor
+    //find out if key is not in the HIGH_RISK_PAYMENTS structure
+    //OR if the key has already been reported
+    const hasKey = Object.prototype.hasOwnProperty.call(HIGH_RISK_PAYMENTS, key);
+    const seenBefore = reported_values.has(key);
+
+    if (!hasKey || seenBefore) continue;
+
+    reported_values.add(key);
+
+    const the_high_risk_payment = HIGH_RISK_PAYMENTS[key];
+
+    violations_detected.push({
+      code: 'HIGH_RISK_PAYMENT_METHOD',
+      severity: 'critical',
+      title: `${the_high_risk_payment} payment method has been requested.`,
+      explanation:
+        `${the_high_risk_payment} payments are irreversible and untraceable.` +
+        'Payments through checks and bank transfers are traceable and are commonly used by legitimate landlords.' +
+        'Do not send money through ${the_high_risk_payment}. Make sure to see property prior to signing a lease.',
+      evidence: method,
+    });
+  }
+  return violations_detected;
+}
+
+export { detectAdvanceFee, detectHighRiskSelections, HIGH_RISK_PAYMENTS };

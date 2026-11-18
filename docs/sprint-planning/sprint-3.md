@@ -19,7 +19,7 @@ Provide student renters with an automated listing scan that extracts property de
 
 _User stories and items from the Jira backlog (Sprint 3: 5 Nov – 19 Nov) are listed in priority order from most important (top) to least important (bottom). Every task includes an estimated effort of $\le 6$ ideal hours._
 
-### User story 1 ("As a student, I want to paste a listing link so that I don't have to spend time typing out information by hand.")
+### User story 1 ("As a student, I want to paste a Craigslist listing link so that I don't have to spend time typing out information by hand.")
 
 - **Jira Issue Key:** `SCRUM-3`
 - **Priority Rating:** 1 (Highest)

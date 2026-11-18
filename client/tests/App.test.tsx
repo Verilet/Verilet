@@ -135,7 +135,8 @@ describe('logged-out flow', () => {
     );
     expect(screen.getByText('What we checked')).toBeVisible();
     expect(screen.getByText('Landlord asks for payment by gift card')).toBeVisible();
-    expect(screen.queryByRole('button', { name: 'Share result' })).not.toBeInTheDocument();
+    // Guests can share a result too.
+    expect(screen.getByRole('button', { name: 'Share result' })).toBeInTheDocument();
   });
 
   it('returns to a blank form from the results page', async () => {

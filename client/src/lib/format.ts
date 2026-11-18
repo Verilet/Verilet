@@ -10,12 +10,22 @@ export function bedroomLabel(bedrooms: ScanResult['bedrooms']): string {
   return BEDROOM_OPTIONS.find((option) => option.value === bedrooms)?.label ?? bedrooms;
 }
 
-/** "2 bed · $1,200 · Santa Cruz, CA" (My scans table). */
+/**
+ * Title of a scan for the My scans table.
+ *
+ * @param scan The scan.
+ * @returns e.g. "2 bed · $1,200 · Santa Cruz, CA".
+ */
 export function scanTitle(scan: ScanResult): string {
   return `${bedroomLabel(scan.bedrooms)} · ${formatRent(scan.rent)} · ${scan.location}`;
 }
 
-/** "2 bed · $1,200 · Santa Cruz" (Recent scans card, city only). */
+/**
+ * Short title of a scan for the recent scans card, with the city only.
+ *
+ * @param scan The scan.
+ * @returns e.g. "2 bed · $1,200 · Santa Cruz".
+ */
 export function scanShortTitle(scan: ScanResult): string {
   const city = scan.location.split(',')[0].trim();
   return `${bedroomLabel(scan.bedrooms)} · ${formatRent(scan.rent)} · ${city}`;
@@ -26,7 +36,12 @@ export function scanMeta(scan: ScanResult): string {
   return `${bedroomLabel(scan.bedrooms)} · ${formatRent(scan.rent)} / month · ${scan.location}`;
 }
 
-/** "zillow.com", or the original text if it is not a valid URL. */
+/**
+ * The website a listing is on.
+ *
+ * @param url The listing link.
+ * @returns e.g. "zillow.com", or the original text if it is not a valid URL.
+ */
 export function listingHost(url: string): string {
   try {
     return new URL(url).hostname.replace(/^www\./, '');
@@ -35,12 +50,23 @@ export function listingHost(url: string): string {
   }
 }
 
-/** Midnight at the start of the given local day, in milliseconds. */
+/**
+ * Midnight at the start of the given local day.
+ *
+ * @param date Any time on that day.
+ * @returns Milliseconds since the epoch at local midnight.
+ */
 function startOfDay(date: Date): number {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
 }
 
-/** "Today", "Yesterday", or "Oct 15". */
+/**
+ * When a scan was made, in words.
+ *
+ * @param iso ISO timestamp of the scan.
+ * @param now The current time. Defaults to now.
+ * @returns "Today", "Yesterday", or a date like "Oct 15".
+ */
 export function formatScanDate(iso: string, now: Date = new Date()): string {
   const date = new Date(iso);
   const days = Math.round((startOfDay(now) - startOfDay(date)) / 86_400_000);

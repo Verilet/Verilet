@@ -10,7 +10,7 @@ import {
   useNavigationType,
   useParams,
 } from 'react-router-dom';
-import { AUTH_PATHS, useAuthState } from './auth/authState';
+import { AUTH_PATHS, signInPathFor, useAuthState } from './auth/authState';
 import DevNav from './components/DevNav';
 import Header from './components/Header';
 import { MOCK_SCANS } from './data/mockScans';
@@ -28,20 +28,39 @@ import LandingView from './views/LandingView';
 import ResultsView from './views/ResultsView';
 import ScansView from './views/ScansView';
 
+/** Props for the app root. */
 interface AppProps {
   /**
    * Preview the logged-in screens without an account, using sample scans kept in this tab.
    * Defaults to the `?loggedIn=true` URL flag, which only works on the dev server.
    */
   loggedIn?: boolean;
+  /** Scans to start with instead of the ones saved in this browser tab. */
   initialScans?: ScanResult[];
   /** Injectable for tests; defaults to the placeholder scan service. */
   checkListing?: CheckListing;
 }
 
+/** Shown on the form when a check fails. */
 const SUBMIT_ERROR = "We couldn't check that listing. Please try again.";
 
-function NotFound({ title, text }: { title: string; text: string }) {
+/** Props for the not-found page. */
+interface NotFoundProps {
+  /** Page heading, e.g. "Page not found". */
+  title: string;
+  /** One sentence explaining what happened. */
+  text: string;
+}
+
+/**
+ * A not-found page with a link back into the app.
+ *
+ * @param props The page's props.
+ * @param props.title Page heading.
+ * @param props.text Explanation under the heading.
+ * @returns The not-found page.
+ */
+function NotFound({ title, text }: NotFoundProps) {
   return (
     <main className="main main--center">
       <div className="intro">
@@ -55,6 +74,11 @@ function NotFound({ title, text }: { title: string; text: string }) {
   );
 }
 
+/**
+ * Shown while sign-in is still checking for an existing session.
+ *
+ * @returns A loading message.
+ */
 function Loading() {
   return (
     <main className="main main--center">
@@ -65,14 +89,26 @@ function Loading() {
   );
 }
 
+/** Props for the results route. */
 interface ResultsRouteProps {
+  /** Scans kept in this browser tab. */
   scans: ScanResult[];
+  /** Whether the visitor is signed in, which changes the back link and details panel. */
   loggedIn: boolean;
+  /** Navigates to another page. */
   goTo: (path: string) => void;
+  /** Copies a short summary of a scan. */
   onShare: (scan: ScanResult) => void;
+  /** Outcome of the most recent share, for brief feedback on the button. */
   shareStatus: { id: string; ok: boolean } | null;
 }
 
+/**
+ * Opens the scan named in the address, or a not-found page when this tab doesn't have it.
+ *
+ * @param props The route's props.
+ * @returns The results page for the scan, or a not-found page.
+ */
 function ResultsRoute({ scans, loggedIn, goTo, onShare, shareStatus }: ResultsRouteProps) {
   const { scanId } = useParams();
   const scan = scans.find((candidate) => candidate.id === scanId);
@@ -101,6 +137,15 @@ function ResultsRoute({ scans, loggedIn, goTo, onShare, shareStatus }: ResultsRo
   );
 }
 
+/**
+ * The app: header, routes, and the development Preview bar. Keeps scans in the browser tab.
+ *
+ * @param props The app's props.
+ * @param props.loggedIn Preview the signed-in screens without an account.
+ * @param props.initialScans Scans to start with.
+ * @param props.checkListing Scores a listing; defaults to the placeholder scorer.
+ * @returns The app.
+ */
 function App({
   loggedIn: initialLoggedIn = import.meta.env.DEV && isLoggedInFromUrl(),
   initialScans,
@@ -137,11 +182,21 @@ function App({
 
   useEffect(() => saveScans(scans), [scans]);
 
+  /**
+   * Goes to another page and clears any error from the last check.
+   *
+   * @param path Page to open.
+   */
   function goTo(path: string) {
     setSubmitError(null);
     navigate(path);
   }
 
+  /**
+   * Checks a listing, keeps the result, and opens it. Shows an error on the form if it fails.
+   *
+   * @param input The validated form values.
+   */
   async function handleSubmit(input: ListingInput) {
     setSubmitting(true);
     setSubmitError(null);
@@ -156,6 +211,11 @@ function App({
     }
   }
 
+  /**
+   * Copies a short summary of a scan and shows whether it worked for two seconds.
+   *
+   * @param scan The scan to share.
+   */
   async function handleShare(scan: ScanResult) {
     const ok = await copyShareText(scan);
     setShareStatus({ id: scan.id, ok });
@@ -163,6 +223,7 @@ function App({
     shareTimer.current = setTimeout(() => setShareStatus(null), 2000);
   }
 
+  /** Opens a sample result from the Preview bar, adding it to the list first if needed. */
   function previewResults() {
     const sample = MOCK_SCANS[0];
     setScans((current) =>
@@ -171,12 +232,19 @@ function App({
     goTo(`/results/${sample.id}`);
   }
 
+  /** Switches the Preview bar between the signed-in and signed-out screens. */
   function toggleLoggedIn() {
     setPreviewLoggedIn((current) => !current);
     goTo('/');
   }
 
-  /** Pages that need an account send signed-out visitors to log in, keeping any car transition. */
+  /**
+   * Shows a page only to signed-in visitors. Others go to log in, which brings them back here
+   * afterwards, keeping any car transition.
+   *
+   * @param page The page that needs an account.
+   * @returns The page, a loading message while sign-in is checked, or a redirect to log in.
+   */
   function requireAccount(page: ReactNode) {
     if (authPending) {
       return <Loading />;
@@ -184,7 +252,14 @@ function App({
     if (loggedIn) {
       return page;
     }
-    return <Navigate to={AUTH_PATHS.signIn} replace state={location.state} />;
+    // The log in page sends them back here afterwards, through Clerk's redirect_url.
+    return (
+      <Navigate
+        to={signInPathFor(location.pathname + location.search)}
+        replace
+        state={location.state}
+      />
+    );
   }
 
   const home = (

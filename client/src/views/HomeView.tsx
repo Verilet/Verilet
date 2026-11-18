@@ -5,20 +5,33 @@ import { formatScanDate, scanShortTitle } from '../lib/format';
 import { ratingFromScore } from '../lib/risk';
 import type { ListingInput, ScanResult } from '../types';
 
+/** Props for the signed-in home page. */
 interface HomeViewProps {
+  /** The visitor's scans, newest first. */
   scans: ScanResult[];
+  /** Called with the validated form values. */
   onSubmit: (input: ListingInput) => void;
+  /** Whether a check is running. */
   submitting: boolean;
+  /** Error from the last check, shown on the form. */
   submitError: string | null;
   /** Set when the visitor arrives through a car transition. */
   carArrival?: CarArrivalInfo | null;
+  /** Opens one scan's result. */
   onViewScan: (scanId: string) => void;
+  /** Opens My scans. */
   onViewAll: () => void;
 }
 
+/** How many recent scans the home page lists. */
 const RECENT_COUNT = 4;
 
-/** The logged-in home page, with the listing form and recent scans. */
+/**
+ * The signed-in home page, with the listing form and recent scans.
+ *
+ * @param props The page's props.
+ * @returns The home page.
+ */
 export default function HomeView({
   scans,
   onSubmit,

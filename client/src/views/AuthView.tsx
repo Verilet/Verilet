@@ -1,15 +1,21 @@
 import { SignIn, SignUp } from '@clerk/react';
 import { Navigate, useLocation } from 'react-router-dom';
-import { AUTH_PATHS, useAuthState } from '../auth/authState';
+import { AUTH_PATHS, redirectAfterSignIn, useAuthState } from '../auth/authState';
 import PageFadeIn from '../components/PageFadeIn';
 import { GUIDE } from '../content/guide';
 import { readCarArrival } from '../lib/carArrival';
 
+/** Props for the log in and sign up pages. */
 interface AuthViewProps {
+  /** Which of Clerk's forms to show. */
   mode: 'sign-in' | 'sign-up';
 }
 
-/** Shown in place of the form when no Clerk publishable key is set. */
+/**
+ * Shown in place of the form when no Clerk publishable key is set.
+ *
+ * @returns A note that sign-in isn't available, with setup steps in development.
+ */
 function SignInUnavailable() {
   return (
     <div className="guide-card auth-page__unavailable" role="status">
@@ -20,38 +26,42 @@ function SignInUnavailable() {
 }
 
 /**
- * The log in and sign up pages: a short reason to have an account beside Clerk's form. Signed-in
- * visitors are sent on to the check form.
+ * The log in and sign up pages: a short reason to have an account beside Clerk's form. Once
+ * signed in, visitors go back to the page they wanted, or to the check form.
+ *
+ * @param props The page's props.
+ * @param props.mode Whether to show the log in or the sign up form.
+ * @returns The log in or sign up page, or a redirect for a visitor who is already signed in.
  */
 export default function AuthView({ mode }: AuthViewProps) {
   const { configured, isSignedIn } = useAuthState();
+  const location = useLocation();
   // A car transition to the check form ends here for signed-out visitors.
-  const arrivedByCar = readCarArrival(useLocation().state) !== null;
+  const arrivedByCar = readCarArrival(location.state) !== null;
+  const returnTo = redirectAfterSignIn(location.search);
   const copy = mode === 'sign-in' ? GUIDE.auth.signIn : GUIDE.auth.signUp;
 
   if (isSignedIn) {
-    return <Navigate to={AUTH_PATHS.afterSignIn} replace />;
+    return <Navigate to={returnTo} replace />;
   }
 
-  let form = <SignInUnavailable />;
-  if (configured) {
-    form =
-      mode === 'sign-in' ? (
-        <SignIn
-          routing="path"
-          path={AUTH_PATHS.signIn}
-          signUpUrl={AUTH_PATHS.signUp}
-          fallbackRedirectUrl={AUTH_PATHS.afterSignIn}
-        />
-      ) : (
-        <SignUp
-          routing="path"
-          path={AUTH_PATHS.signUp}
-          signInUrl={AUTH_PATHS.signIn}
-          fallbackRedirectUrl={AUTH_PATHS.afterSignIn}
-        />
-      );
-  }
+  const clerkForm =
+    mode === 'sign-in' ? (
+      <SignIn
+        routing="path"
+        path={AUTH_PATHS.signIn}
+        signUpUrl={AUTH_PATHS.signUp}
+        fallbackRedirectUrl={returnTo}
+      />
+    ) : (
+      <SignUp
+        routing="path"
+        path={AUTH_PATHS.signUp}
+        signInUrl={AUTH_PATHS.signIn}
+        fallbackRedirectUrl={returnTo}
+      />
+    );
+  const form = configured ? clerkForm : <SignInUnavailable />;
 
   return (
     <main className="guide auth-page">

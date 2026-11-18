@@ -3,16 +3,22 @@ import AccountMenu from '../auth/AccountMenu';
 import { AUTH_PATHS } from '../auth/authState';
 import { GUIDE } from '../content/guide';
 
+/** Props for the site header. */
 interface HeaderProps {
+  /** Whether to show the signed-in links and the account menu. */
   loggedIn: boolean;
-  initials?: string;
 }
 
 /**
- * Site header. Signed out: the logo, How it works and a Log in link. Signed in: the logo, the
- * Check a listing and My scans links, and the account menu.
+ * Site header: the logo, the site links, and either a Log in link or the account menu. How it
+ * works is always linked; signed-in visitors also get Check a listing and My scans. On phones the
+ * links move to their own row instead of disappearing.
+ *
+ * @param props The header's props.
+ * @param props.loggedIn Whether the visitor is signed in.
+ * @returns The header.
  */
-export default function Header({ loggedIn, initials = 'JD' }: HeaderProps) {
+export default function Header({ loggedIn }: HeaderProps) {
   const { pathname } = useLocation();
   const onScans = pathname.startsWith('/scans') || pathname.startsWith('/results');
   const onHome = pathname === '/' || pathname === '/check';
@@ -28,37 +34,37 @@ export default function Header({ loggedIn, initials = 'JD' }: HeaderProps) {
           </span>
           <span className="logo__name">Verilet</span>
         </Link>
-        {loggedIn && (
-          <nav className="nav" aria-label="Main">
-            <Link to="/" className="nav__link" aria-current={onHome ? 'page' : undefined}>
-              Check a listing
-            </Link>
-            <Link to="/scans" className="nav__link" aria-current={onScans ? 'page' : undefined}>
-              My scans
-            </Link>
-          </nav>
-        )}
+        <nav className="nav" aria-label="Site">
+          {loggedIn && (
+            <>
+              <Link to="/" className="nav__link" aria-current={onHome ? 'page' : undefined}>
+                Check a listing
+              </Link>
+              <Link to="/scans" className="nav__link" aria-current={onScans ? 'page' : undefined}>
+                My scans
+              </Link>
+            </>
+          )}
+          <Link
+            to="/how-it-works"
+            className="nav__link"
+            aria-current={pathname === '/how-it-works' ? 'page' : undefined}
+          >
+            How it works
+          </Link>
+        </nav>
       </div>
-      {loggedIn ? (
-        <AccountMenu initials={initials} />
-      ) : (
-        <div className="header__right">
-          <nav className="nav nav--public" aria-label="Site">
-            <Link
-              to="/how-it-works"
-              className="nav__link"
-              aria-current={pathname === '/how-it-works' ? 'page' : undefined}
-            >
-              How it works
-            </Link>
-          </nav>
-          {!onAuthPage && (
+      <div className="header__right">
+        {loggedIn ? (
+          <AccountMenu />
+        ) : (
+          !onAuthPage && (
             <Link to={AUTH_PATHS.signIn} className="header__login">
               {GUIDE.auth.logInLabel}
             </Link>
-          )}
-        </div>
-      )}
+          )
+        )}
+      </div>
     </header>
   );
 }

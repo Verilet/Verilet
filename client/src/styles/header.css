@@ -109,33 +109,33 @@
   background: var(--color-accent);
 }
 
+/* Phones: the links move to their own row under the logo, so they are always reachable. */
 @media (max-width: 720px) {
-  .header__left {
-    gap: 20px;
-  }
-
-  .nav {
-    gap: 16px;
-  }
-
-  .nav--public {
-    display: none;
-  }
-
   .header {
-    padding: 0 16px;
+    height: auto;
+    padding: 12px 16px 0;
+    flex-wrap: wrap;
+    row-gap: 4px;
   }
-}
 
-/* Narrow phones: keep the signed-in links on one line next to the logo. */
-@media (max-width: 420px) {
-  .header__left,
+  /* Lets the logo and the links sit directly in the header's wrapping row. */
+  .header__left {
+    display: contents;
+  }
+
+  .header__right {
+    margin-left: auto;
+  }
+
   .nav {
-    gap: 12px;
+    order: 3;
+    width: 100%;
+    gap: 24px;
+    overflow-x: auto;
+    padding: 8px 0 12px;
   }
 
   .nav__link {
-    font-size: 14px;
     white-space: nowrap;
   }
 }

@@ -83,8 +83,8 @@
   width: 14%;
 }
 
-.col-actions {
-  text-align: right !important;
+.scans-table .col-actions {
+  text-align: right;
   white-space: nowrap;
 }
 
@@ -106,21 +106,22 @@
   color: var(--color-muted);
 }
 
-.score {
-  font-size: 16px !important;
+.scans-table td.score {
+  font-size: 16px;
   font-weight: 700;
 }
 
-.score--danger {
-  color: var(--color-danger) !important;
+/* Beat the muted colour of `.scans-table td` without !important. */
+.scans-table td.score--danger {
+  color: var(--color-danger);
 }
 
-.score--warn {
-  color: var(--color-warn) !important;
+.scans-table td.score--warn {
+  color: var(--color-warn);
 }
 
-.score--ok {
-  color: var(--color-ok) !important;
+.scans-table td.score--ok {
+  color: var(--color-ok);
 }
 
 .row-action {

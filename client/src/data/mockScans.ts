@@ -1,12 +1,19 @@
 import { scoreListing } from '../services/scanService';
 import type { ListingInput, ScanResult } from '../types';
 
+/**
+ * A timestamp a number of days before now.
+ *
+ * @param days How many days ago.
+ * @returns ISO timestamp.
+ */
 function daysAgo(days: number): string {
   const date = new Date();
   date.setDate(date.getDate() - days);
   return date.toISOString();
 }
 
+/** Optional form fields shared by every sample scan. */
 const SAMPLE_DETAILS = {
   securityDeposit: null,
   applicationFee: null,
@@ -15,8 +22,18 @@ const SAMPLE_DETAILS = {
   photos: [],
 } satisfies Partial<ListingInput>;
 
+/** The form fields each sample scan sets itself. */
 type SeedInput = Omit<ListingInput, keyof typeof SAMPLE_DETAILS>;
 
+/**
+ * Builds one sample scan.
+ *
+ * @param id Scan ID.
+ * @param days How many days ago it was made.
+ * @param score Risk score to show.
+ * @param sample Its form fields.
+ * @returns The sample scan.
+ */
 function seed(id: string, days: number, score: number, sample: SeedInput): ScanResult {
   const input: ListingInput = { ...sample, ...SAMPLE_DETAILS };
   return { ...input, ...scoreListing(input), score, id, createdAt: daysAgo(days) };

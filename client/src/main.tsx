@@ -15,7 +15,7 @@ import './styles/landing.css';
 import './styles/about.css';
 import './styles/transitions.css';
 import './styles/auth.css';
-import App from './App.tsx';
+import App from './App';
 import AuthProvider from './auth/AuthProvider';
 
 const rootElement = document.getElementById('root');

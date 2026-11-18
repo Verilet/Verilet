@@ -164,15 +164,15 @@
 
 /* Score colours for the number and bar. */
 .score--danger {
-  color: var(--color-danger) !important;
+  color: var(--color-danger);
 }
 
 .score--warn {
-  color: var(--color-warn) !important;
+  color: var(--color-warn);
 }
 
 .score--ok {
-  color: var(--color-ok) !important;
+  color: var(--color-ok);
 }
 
 @media (max-width: 720px) {

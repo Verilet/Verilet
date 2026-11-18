@@ -1,14 +1,23 @@
+/** Props for the development Preview bar. */
 interface DevNavProps {
+  /** Whether the signed-in screens are showing. */
   loggedIn: boolean;
+  /** Switches between the signed-in and signed-out screens. */
   onToggleLoggedIn: () => void;
+  /** Opens the check form (or the home page when signed in). */
   onShowCheck: () => void;
+  /** Opens a sample result. */
   onShowResults: () => void;
+  /** Opens My scans. */
   onShowScans: () => void;
 }
 
 /**
  * Development-only shortcut bar for jumping between screens while the real flow (sign-in, API) is
  * still being built. App renders it only in `npm run dev`, never in production builds or tests.
+ *
+ * @param props The bar's props.
+ * @returns The Preview bar.
  */
 export default function DevNav({
   loggedIn,

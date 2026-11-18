@@ -4,6 +4,12 @@ import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import App from '../src/App';
 import AuthProvider from '../src/auth/AuthProvider';
+import {
+  redirectAfterSignIn,
+  signInPathFor,
+  useAuthState,
+  type AuthState,
+} from '../src/auth/authState';
 import { GUIDE } from '../src/content/guide';
 
 interface ClerkFormProps {
@@ -131,8 +137,12 @@ describe('header', () => {
     clerk.session = { ...clerk.session, isSignedIn: true };
     renderAt('/');
     expect(screen.getByRole('button', { name: 'Account' })).toBeInTheDocument();
-    const main = within(screen.getByRole('navigation', { name: 'Main' }));
-    expect(main.getByRole('link', { name: 'My scans' })).toBeInTheDocument();
+    const site = within(screen.getByRole('navigation', { name: 'Site' }));
+    expect(site.getByRole('link', { name: 'My scans' })).toBeInTheDocument();
+    expect(site.getByRole('link', { name: 'How it works' })).toHaveAttribute(
+      'href',
+      '/how-it-works',
+    );
     expect(screen.queryByRole('link', { name: GUIDE.auth.logInLabel })).not.toBeInTheDocument();
   });
 
@@ -166,5 +176,79 @@ describe('Clerk setup', () => {
   it('skips Clerk entirely without a key', () => {
     renderAt('/', '');
     expect(clerk.providerProps).toEqual({});
+  });
+
+  it("passes token options straight through to Clerk's getToken", async () => {
+    const getToken = vi.fn(async () => 'token_456');
+    clerk.session = { ...clerk.session, isSignedIn: true, getToken };
+    let readToken: AuthState['getToken'] = async () => null;
+    function TokenReader() {
+      readToken = useAuthState().getToken;
+      return null;
+    }
+    render(
+      <MemoryRouter>
+        <AuthProvider publishableKey={KEY}>
+          <TokenReader />
+        </AuthProvider>
+      </MemoryRouter>,
+    );
+
+    await expect(readToken({ template: 'verilet-api', skipCache: true })).resolves.toBe(
+      'token_456',
+    );
+    expect(getToken).toHaveBeenCalledWith({ template: 'verilet-api', skipCache: true });
+  });
+});
+
+describe('returning after log in', () => {
+  it('sends a signed-out visitor from My scans to log in with the page to come back to', () => {
+    renderAt('/scans');
+    const form = screen.getByTestId('clerk-sign-in');
+    expect(form).toHaveAttribute('data-redirect', '/scans');
+  });
+
+  it('keeps the page to come back to when switching to sign up', () => {
+    renderAt('/sign-up?redirect_url=%2Fscans');
+    expect(screen.getByTestId('clerk-sign-up')).toHaveAttribute('data-redirect', '/scans');
+  });
+
+  it('takes a signed-in visitor straight to the page they asked for', () => {
+    clerk.session = { ...clerk.session, isSignedIn: true };
+    renderAt('/login?redirect_url=%2Fscans');
+    expect(screen.getByRole('heading', { level: 1, name: 'My scans' })).toBeInTheDocument();
+  });
+
+  it.each([
+    ['another website', 'https://evil.example/steal'],
+    ['a protocol-relative link', '//evil.example'],
+    ['a backslash link', '/\\evil.example'],
+    ['the log in page itself', '/login'],
+    ['nothing', null],
+  ])('falls back to the check form when the return page is %s', (_name, target) => {
+    const search = target === null ? '' : `?${new URLSearchParams({ redirect_url: target })}`;
+    expect(redirectAfterSignIn(search)).toBe('/check');
+  });
+
+  it('builds a log in link that carries the page and its query', () => {
+    expect(signInPathFor('/results/scan-1?tab=details')).toBe(
+      '/login?redirect_url=%2Fresults%2Fscan-1%3Ftab%3Ddetails',
+    );
+    expect(redirectAfterSignIn('?redirect_url=%2Fresults%2Fscan-1%3Ftab%3Ddetails')).toBe(
+      '/results/scan-1?tab=details',
+    );
+  });
+});
+
+describe('preview account menu', () => {
+  it('shows a plain avatar with no made-up initials', () => {
+    render(
+      <MemoryRouter initialEntries={['/']}>
+        <App loggedIn initialScans={[]} />
+      </MemoryRouter>,
+    );
+    const avatar = screen.getByRole('img', { name: 'Preview account' });
+    expect(avatar).toHaveTextContent('');
+    expect(screen.queryByText('JD')).not.toBeInTheDocument();
   });
 });

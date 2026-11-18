@@ -4,16 +4,22 @@ import { formatScanDate, listingHost, scanTitle } from '../lib/format';
 import { ratingFromScore, ratingTone } from '../lib/risk';
 import type { Rating, ScanResult } from '../types';
 
+/** Which ratings the table shows. */
 type Filter = 'ALL' | Rating;
 
+/** Props for the My scans page. */
 interface ScansViewProps {
+  /** The visitor's scans, newest first. */
   scans: ScanResult[];
+  /** Opens one scan's result. */
   onViewScan: (scanId: string) => void;
+  /** Copies a short summary of a scan. */
   onShareScan: (scan: ScanResult) => void;
   /** Outcome of the most recent share attempt, for brief feedback on that row. */
   shareStatus: { id: string; ok: boolean } | null;
 }
 
+/** The rating filter buttons above the table. */
 const FILTERS: { value: Filter; label: string }[] = [
   { value: 'ALL', label: 'All' },
   { value: 'HIGH', label: 'High risk' },
@@ -21,7 +27,12 @@ const FILTERS: { value: Filter; label: string }[] = [
   { value: 'LOW', label: 'Low risk' },
 ];
 
-/** The logged-in table of past scans, with rating filters. */
+/**
+ * The signed-in table of past scans, with rating filters.
+ *
+ * @param props The page's props.
+ * @returns The My scans page.
+ */
 export default function ScansView({ scans, onViewScan, onShareScan, shareStatus }: ScansViewProps) {
   const [filter, setFilter] = useState<Filter>('ALL');
   const visible =

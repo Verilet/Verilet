@@ -6,19 +6,32 @@ import { scanMeta } from '../lib/format';
 import { RATING_HEADLINE, ratingFromScore, ratingTone } from '../lib/risk';
 import type { ScanResult } from '../types';
 
+/** Props for the results page. */
 interface ResultsViewProps {
+  /** The scan to show. */
   scan: ScanResult;
+  /** Whether the visitor is signed in, which adds the "Saved to My scans" note. */
   loggedIn: boolean;
+  /** Text of the back link, e.g. "← My scans". */
   backLabel: string;
+  /** Called by the back link. */
   onBack: () => void;
+  /** Starts a new check. */
   onCheckAnother: () => void;
+  /** Copies a short summary of the result. */
   onShare: () => void;
+  /** Text of the share button, which briefly confirms a copy. */
   shareLabel: string;
   /** Whether "More details" starts open. */
   defaultExpanded: boolean;
 }
 
-/** The result of a check, with an expandable "More details" panel. */
+/**
+ * The result of a check, with an expandable "More details" panel and a share button.
+ *
+ * @param props The page's props.
+ * @returns The results page.
+ */
 export default function ResultsView({
   scan,
   loggedIn,
@@ -62,11 +75,9 @@ export default function ResultsView({
               {expanded ? 'Hide details' : 'More details'}
               <ChevronIcon up={expanded} />
             </button>
-            {loggedIn && (
-              <button type="button" className="button button--secondary" onClick={onShare}>
-                {shareLabel}
-              </button>
-            )}
+            <button type="button" className="button button--secondary" onClick={onShare}>
+              {shareLabel}
+            </button>
             <button type="button" className="button button--secondary" onClick={onCheckAnother}>
               Check another listing
             </button>

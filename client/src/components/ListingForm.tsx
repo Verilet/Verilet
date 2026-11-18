@@ -1,4 +1,12 @@
-import { useEffect, useId, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
+import {
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type FormEvent,
+  type ReactElement,
+} from 'react';
 import CarArrival from './CarArrival';
 import ChevronIcon from './ChevronIcon';
 import PageFadeIn from './PageFadeIn';
@@ -22,12 +30,13 @@ interface ListingFormProps {
   onSubmit: (input: ListingInput) => void;
   submitting: boolean;
   submitError: string | null;
-  /** Injectable for tests; defaults to the placeholder autofill service. */
+  /** Injectable for tests; defaults to the live autofill service. */
   autofillListing?: AutofillListing;
   /** Set when the visitor arrives through a car transition. */
   carArrival?: CarArrivalInfo | null;
 }
 
+/** Focus order for sequentially highlighting invalid form fields. */
 const FIELD_ORDER: FormField[] = [
   'listingUrl',
   'rent',
@@ -42,22 +51,40 @@ const FIELD_ORDER: FormField[] = [
   'photos',
 ];
 
-const AUTOFILL_DONE = 'We filled in what we could find. Check it and add anything missing.';
-const AUTOFILL_EMPTY = "We couldn't read details from that link. Please fill them in below.";
+/** Banner status text displayed while the scraper request is in flight. */
+const AUTOFILL_READING = 'Reading listing details…';
 
+/** Banner status text displayed when at least one field was extracted. */
+const AUTOFILL_DONE = 'Details filled. Please review below.';
+
+/** Banner status text displayed when no details could be extracted from the link. */
+const AUTOFILL_EMPTY = "Couldn't read link. Please enter details below.";
+
+/** Banner status text displayed when the scrape endpoint fails or times out. */
+const AUTOFILL_SERVER_ERROR = 'Server error. Please try again.';
+
+/**
+ * Interactive rental listing form allowing student renters to input or autofill
+ * property details, review extracted information, and submit the listing for scam checks.
+ *
+ * @param props Component properties configuring submission handlers and autofill service.
+ * @returns Rendered JSX element representing the rental listing form.
+ */
 export default function ListingForm({
   onSubmit,
   submitting,
   submitError,
   autofillListing = defaultAutofillListing,
   carArrival = null,
-}: ListingFormProps) {
+}: ListingFormProps): ReactElement {
   const baseId = useId();
   const [values, setValues] = useState<FormValues>(EMPTY_FORM);
   const [errors, setErrors] = useState<FormErrors>({});
   const [autofilling, setAutofilling] = useState(false);
   const [autofillMessage, setAutofillMessage] = useState<string | null>(null);
   const fieldRefs = useRef<Partial<Record<FormField, HTMLElement | null>>>({});
+  const userTypedFields = useRef<Set<TextField>>(new Set());
+  const autofilledFields = useRef<Set<TextField>>(new Set());
 
   const linkInputRef = useRef<HTMLInputElement>(null);
   const arrivingByCar = carArrival !== null;
@@ -68,31 +95,66 @@ export default function ListingForm({
     }
   }, [arrivingByCar]);
 
-  const idFor = (field: FormField) => `${baseId}-${field}`;
-  const errorIdFor = (field: FormField) => `${baseId}-${field}-error`;
+  /** Generates a stable unique HTML element ID scoped to this form instance. */
+  const idFor = (field: FormField): string => `${baseId}-${field}`;
 
-  function clearError(field: FormField) {
+  /** Generates an accessible error element ID for a given form field. */
+  const errorIdFor = (field: FormField): string => `${baseId}-${field}-error`;
+
+  /**
+   * Clears the current validation error for a specified form field.
+   *
+   * @param field The field to clear error state for.
+   */
+  function clearError(field: FormField): void {
     if (errors[field]) {
       setErrors((current) => ({ ...current, [field]: undefined }));
     }
   }
 
-  function handleChange(field: TextField) {
+  /**
+   * Higher-order change event handler for text, select, and textarea fields.
+   * Updates state, clears field error, and tracks manual user input vs. autofill provenance.
+   *
+   * @param field The text field being edited.
+   * @returns Change event handler callback for the input element.
+   */
+  function handleChange(
+    field: TextField,
+  ): (event: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => void {
     return (event: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
       const value = event.target.value;
       setValues((current) => ({ ...current, [field]: value }));
       clearError(field);
+      if (field === 'listingUrl') {
+        setAutofillMessage(null);
+      } else {
+        if (value.trim()) {
+          userTypedFields.current.add(field);
+        } else {
+          userTypedFields.current.delete(field);
+        }
+        autofilledFields.current.delete(field);
+      }
     };
   }
 
-  function handlePhotosChange(event: ChangeEvent<HTMLInputElement>) {
+  /**
+   * Change event handler for photo file attachments.
+   *
+   * @param event File input change event.
+   */
+  function handlePhotosChange(event: ChangeEvent<HTMLInputElement>): void {
     const photos = Array.from(event.target.files ?? []);
     setValues((current) => ({ ...current, photos }));
     clearError('photos');
   }
 
-  /** Fills only the blank fields, so nothing the student already typed is overwritten. */
-  async function handleAutofill() {
+  /**
+   * Triggers the listing autofill workflow by validating the listing link, invoking
+   * the scrape service, and populating extracted details while preserving user-typed fields.
+   */
+  async function handleAutofill(): Promise<void> {
     if (autofilling) {
       return;
     }
@@ -103,32 +165,98 @@ export default function ListingForm({
       fieldRefs.current.listingUrl?.focus();
       return;
     }
+    clearError('listingUrl');
     setAutofilling(true);
-    setAutofillMessage(null);
+    setAutofillMessage(AUTOFILL_READING);
     try {
       const found = await autofillListing(link.data);
-      setValues((current) => ({
-        ...current,
-        rent: current.rent || (found.rent ?? ''),
-        location: current.location || (found.location ?? ''),
-        description: current.description || (found.description ?? ''),
-      }));
       const foundAnything = Boolean(found.rent || found.location || found.description);
-      setAutofillMessage(foundAnything ? AUTOFILL_DONE : AUTOFILL_EMPTY);
+      if (!foundAnything) {
+        setAutofillMessage(AUTOFILL_EMPTY);
+        return;
+      }
+
+      const isUserTypedRent = userTypedFields.current.has('rent');
+      const isUserTypedLocation = userTypedFields.current.has('location');
+      const isUserTypedDescription = userTypedFields.current.has('description');
+      const wasAutofilledRent = autofilledFields.current.has('rent');
+      const wasAutofilledLocation = autofilledFields.current.has('location');
+      const wasAutofilledDescription = autofilledFields.current.has('description');
+
+      setValues((current) => {
+        const nextRent = isUserTypedRent
+          ? current.rent
+          : (found.rent ?? (wasAutofilledRent ? '' : current.rent));
+
+        const nextLocation = isUserTypedLocation
+          ? current.location
+          : (found.location ?? (wasAutofilledLocation ? '' : current.location));
+
+        const nextDescription = isUserTypedDescription
+          ? current.description
+          : (found.description ?? (wasAutofilledDescription ? '' : current.description));
+
+        return {
+          ...current,
+          rent: nextRent,
+          location: nextLocation,
+          description: nextDescription,
+        };
+      });
+
+      // Track newly autofilled fields only if populated by autofill
+      if (!isUserTypedRent && found.rent) {
+        autofilledFields.current.add('rent');
+      } else if (!isUserTypedRent) {
+        autofilledFields.current.delete('rent');
+      }
+      if (!isUserTypedLocation && found.location) {
+        autofilledFields.current.add('location');
+      } else if (!isUserTypedLocation) {
+        autofilledFields.current.delete('location');
+      }
+      if (!isUserTypedDescription && found.description) {
+        autofilledFields.current.add('description');
+      } else if (!isUserTypedDescription) {
+        autofilledFields.current.delete('description');
+      }
+
+      // Clear prior validation errors for successfully populated fields
+      setErrors((current) => {
+        const updated = { ...current };
+        if (!isUserTypedRent && found.rent) {
+          delete updated.rent;
+        }
+        if (!isUserTypedLocation && found.location) {
+          delete updated.location;
+        }
+        if (!isUserTypedDescription && found.description) {
+          delete updated.description;
+        }
+        return updated;
+      });
+
+      setAutofillMessage(AUTOFILL_DONE);
     } catch {
-      setAutofillMessage(AUTOFILL_EMPTY);
+      setAutofillMessage(AUTOFILL_SERVER_ERROR);
     } finally {
       setAutofilling(false);
     }
   }
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  /**
+   * Handles form submission: validates all fields with Zod, sets error state or focuses
+   * the first invalid field on failure, and dispatches validated data on success.
+   *
+   * @param event Form submission event.
+   */
+  function handleSubmit(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault();
-    if (submitting) {
+    if (submitting || autofilling) {
       return;
     }
     const result = validateListingForm(values);
-    if (!result.success) {
+    if (result.success === false) {
       setErrors(result.errors);
       const firstInvalid = FIELD_ORDER.find((field) => result.errors[field]);
       if (firstInvalid) {
@@ -140,9 +268,12 @@ export default function ListingForm({
     onSubmit(result.data);
   }
 
-  const describedBy = (field: FormField) => (errors[field] ? errorIdFor(field) : undefined);
+  /** Resolves the accessibility error ID for aria-describedby if a field has an error. */
+  const describedBy = (field: FormField): string | undefined =>
+    errors[field] ? errorIdFor(field) : undefined;
 
-  const fieldError = (field: FormField) =>
+  /** Renders the accessible inline error banner for a field if validation failed. */
+  const fieldError = (field: FormField): ReactElement | null =>
     errors[field] ? (
       <p className="field__error" id={errorIdFor(field)} role="alert">
         {errors[field]}
@@ -433,7 +564,11 @@ export default function ListingForm({
         </p>
       )}
 
-      <button type="submit" className="button button--primary button--block" disabled={submitting}>
+      <button
+        type="submit"
+        className="button button--primary button--block"
+        disabled={submitting || autofilling}
+      >
         {submitting ? 'Checking…' : 'Check listing'}
       </button>
       {carArrival &&

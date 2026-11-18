@@ -33,9 +33,9 @@ flowchart TD
     ScrapeCtrl --> ScraperService
 
     ScraperService -.->|"HTML Scrape"| Craigslist
-    ScraperService -.->|"JSON-LD / HTML"| Zillow
-    ScraperService -.->|"JSON-LD / HTML"| Redfin
-    ScraperService -.->|"OpenGraph Meta"| FB
+    ScraperService -.->|"JSON-LD / HTML"| Zillow(Coming soon)
+    ScraperService -.->|"JSON-LD / HTML"| Redfin(Coming soon)
+    ScraperService -.->|"OpenGraph Meta"| FB(Coming soon)
 
     ScraperService -->|"Standardized Data"| ScrapeCtrl
     ScrapeCtrl -->|"JSON Envelope"| ClientService
@@ -141,3 +141,14 @@ Agents and contributors must maintain the following architectural rules:
 5. **Testing Isolation:**
    - Unit tests in `client/tests/` and `server/tests/` must never make live external network requests.
    - External dependencies and network responses must be mocked with offline HTML/JSON fixtures.
+
+## 4. Mongo Database schema
+const rentBaselineSchema = new Schema<RentBaseline>({
+  county: { type: String },
+  zipCode: { type: String },
+  roomType: { type: String, required: true },
+  price: { type: Number, required: true },
+  year: { type: Number, required: true },
+  source: { type: String, required: true },
+});
+

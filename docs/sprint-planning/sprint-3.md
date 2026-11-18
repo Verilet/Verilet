@@ -26,7 +26,7 @@ _User stories and items from the Jira backlog (Sprint 3: 5 Nov – 19 Nov) are l
 - **Story Points:** 8
 - **Assignee:** Aubrey Hayes
 - **Sprint 2 Completed Tasks:** `SCRUM-3-T-1` (Scrape endpoint & JSON-LD parser · 4h) and `SCRUM-3-T-2` (Dedicated Craigslist scraper · 6h)
-- **Sprint 3 Remaining Sub-tasks:**
+- **Sprint 3 Remaining Tasks:**
   1. Build frontend URL search bar component with active loading spinner, client-side URL validation, and invalid URL alert banner (`SCRUM-3-T-3`) (5 ideal hours)
   2. Connect scraper response handler to auto-populate form inputs, switch to the manual form tab, and display an inline review prompt (`SCRUM-3-T-4`) (5 ideal hours)
 
@@ -41,7 +41,7 @@ _User stories and items from the Jira backlog (Sprint 3: 5 Nov – 19 Nov) are l
 - **Story Points:** 8
 - **Assignee:** Devarsh Krishnan Jayakrishnan
 - **Status:** Core form inputs implemented in Sprint 2; in PR review
-- **Sprint 3 Remaining Sub-tasks:**
+- **Sprint 3 Remaining Tasks:**
   1. Finalize PR review revisions, input validation edge-cases, and merge manual listing form to receive scraper autofill (`SCRUM-15-T-1`) (0 ideal hours — implementation hours credited in Sprint 2)
 
 **Total for user story 2:** 0 ideal hours
@@ -53,7 +53,7 @@ _User stories and items from the Jira backlog (Sprint 3: 5 Nov – 19 Nov) are l
 - **Jira Issue Key:** `SCRUM-21`
 - **Priority Rating:** 2
 - **Assignee:** Aubrey Hayes
-- **Sprint 3 Sub-tasks:**
+- **Sprint 3 Tasks:**
   1. Create `securityDeposit.service.ts` with Zod schema, California AB 12 deposit cap evaluation, standardized result envelope, and unit tests in `server/tests/securityDeposit.test.ts` (`SCRUM-21-T-1`) (4 ideal hours)
   2. Create `applicationFee.service.ts` with Zod schema, California Civil Code § 1950.6 $65 statutory fee limit check, standardized result envelope, and unit tests in `server/tests/applicationFee.test.ts` (`SCRUM-21-T-2`) (4 ideal hours)
 
@@ -67,7 +67,7 @@ _User stories and items from the Jira backlog (Sprint 3: 5 Nov – 19 Nov) are l
 - **Priority Rating:** 2
 - **Story Points:** 5
 - **Assignee:** Adan Magaña-Bravo
-- **Sprint 3 Sub-tasks:**
+- **Sprint 3 Tasks:**
   1. Create `gisLandUse.service.ts` with `GisAddressInputSchema` and Santa Cruz County Assessor MapServer ArcGIS REST query builder with normalized address matching and 5000ms timeout handling (`SCRUM-20-T-1`) (4 ideal hours)
   2. Implement assessor `USECDDESC` land use code evaluation, non-residential/unverified flag triggers, standardized JSON envelope, and offline Vitest tests with mocked parcel fixtures (`SCRUM-20-T-2`) (4 ideal hours)
 
@@ -82,7 +82,7 @@ _User stories and items from the Jira backlog (Sprint 3: 5 Nov – 19 Nov) are l
 - **Story Points:** 5
 - **Assignee:** Lars Voigt-Bui
 - **Sprint 2 Completed Tasks:** `SCRUM-18-T-1` (Regex crypto, wire transfer, and gift card scanner · 6h)
-- **Sprint 3 Remaining Sub-tasks:**
+- **Sprint 3 Remaining Tasks:**
   1. Build proximity regex detecting P2P cash apps (Zelle, Venmo, CashApp, Chime) paired with advance deposit terms (before tour, holding fee) (`SCRUM-18-T-2`) (6 ideal hours)
 
 **Total for user story 5:** 6 ideal hours
@@ -96,7 +96,7 @@ _User stories and items from the Jira backlog (Sprint 3: 5 Nov – 19 Nov) are l
 - **Story Points:** 5
 - **Assignee:** Yifei Peng
 - **Sprint 2 Completed Tasks:** `SCRUM-19-T-2` (HUD Fair Market Rent benchmark tables · 5h)
-- **Sprint 3 Remaining Sub-tasks:**
+- **Sprint 3 Remaining Tasks:**
   1. Implement `price.checker.ts` outlier comparison service comparing listing rent against Santa Cruz median rent thresholds (`SCRUM-19-T-1`) (6 ideal hours)
   2. Set up test MongoDB Atlas replica cluster and write backend Vitest tests verifying median comparisons, room adjustments, and boundary thresholds (`SCRUM-19-T-3`) (2 ideal hours)
 
@@ -110,7 +110,7 @@ _User stories and items from the Jira backlog (Sprint 3: 5 Nov – 19 Nov) are l
 - **Priority Rating:** 4
 - **Assignee:** Devarsh Krishnan Jayakrishnan
 - **Sprint 2 Completed Tasks:** Check page 3-step explanation layout & wireframes
-- **Sprint 3 Remaining Sub-tasks:**
+- **Sprint 3 Remaining Tasks:**
   1. Build interactive road-style "How it works" animated visualization route (`/how-it-works`) explaining the 4-tier verification process (`SCRUM-48-T-8`) (5 ideal hours)
 
 **Total for user story 7:** 5 ideal hours

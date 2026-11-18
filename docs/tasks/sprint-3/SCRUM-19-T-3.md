@@ -57,9 +57,9 @@ in sync automatically, and tests that connect to Atlas.
 File: `server/tests/SCRUM-19-T-3_rentDatabase.test.ts`
 Setup for all: Vitest; environment set with `vi.stubEnv` or a plain object, no database connection.
 
-- Criterion 1: `SCRUM-19-T-3 uses averagePrice when RENT_DB_NAME is unset`
-- Criterion 2: `SCRUM-19-T-3 uses averagePrice when RENT_DB_NAME is empty`
-- Criterion 3: `SCRUM-19-T-3 uses the database named in RENT_DB_NAME`
-- Criterion 4: `SCRUM-19-T-3 rejects an invalid database name`
-- Criterion 5: `SCRUM-19-T-3 rent models read from RENT_DB_NAME`
-- Criterion 6: `SCRUM-19-T-3 rent models read from averagePrice by default`
+- Criterion 1: `SCRUM-19-T-3 [Criterion 1] returns averagePrice when RENT_DB_NAME is unset` — passes an empty env object and calls `getRentDbName()` with no arguments; asserts `averagePrice` both times.
+- Criterion 2: `SCRUM-19-T-3 [Criterion 2] returns averagePrice when RENT_DB_NAME is empty or whitespace` — `''` and `'   '`; asserts `averagePrice`.
+- Criterion 3: `SCRUM-19-T-3 [Criterion 3] returns the trimmed database name from RENT_DB_NAME` — `test_dataBase` with and without surrounding spaces; asserts `test_dataBase`.
+- Criterion 4: `SCRUM-19-T-3 [Criterion 4] throws for a RENT_DB_NAME that is not a valid database name` — names with a dot, space, null byte, slash, backslash, double quote, `$`, tab, newline, and 64 characters; asserts each throws an error naming `RENT_DB_NAME`.
+- Criterion 5: `SCRUM-19-T-3 [Criterion 5] connects the rent models to the database named in RENT_DB_NAME` — stubs `RENT_DB_NAME=test_dataBase` and imports the model fresh; asserts both models use `test_dataBase` and keep their collection names.
+- Criterion 6: `SCRUM-19-T-3 [Criterion 6] connects the rent models to averagePrice when RENT_DB_NAME is unset` — unsets `RENT_DB_NAME` and imports the model fresh; asserts both models use `averagePrice`.

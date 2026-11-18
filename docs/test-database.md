@@ -53,19 +53,21 @@ $tools = 'C:\Program Files\MongoDB\Tools\100\bin'
 $file  = "$env:TEMP\averagePrice.archive"
 
 & "$tools\mongodump.exe" --uri $env:MONGO_URI --db averagePrice --archive=$file
-& "$tools\mongorestore.exe" --uri $env:MONGO_URI --archive=$file --nsFrom 'averagePrice.*' --nsTo 'test_dataBase.*' --drop
-Remove-Item $file
+if ($LASTEXITCODE -eq 0) {
+  & "$tools\mongorestore.exe" --uri $env:MONGO_URI --archive=$file --nsFrom 'averagePrice.*' --nsTo 'test_dataBase.*' --drop
+}
+Remove-Item $file -ErrorAction SilentlyContinue
 ```
 
 **Bash (macOS / Linux / Git Bash):**
 
 ```bash
-MONGO_URI="$(grep '^MONGO_URI=' server/.env | cut -d= -f2- | tr -d "\"'")"
-FILE="${TMPDIR:-/tmp}/averagePrice.archive"
+MONGO_URI="$(grep '^MONGO_URI=' server/.env | cut -d= -f2- | tr -d '\r' | sed -E "s/^[\"']|[\"']$//g")"
+FILE="$(mktemp)"
 
-mongodump --uri "$MONGO_URI" --db averagePrice --archive="$FILE"
-mongorestore --uri "$MONGO_URI" --archive="$FILE" --nsFrom 'averagePrice.*' --nsTo 'test_dataBase.*' --drop
-rm "$FILE"
+mongodump --uri "$MONGO_URI" --db averagePrice --archive="$FILE" &&
+  mongorestore --uri "$MONGO_URI" --archive="$FILE" --nsFrom 'averagePrice.*' --nsTo 'test_dataBase.*' --drop
+rm -f "$FILE"
 ```
 
 ### What each step does
@@ -75,6 +77,7 @@ rm "$FILE"
 | `mongodump ... --db averagePrice`       | Reads every collection in `averagePrice` into one archive file. **Read-only**: `averagePrice` is not changed.                          |
 | `--nsFrom ... --nsTo 'test_dataBase.*'` | Renames each collection on the way in, so `averagePrice.santaCruz` is restored as `test_dataBase.santaCruz`.                           |
 | `--drop`                                | Empties each `test_dataBase` collection before restoring, so re-copying replaces the old copy instead of failing on duplicate records. |
+| `&&` / `if ($LASTEXITCODE -eq 0)`       | Runs the restore only if the dump succeeded, so a failed dump never empties `test_dataBase`.                                           |
 | `Remove-Item` / `rm`                    | Deletes the temporary archive. It is saved outside the repo, so it can't be committed by accident.                                     |
 
 ### 3. Check it worked

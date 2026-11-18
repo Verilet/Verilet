@@ -1,17 +1,26 @@
 import '@testing-library/jest-dom/vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from 'vitest';
 import ListingForm from '../src/components/ListingForm';
 
 const VALID_URL = 'https://example.com/rentals/sunny-apartment-1';
 
-function renderForm(onSubmit = vi.fn()) {
+/**
+ * Renders the ListingForm with userEvent setup and default mock submit handler.
+ *
+ * @param onSubmit Optional mock submit handler.
+ * @returns Object with userEvent instance and onSubmit spy.
+ */
+function renderForm(onSubmit = vi.fn()): {
+  user: ReturnType<typeof userEvent.setup>;
+  onSubmit: typeof onSubmit;
+} {
   render(<ListingForm onSubmit={onSubmit} submitting={false} submitError={null} />);
   return { user: userEvent.setup(), onSubmit };
 }
 
-function mockFetchSuccess(data: unknown, ok = true, status = 200) {
+function mockFetchSuccess(data: unknown, ok = true, status = 200): MockInstance {
   return vi.spyOn(globalThis, 'fetch').mockResolvedValue({
     ok,
     status,
@@ -105,6 +114,7 @@ describe('SCRUM-3-T-3: ListingForm autofill integration', () => {
     const button = screen.getByRole('button', { name: 'Reading…' });
     expect(button).toBeInTheDocument();
     expect(button).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Check listing' })).toBeDisabled();
 
     // Resolve the pending fetch
     resolveFetch({
@@ -124,6 +134,7 @@ describe('SCRUM-3-T-3: ListingForm autofill integration', () => {
 
     await waitFor(() => {
       expect(screen.getByRole('button', { name: 'Autofill' })).toBeEnabled();
+      expect(screen.getByRole('button', { name: 'Check listing' })).toBeEnabled();
     });
   });
 
@@ -196,10 +207,102 @@ describe('SCRUM-3-T-3: ListingForm autofill integration', () => {
     expect(rentInput).toHaveValue('2600');
   });
 
+  it('SCRUM-3-T-3 resets previously autofilled fields when another scrape returns missing fields, while preserving inputs on error', async () => {
+    // 1st request: Craigslist returns rent 1800
+    const fetchSpy = mockFetchSuccess({
+      success: true,
+      data: {
+        title: 'Craigslist Studio',
+        rent: 1800,
+        address: '100 Ocean St, Santa Cruz, CA',
+        description: 'Cozy studio',
+        photos: [],
+      },
+    });
+
+    const { user } = renderForm();
+    const linkInput = screen.getByLabelText('Listing link');
+    const autofillButton = screen.getByRole('button', { name: 'Autofill' });
+
+    await user.type(linkInput, 'https://craigslist.org/listing/1');
+    await user.click(autofillButton);
+
+    expect(await screen.findByText('Details filled. Please review below.')).toBeInTheDocument();
+    expect(screen.getByLabelText('Monthly rent')).toHaveValue('1800');
+    expect(screen.getByLabelText('City or address')).toHaveValue('100 Ocean St, Santa Cruz, CA');
+
+    // 2nd request: Zillow returns OpenGraph details where rent is null per SCRUM-3-T-1
+    fetchSpy.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        success: true,
+        data: {
+          title: 'Broadway Apartments',
+          rent: null,
+          address: null,
+          description: 'Zillow apartment community',
+          photos: [],
+        },
+      }),
+    } as Response);
+
+    await user.clear(linkInput);
+    await user.type(
+      linkInput,
+      'https://www.zillow.com/apartments/santa-cruz-ca/broadway-514/5YT2zy/',
+    );
+    await user.click(autofillButton);
+
+    expect(await screen.findByText('Details filled. Please review below.')).toBeInTheDocument();
+    // Monthly rent from Craigslist should be cleared to blank, not retained
+    expect(screen.getByLabelText('Monthly rent')).toHaveValue('');
+    expect(screen.getByLabelText('Description and messages (optional)')).toHaveValue(
+      'Broadway Apartments\n\nZillow apartment community',
+    );
+
+    // 3rd request: Subsequent network failure on another link preserves existing form inputs
+    fetchSpy.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+    await user.clear(linkInput);
+    await user.type(linkInput, 'https://example.com/another-link');
+    await user.click(autofillButton);
+
+    expect(await screen.findByText('Server error. Please try again.')).toBeInTheDocument();
+    expect(screen.getByLabelText('Description and messages (optional)')).toHaveValue(
+      'Broadway Apartments\n\nZillow apartment community',
+    );
+
+    // 4th request: Subsequent empty scrape preserves existing form inputs per fault tolerance spec
+    fetchSpy.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        success: true,
+        data: {
+          title: null,
+          rent: null,
+          address: null,
+          description: null,
+          photos: null,
+        },
+      }),
+    } as Response);
+    await user.clear(linkInput);
+    await user.type(linkInput, 'https://example.com/empty-listing');
+    await user.click(autofillButton);
+
+    expect(
+      await screen.findByText("Couldn't read link. Please enter details below."),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText('Description and messages (optional)')).toHaveValue(
+      'Broadway Apartments\n\nZillow apartment community',
+    );
+  });
+
   it('SCRUM-3-T-3 [Criterion 6] displays appropriate banner on unreadable scrape or server/timeout error without crashing', async () => {
     const { user } = renderForm();
     const linkInput = screen.getByLabelText('Listing link');
-    const autofillButton = () => screen.getByRole('button', { name: 'Autofill' });
+    const autofillButton = (): HTMLElement => screen.getByRole('button', { name: 'Autofill' });
 
     // 6A: Unreadable scrape (success: false reported by backend)
     const fetchSpy = mockFetchSuccess({
@@ -314,5 +417,63 @@ describe('SCRUM-3-T-3: ListingForm autofill integration', () => {
     });
     expect(screen.getByLabelText('Monthly rent')).toHaveValue('1950');
     expect(screen.getByLabelText('City or address')).toHaveValue('Santa Cruz, CA');
+  });
+
+  it('SCRUM-3-T-3 does not clear validation errors or overwrite user-typed values across subsequent scrapes', async () => {
+    const fetchSpy = mockFetchSuccess({
+      success: true,
+      data: {
+        title: 'Apartment 1',
+        rent: 2000,
+        address: '100 Ocean St, Santa Cruz, CA',
+        description: 'First description',
+        photos: [],
+      },
+    });
+
+    const { user } = renderForm();
+    const linkInput = screen.getByLabelText('Listing link');
+    const rentInput = screen.getByLabelText('Monthly rent');
+    const submitButton = screen.getByRole('button', { name: 'Check listing' });
+
+    // User types invalid rent and submits to produce validation error
+    await user.type(linkInput, VALID_URL);
+    await user.type(rentInput, 'invalid-rent');
+    await user.click(submitButton);
+
+    expect(await screen.findByText('Enter the rent as a number, like 1200.')).toBeInTheDocument();
+
+    // Trigger autofill on a scrape that provides rent: 2000
+    await user.click(screen.getByRole('button', { name: 'Autofill' }));
+    expect(await screen.findByText('Details filled. Please review below.')).toBeInTheDocument();
+
+    // User's invalid rent is preserved, and the validation error remains intact
+    expect(rentInput).toHaveValue('invalid-rent');
+    expect(screen.getByText('Enter the rent as a number, like 1200.')).toBeInTheDocument();
+    expect(screen.getByLabelText('City or address')).toHaveValue('100 Ocean St, Santa Cruz, CA');
+
+    // Second scrape without rent does NOT wipe user's typed value
+    fetchSpy.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        success: true,
+        data: {
+          title: 'Apartment 2',
+          rent: null,
+          address: '200 High St, Santa Cruz, CA',
+          description: 'Second description',
+          photos: [],
+        },
+      }),
+    } as Response);
+
+    await user.clear(linkInput);
+    await user.type(linkInput, 'https://example.com/listing-2');
+    await user.click(screen.getByRole('button', { name: 'Autofill' }));
+
+    expect(await screen.findByText('Details filled. Please review below.')).toBeInTheDocument();
+    expect(rentInput).toHaveValue('invalid-rent');
+    expect(screen.getByLabelText('City or address')).toHaveValue('200 High St, Santa Cruz, CA');
   });
 });

@@ -27,7 +27,7 @@ export const scrapedListingDataSchema = z.object({
   /** Body description text of the listing advertisement. */
   description: z.string().nullable().optional(),
   /** Image URLs extracted from the listing page gallery. */
-  photos: z.array(z.string()).optional(),
+  photos: z.array(z.string()).nullable().optional(),
 });
 
 /** Schema for the standard API response envelope returned by the backend scrape service. */
@@ -60,7 +60,7 @@ const AUTOFILL_TIMEOUT_MS = 10_000;
 export const autofillListing: AutofillListing = async (
   listingUrl: string,
 ): Promise<ListingAutofill> => {
-  const rawApiUrl = import.meta.env.VITE_API_URL ?? '';
+  const rawApiUrl = (import.meta.env.VITE_API_URL ?? '').trim();
   const apiUrl = rawApiUrl.replace(/\/+$/, '');
   const endpoint = `${apiUrl}/api/scrape`;
 
@@ -101,9 +101,9 @@ export const autofillListing: AutofillListing = async (
     combinedDescription = trimmedDesc;
   }
 
-  return {
+  return listingAutofillSchema.parse({
     rent: normalizedRent,
     location: normalizedLocation,
     description: combinedDescription,
-  };
+  });
 };

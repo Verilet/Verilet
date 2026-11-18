@@ -7,7 +7,17 @@ import type { AutofillListing } from '../src/services/autofillService';
 
 const LINK = 'https://example.com/listing/1';
 
-function renderForm(autofillListing?: AutofillListing, onSubmit = vi.fn()) {
+/**
+ * Renders the ListingForm with userEvent setup and mock handlers.
+ *
+ * @param autofillListing Optional custom autofill function mock.
+ * @param onSubmit Optional mock submit handler.
+ * @returns Object containing userEvent instance and onSubmit spy.
+ */
+function renderForm(
+  autofillListing?: AutofillListing,
+  onSubmit = vi.fn(),
+): { user: ReturnType<typeof userEvent.setup>; onSubmit: typeof onSubmit } {
   render(
     <ListingForm
       onSubmit={onSubmit}
@@ -19,7 +29,8 @@ function renderForm(autofillListing?: AutofillListing, onSubmit = vi.fn()) {
   return { user: userEvent.setup(), onSubmit };
 }
 
-const autofillButton = () => screen.getByRole('button', { name: 'Autofill' });
+/** Queries the autofill button from the rendered screen. */
+const autofillButton = (): HTMLElement => screen.getByRole('button', { name: 'Autofill' });
 
 describe('ListingForm autofill', () => {
   it('only puts text in the status region when there is a message', async () => {
@@ -148,10 +159,50 @@ describe('ListingForm autofill', () => {
       'Second apartment',
     );
   });
+
+  it('resets previously autofilled fields when another scan returns missing fields', async () => {
+    const mockAutofill = vi
+      .fn<AutofillListing>()
+      .mockResolvedValueOnce({
+        rent: '1,800',
+        location: '100 Ocean St, Santa Cruz, CA',
+        description: 'First studio',
+      })
+      .mockResolvedValueOnce({
+        description: 'Second apartment without rent',
+      });
+
+    const { user } = renderForm(mockAutofill);
+
+    // First scan
+    await user.type(screen.getByLabelText('Listing link'), LINK);
+    await user.click(autofillButton());
+
+    expect(await screen.findByText(/Details filled/)).toBeInTheDocument();
+    expect(screen.getByLabelText('Monthly rent')).toHaveValue('1,800');
+
+    // Second scan with missing rent and location
+    const linkInput = screen.getByLabelText('Listing link');
+    await user.clear(linkInput);
+    await user.type(linkInput, 'https://example.com/listing/no-rent');
+    await user.click(autofillButton());
+
+    expect(await screen.findByText(/Details filled/)).toBeInTheDocument();
+    expect(screen.getByLabelText('Monthly rent')).toHaveValue('');
+    expect(screen.getByLabelText('City or address')).toHaveValue('');
+    expect(screen.getByLabelText('Description and messages (optional)')).toHaveValue(
+      'Second apartment without rent',
+    );
+  });
 });
 
 describe('ListingForm optional details', () => {
-  async function fillRequired(user: ReturnType<typeof userEvent.setup>) {
+  /**
+   * Fills in all required listing form fields to enable successful submission.
+   *
+   * @param user Testing Library userEvent setup instance.
+   */
+  async function fillRequired(user: ReturnType<typeof userEvent.setup>): Promise<void> {
     await user.type(screen.getByLabelText('Listing link'), LINK);
     await user.type(screen.getByLabelText('Monthly rent'), '1200');
     await user.selectOptions(screen.getByLabelText('Bedrooms'), '2');

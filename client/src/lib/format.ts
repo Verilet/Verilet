@@ -1,13 +1,47 @@
 import { BEDROOM_OPTIONS, type ScanResult } from '../types';
 
-/** "$1,200". */
+/**
+ * Formats a rent in whole dollars.
+ *
+ * @param rent Monthly rent in USD.
+ * @returns e.g. "$1,200".
+ */
 export function formatRent(rent: number): string {
   return `$${rent.toLocaleString('en-US')}`;
 }
 
-/** "2 bed", from a stored bedroom value. */
+/**
+ * The label for a stored bedroom value.
+ *
+ * @param bedrooms Bedroom value from the form, e.g. "2".
+ * @returns e.g. "2 bed".
+ */
 export function bedroomLabel(bedrooms: ScanResult['bedrooms']): string {
   return BEDROOM_OPTIONS.find((option) => option.value === bedrooms)?.label ?? bedrooms;
+}
+
+/** Ways to shorten or extend a scan's one-line summary. */
+interface ScanSummaryOptions {
+  /** Add " / month" after the rent. */
+  perMonth?: boolean;
+  /** Show only the city: the part of the location before the first comma. */
+  cityOnly?: boolean;
+}
+
+/**
+ * Describes a scan in one line: bedrooms, rent and place. The titles below all use this.
+ *
+ * @param scan The scan.
+ * @param options Whether to add "/ month" or show the city only.
+ * @returns e.g. "2 bed · $1,200 · Santa Cruz, CA".
+ */
+export function scanSummary(
+  scan: ScanResult,
+  { perMonth = false, cityOnly = false }: ScanSummaryOptions = {},
+): string {
+  const rent = perMonth ? `${formatRent(scan.rent)} / month` : formatRent(scan.rent);
+  const place = cityOnly ? scan.location.split(',')[0].trim() : scan.location;
+  return `${bedroomLabel(scan.bedrooms)} · ${rent} · ${place}`;
 }
 
 /**
@@ -17,7 +51,7 @@ export function bedroomLabel(bedrooms: ScanResult['bedrooms']): string {
  * @returns e.g. "2 bed · $1,200 · Santa Cruz, CA".
  */
 export function scanTitle(scan: ScanResult): string {
-  return `${bedroomLabel(scan.bedrooms)} · ${formatRent(scan.rent)} · ${scan.location}`;
+  return scanSummary(scan);
 }
 
 /**
@@ -27,13 +61,17 @@ export function scanTitle(scan: ScanResult): string {
  * @returns e.g. "2 bed · $1,200 · Santa Cruz".
  */
 export function scanShortTitle(scan: ScanResult): string {
-  const city = scan.location.split(',')[0].trim();
-  return `${bedroomLabel(scan.bedrooms)} · ${formatRent(scan.rent)} · ${city}`;
+  return scanSummary(scan, { cityOnly: true });
 }
 
-/** "2 bed · $1,200 / month · Santa Cruz, CA" (results header). */
+/**
+ * Summary of a scan for the results page header.
+ *
+ * @param scan The scan.
+ * @returns e.g. "2 bed · $1,200 / month · Santa Cruz, CA".
+ */
 export function scanMeta(scan: ScanResult): string {
-  return `${bedroomLabel(scan.bedrooms)} · ${formatRent(scan.rent)} / month · ${scan.location}`;
+  return scanSummary(scan, { perMonth: true });
 }
 
 /**

@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { RatingChip } from '../components/Chip';
 import ListingForm from '../components/ListingForm';
 import type { CarArrivalInfo } from '../lib/carArrival';
@@ -41,7 +42,17 @@ export default function HomeView({
   onViewScan,
   onViewAll,
 }: HomeViewProps) {
-  const recent = scans.slice(0, RECENT_COUNT);
+  // Titles, dates and ratings are only worked out again when the scans change.
+  const recent = useMemo(
+    () =>
+      scans.slice(0, RECENT_COUNT).map((scan) => ({
+        scan,
+        title: scanShortTitle(scan),
+        date: formatScanDate(scan.createdAt),
+        rating: ratingFromScore(scan.score),
+      })),
+    [scans],
+  );
 
   return (
     <main className="main">
@@ -67,22 +78,24 @@ export default function HomeView({
             <h2 className="card__heading" id="recent-heading">
               Recent scans
             </h2>
-            <button type="button" className="text-button" onClick={onViewAll}>
-              View all
-            </button>
+            {recent.length > 0 && (
+              <button type="button" className="text-button" onClick={onViewAll}>
+                View all
+              </button>
+            )}
           </div>
           {recent.length === 0 ? (
             <p className="empty">No scans yet. Check a listing and it will show up here.</p>
           ) : (
             <ul className="recent-list">
-              {recent.map((scan) => (
+              {recent.map(({ scan, title, date, rating }) => (
                 <li key={scan.id} className="recent-list__item">
                   <button type="button" className="recent-row" onClick={() => onViewScan(scan.id)}>
                     <span className="recent-row__text">
-                      <span className="recent-row__title">{scanShortTitle(scan)}</span>
-                      <span className="recent-row__date">{formatScanDate(scan.createdAt)}</span>
+                      <span className="recent-row__title">{title}</span>
+                      <span className="recent-row__date">{date}</span>
                     </span>
-                    <RatingChip rating={ratingFromScore(scan.score)} />
+                    <RatingChip rating={rating} />
                   </button>
                 </li>
               ))}

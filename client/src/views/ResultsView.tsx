@@ -10,8 +10,6 @@ import type { ScanResult } from '../types';
 interface ResultsViewProps {
   /** The scan to show. */
   scan: ScanResult;
-  /** Whether the visitor is signed in, which adds the "Saved to My scans" note. */
-  loggedIn: boolean;
   /** Text of the back link, e.g. "← My scans". */
   backLabel: string;
   /** Called by the back link. */
@@ -34,7 +32,6 @@ interface ResultsViewProps {
  */
 export default function ResultsView({
   scan,
-  loggedIn,
   backLabel,
   onBack,
   onCheckAnother,
@@ -57,7 +54,6 @@ export default function ResultsView({
         <section className="card card--summary" aria-labelledby="result-heading">
           <div className="summary__meta">
             <p>{scanMeta(scan)}</p>
-            {loggedIn && <p className="summary__saved">Saved to My scans</p>}
           </div>
           <RatingChip rating={rating} />
           <h1 className="summary__title" id="result-heading">

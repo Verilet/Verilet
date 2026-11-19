@@ -1,11 +1,41 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { RatingChip } from '../components/Chip';
 import { formatScanDate, listingHost, scanTitle } from '../lib/format';
-import { ratingFromScore, ratingTone } from '../lib/risk';
+import { RATING_TONE, ratingFromScore } from '../lib/risk';
 import type { Rating, ScanResult } from '../types';
 
 /** Which ratings the table shows. */
 type Filter = 'ALL' | Rating;
+
+/** One table row, with everything it shows worked out once. */
+interface ScanRow {
+  /** The scan behind the row. */
+  scan: ScanResult;
+  /** Its risk rating. */
+  rating: Rating;
+  /** e.g. "2 bed · $1,200 · Santa Cruz, CA". */
+  title: string;
+  /** The website the listing is on, e.g. "zillow.com". */
+  host: string;
+  /** e.g. "Today" or "Oct 15". */
+  date: string;
+}
+
+/**
+ * Works out each scan's rating, title, website and date once.
+ *
+ * @param scans The visitor's scans.
+ * @returns One row per scan, in the same order.
+ */
+function toRows(scans: ScanResult[]): ScanRow[] {
+  return scans.map((scan) => ({
+    scan,
+    rating: ratingFromScore(scan.score),
+    title: scanTitle(scan),
+    host: listingHost(scan.listingUrl),
+    date: formatScanDate(scan.createdAt),
+  }));
+}
 
 /** Props for the My scans page. */
 interface ScansViewProps {
@@ -35,8 +65,12 @@ const FILTERS: { value: Filter; label: string }[] = [
  */
 export default function ScansView({ scans, onViewScan, onShareScan, shareStatus }: ScansViewProps) {
   const [filter, setFilter] = useState<Filter>('ALL');
-  const visible =
-    filter === 'ALL' ? scans : scans.filter((scan) => ratingFromScore(scan.score) === filter);
+  // Rows are only rebuilt when the scans change, and only re-filtered when the filter changes.
+  const rows = useMemo(() => toRows(scans), [scans]);
+  const visible = useMemo(
+    () => (filter === 'ALL' ? rows : rows.filter((row) => row.rating === filter)),
+    [rows, filter],
+  );
 
   return (
     <main className="main">
@@ -86,21 +120,20 @@ export default function ScansView({ scans, onViewScan, onShareScan, shareStatus 
               </tr>
             </thead>
             <tbody>
-              {visible.map((scan) => {
-                const rating = ratingFromScore(scan.score);
+              {visible.map(({ scan, rating, title, host, date }) => {
                 return (
                   <tr key={scan.id}>
                     <td className="col-listing">
-                      <span className="scans-table__title">{scanTitle(scan)}</span>
-                      <span className="scans-table__sub">{listingHost(scan.listingUrl)}</span>
+                      <span className="scans-table__title">{title}</span>
+                      <span className="scans-table__sub">{host}</span>
                     </td>
                     <td className="col-rating">
                       <RatingChip rating={rating} />
                     </td>
-                    <td className={`col-score score score--${ratingTone(scan.score)}`}>
+                    <td className={`col-score score score--${RATING_TONE[rating]}`}>
                       {scan.score}
                     </td>
-                    <td className="col-date">{formatScanDate(scan.createdAt)}</td>
+                    <td className="col-date">{date}</td>
                     <td className="col-actions">
                       <button
                         type="button"

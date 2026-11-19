@@ -1,4 +1,13 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import {
+  lazy,
+  Suspense,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import {
   Link,
   Navigate,
@@ -10,18 +19,17 @@ import {
   useNavigationType,
   useParams,
 } from 'react-router-dom';
-import { AUTH_PATHS, signInPathFor, useAuthState } from './auth/authState';
+import { AUTH_PATHS, useAuthState } from './auth/authState';
 import DevNav from './components/DevNav';
 import Header from './components/Header';
 import { MOCK_SCANS } from './data/mockScans';
 import { readCarArrival } from './lib/carArrival';
 import { loadScans, saveScans } from './lib/scanStorage';
-import { isLoggedInFromUrl } from './lib/session';
+import { readPreviewFlag, savePreviewFlag } from './lib/session';
 import { copyShareText } from './lib/share';
 import { checkListing as defaultCheckListing, type CheckListing } from './services/scanService';
 import type { ListingInput, ScanResult } from './types';
 import AboutView from './views/AboutView';
-import AuthView from './views/AuthView';
 import CheckView from './views/CheckView';
 import HomeView from './views/HomeView';
 import LandingView from './views/LandingView';
@@ -31,8 +39,8 @@ import ScansView from './views/ScansView';
 /** Props for the app root. */
 interface AppProps {
   /**
-   * Preview the logged-in screens without an account, using sample scans kept in this tab.
-   * Defaults to the `?loggedIn=true` URL flag, which only works on the dev server.
+   * Preview the signed-in screens without an account, using sample scans kept in this tab.
+   * Left out, the dev server reads the `?loggedIn=true` flag; false follows real sign-in.
    */
   loggedIn?: boolean;
   /** Scans to start with instead of the ones saved in this browser tab. */
@@ -40,6 +48,9 @@ interface AppProps {
   /** Injectable for tests; defaults to the placeholder scan service. */
   checkListing?: CheckListing;
 }
+
+/** The log in and sign up pages use Clerk's forms, so they load only when someone opens them. */
+const AuthView = lazy(() => import('./views/AuthView'));
 
 /** Shown on the form when a check fails. */
 const SUBMIT_ERROR = "We couldn't check that listing. Please try again.";
@@ -75,7 +86,7 @@ function NotFound({ title, text }: NotFoundProps) {
 }
 
 /**
- * Shown while sign-in is still checking for an existing session.
+ * Shown while sign-in is still checking for an existing session, or a page is still loading.
  *
  * @returns A loading message.
  */
@@ -124,7 +135,6 @@ function ResultsRoute({ scans, loggedIn, goTo, onShare, shareStatus }: ResultsRo
     <ResultsView
       key={scan.id}
       scan={scan}
-      loggedIn={loggedIn}
       backLabel={loggedIn ? '← My scans' : '← Check another listing'}
       onBack={() => goTo(loggedIn ? '/scans' : '/check')}
       onCheckAnother={() => goTo(loggedIn ? '/' : '/check')}
@@ -147,7 +157,7 @@ function ResultsRoute({ scans, loggedIn, goTo, onShare, shareStatus }: ResultsRo
  * @returns The app.
  */
 function App({
-  loggedIn: initialLoggedIn = import.meta.env.DEV && isLoggedInFromUrl(),
+  loggedIn: previewProp,
   initialScans,
   checkListing = defaultCheckListing,
 }: AppProps) {
@@ -165,13 +175,26 @@ function App({
 
   const carArrival = useMemo(() => readCarArrival(location.state), [location.state]);
   const auth = useAuthState();
-  const [previewLoggedIn, setPreviewLoggedIn] = useState(initialLoggedIn);
-  const loggedIn = previewLoggedIn || auth.isSignedIn;
-  const authPending = auth.configured && !auth.isLoaded;
+  // The Preview bar overrides real sign-in in either direction; null follows the real session.
+  const [preview, setPreview] = useState<boolean | null>(() => {
+    if (previewProp !== undefined) {
+      return previewProp ? true : null;
+    }
+    return import.meta.env.DEV ? readPreviewFlag() : null;
+  });
+  const loggedIn = preview ?? auth.isSignedIn;
+  const authPending = preview === null && auth.configured && !auth.isLoaded;
+
+  // Remember the preview for this tab, outside of rendering.
+  useEffect(() => {
+    if (import.meta.env.DEV && previewProp === undefined) {
+      savePreviewFlag(preview);
+    }
+  }, [preview, previewProp]);
 
   // Scans are kept in this browser tab for now, whether signed in or previewing.
   const [scans, setScans] = useState<ScanResult[]>(
-    () => initialScans ?? loadScans() ?? (initialLoggedIn ? MOCK_SCANS : []),
+    () => initialScans ?? loadScans() ?? (preview ? MOCK_SCANS : []),
   );
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -232,18 +255,18 @@ function App({
     goTo(`/results/${sample.id}`);
   }
 
-  /** Switches the Preview bar between the signed-in and signed-out screens. */
+  /** Switches the Preview bar between the signed-in and signed-out screens, even when signed in. */
   function toggleLoggedIn() {
-    setPreviewLoggedIn((current) => !current);
+    setPreview(!loggedIn);
     goTo('/');
   }
 
   /**
-   * Shows a page only to signed-in visitors. Others go to log in, which brings them back here
-   * afterwards, keeping any car transition.
+   * Shows a page only to signed-in visitors. Others go to the landing page, keeping any car
+   * transition (SCRUM-48-T-7 criterion 10).
    *
    * @param page The page that needs an account.
-   * @returns The page, a loading message while sign-in is checked, or a redirect to log in.
+   * @returns The page, a loading message while sign-in is checked, or a redirect home.
    */
   function requireAccount(page: ReactNode) {
     if (authPending) {
@@ -252,14 +275,7 @@ function App({
     if (loggedIn) {
       return page;
     }
-    // The log in page sends them back here afterwards, through Clerk's redirect_url.
-    return (
-      <Navigate
-        to={signInPathFor(location.pathname + location.search)}
-        replace
-        state={location.state}
-      />
-    );
+    return <Navigate to="/" replace state={location.state} />;
   }
 
   const home = (
@@ -286,12 +302,26 @@ function App({
 
   return (
     <div className={warm ? 'app theme-warm' : 'app'}>
-      <Header loggedIn={loggedIn} />
+      <Header loggedIn={loggedIn} pending={authPending} />
       <Routes>
-        <Route path="/" element={loggedIn ? home : <LandingView />} />
+        <Route path="/" element={authPending ? <Loading /> : loggedIn ? home : <LandingView />} />
         <Route path="/check" element={authPending ? <Loading /> : loggedIn ? home : checkForm} />
-        <Route path={`${AUTH_PATHS.signIn}/*`} element={<AuthView mode="sign-in" />} />
-        <Route path={`${AUTH_PATHS.signUp}/*`} element={<AuthView mode="sign-up" />} />
+        <Route
+          path={`${AUTH_PATHS.signIn}/*`}
+          element={
+            <Suspense fallback={<Loading />}>
+              <AuthView mode="sign-in" />
+            </Suspense>
+          }
+        />
+        <Route
+          path={`${AUTH_PATHS.signUp}/*`}
+          element={
+            <Suspense fallback={<Loading />}>
+              <AuthView mode="sign-up" />
+            </Suspense>
+          }
+        />
         <Route path="/how-it-works" element={<AboutView />} />
         <Route
           path="/scans"

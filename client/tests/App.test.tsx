@@ -175,11 +175,13 @@ describe('logged-in flow', () => {
     const recent = screen.getByRole('region', { name: 'Recent scans' });
     expect(within(recent).getAllByRole('listitem')).toHaveLength(3);
     expect(within(recent).getByText('HIGH RISK')).toBeInTheDocument();
+    expect(within(recent).getByRole('button', { name: 'View all' })).toBeInTheDocument();
   });
 
-  it('shows an empty state when there are no scans', () => {
+  it('shows an empty state without a View all button when there are no scans', () => {
     renderApp(<App loggedIn initialScans={[]} />);
     expect(screen.getByText(/No scans yet/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'View all' })).not.toBeInTheDocument();
   });
 
   it('filters My scans by rating', async () => {
@@ -208,7 +210,6 @@ describe('logged-in flow', () => {
     await user.click(within(screen.getAllByRole('row')[1]).getByRole('button', { name: 'View' }));
 
     expect(await screen.findByRole('button', { name: 'Hide details' })).toBeInTheDocument();
-    expect(screen.getByText('Saved to My scans')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Share result' })).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: '← My scans' }));
@@ -220,7 +221,7 @@ describe('logged-in flow', () => {
     renderApp(<App loggedIn initialScans={[]} checkListing={fakeCheck} />);
 
     await fillAndSubmit(user);
-    await screen.findByText('Saved to My scans');
+    await screen.findByRole('button', { name: '← My scans' });
     await user.click(screen.getByRole('button', { name: '← My scans' }));
     expect(screen.getByRole('button', { name: 'All (1)' })).toBeInTheDocument();
   });

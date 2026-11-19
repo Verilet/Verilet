@@ -31,16 +31,27 @@ function SignInUnavailable() {
  *
  * @param props The page's props.
  * @param props.mode Whether to show the log in or the sign up form.
- * @returns The log in or sign up page, or a redirect for a visitor who is already signed in.
+ * @returns The log in or sign up page, a loading message while Clerk starts, or a redirect for a
+ *   visitor who is already signed in.
  */
 export default function AuthView({ mode }: AuthViewProps) {
-  const { configured, isSignedIn } = useAuthState();
+  const { configured, isLoaded, isSignedIn } = useAuthState();
   const location = useLocation();
   // A car transition to the check form ends here for signed-out visitors.
   const arrivedByCar = readCarArrival(location.state) !== null;
   const returnTo = redirectAfterSignIn(location.search);
   const copy = mode === 'sign-in' ? GUIDE.auth.signIn : GUIDE.auth.signUp;
 
+  // Until Clerk knows whether there is a session, show neither the form nor a redirect.
+  if (configured && !isLoaded) {
+    return (
+      <main className="main main--center">
+        <p className="intro__text" role="status">
+          Loading…
+        </p>
+      </main>
+    );
+  }
   if (isSignedIn) {
     return <Navigate to={returnTo} replace />;
   }

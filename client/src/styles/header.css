@@ -75,18 +75,11 @@
   gap: 32px;
 }
 
-.header__login {
+.header .button.header__login {
   height: 40px;
   padding: 0 18px;
-  display: inline-flex;
-  align-items: center;
-  border: 1px solid var(--color-border);
   border-radius: var(--radius-pill);
-  background: var(--color-surface);
-  color: var(--color-ink);
   font-size: 14px;
-  font-weight: 600;
-  text-decoration: none;
 }
 
 .header__login:hover {

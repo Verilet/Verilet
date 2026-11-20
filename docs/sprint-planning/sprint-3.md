@@ -148,10 +148,10 @@ _User stories and items from the Jira backlog (Sprint 3: 5 Nov – 19 Nov) are l
 
 ## Initial Burnup Chart
 
-![Sprint 3 Initial Burnup Chart](../sprint-review/assets/sprint_3_initial_burnup.svg)
+![Sprint 3 Initial Burnup Chart](../assets/sprint_3_initial_burnup.svg)
 
 - **Document Name / Chart Label:** Sprint 3 Initial Burnup Chart - Project Verilet
-- **Hosting & Location:** The initial burnup chart is hosted in Google Sheets (accessible to team members and course staff) and tracks daily progress toward sprint completion. The initial baseline chart is embedded above and archived in the repository at `docs/sprint-review/assets/sprint_3_initial_burnup.svg`.
+- **Hosting & Location:** The initial burnup chart is hosted in Google Sheets (accessible to team members and course staff) and tracks daily progress toward sprint completion. The initial baseline chart is embedded above and archived in the repository at `docs/assets/sprint_3_initial_burnup.svg`.
 - **Baseline Scope:** Plotted at 45.0 total ideal work hours across 14 sprint days (November 5 – November 19, 2026), starting at Day 0 with 0 completed hours and a planned completion trajectory averaging ~3.2 ideal hours/day across the 5-person team.
 
 ---

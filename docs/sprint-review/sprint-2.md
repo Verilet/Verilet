@@ -140,7 +140,7 @@ _Computed across all sprints to date (Sprint 1: 14 days, Sprint 2: 14 days; Tota
 
 ## Sprint Burnup Chart
 
-![Sprint 2 Burnup Chart](./assets/sprint_2_burnup_chart.svg)
+![Sprint 2 Burnup Chart](../assets/sprint_2_burnup_chart.svg)
 
 _The final sprint burnup chart for Sprint 2 is embedded above, available for viewing in the lab, and submitted alongside this report._
 

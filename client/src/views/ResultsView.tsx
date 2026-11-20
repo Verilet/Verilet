@@ -1,21 +1,47 @@
 import { useId, useState } from 'react';
+import { Link } from 'react-router-dom';
 import ChevronIcon from '../components/ChevronIcon';
 import { RatingChip, StatusChip } from '../components/Chip';
 import { GUIDE } from '../content/guide';
 import { scanMeta } from '../lib/format';
 import { RATING_HEADLINE, ratingFromScore, ratingTone } from '../lib/risk';
 import type { ScanResult } from '../types';
+import '../styles/results.css';
 
+/** Props for the results page. */
 interface ResultsViewProps {
+  /** The scan to show. */
   scan: ScanResult;
+  /** Text of the back link, e.g. "← My scans". */
   backLabel: string;
-  onBack: () => void;
-  onCheckAnother: () => void;
+  /** Where the back link goes, e.g. `/scans`. */
+  backTo: string;
+  /** Where "Check another listing" goes: the check form. */
+  checkAnotherTo: string;
+  /** Copies a short summary of the result. */
+  onShare: () => void;
+  /** Text of the share button, which briefly confirms a copy. */
+  shareLabel: string;
+  /** Whether "More details" starts open. */
+  defaultExpanded: boolean;
 }
 
-/** The result of a check, with an expandable "More details" panel. */
-export default function ResultsView({ scan, backLabel, onBack, onCheckAnother }: ResultsViewProps) {
-  const [expanded, setExpanded] = useState(false);
+/**
+ * The result of a check, with an expandable "More details" panel and a share button.
+ *
+ * @param props The page's props.
+ * @returns The results page.
+ */
+export default function ResultsView({
+  scan,
+  backLabel,
+  backTo,
+  checkAnotherTo,
+  onShare,
+  shareLabel,
+  defaultExpanded,
+}: ResultsViewProps) {
+  const [expanded, setExpanded] = useState(defaultExpanded);
   const detailsId = useId();
   const rating = ratingFromScore(scan.score);
   const headline = RATING_HEADLINE[rating];
@@ -23,9 +49,9 @@ export default function ResultsView({ scan, backLabel, onBack, onCheckAnother }:
   return (
     <main className="main main--center">
       <div className="results">
-        <button type="button" className="back-link" onClick={onBack}>
+        <Link to={backTo} className="back-link">
           {backLabel}
-        </button>
+        </Link>
 
         <section className="card card--summary" aria-labelledby="result-heading">
           <div className="summary__meta">
@@ -47,10 +73,17 @@ export default function ResultsView({ scan, backLabel, onBack, onCheckAnother }:
               {expanded ? 'Hide details' : 'More details'}
               <ChevronIcon up={expanded} />
             </button>
-            <button type="button" className="button button--secondary" onClick={onCheckAnother}>
-              Check another listing
+            <button type="button" className="button button--secondary" onClick={onShare}>
+              {shareLabel}
             </button>
+            <Link to={checkAnotherTo} className="button button--secondary">
+              Check another listing
+            </Link>
           </div>
+          {/* Tells screen readers whether the copy worked; the button text changes for sighted users. */}
+          <p className="visually-hidden" aria-live="polite">
+            {shareLabel === 'Share result' ? '' : shareLabel}
+          </p>
         </section>
 
         <section

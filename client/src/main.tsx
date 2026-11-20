@@ -3,15 +3,10 @@ import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import './index.css';
 import './styles/layout.css';
-import './styles/header.css';
-import './styles/form.css';
 import './styles/buttons.css';
 import './styles/chips.css';
-import './styles/results.css';
-import './styles/landing.css';
-import './styles/about.css';
-import './styles/transitions.css';
-import App from './App.tsx';
+import App from './App';
+import AuthProvider from './auth/AuthProvider';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
@@ -21,7 +16,9 @@ if (!rootElement) {
 createRoot(rootElement).render(
   <StrictMode>
     <BrowserRouter>
-      <App />
+      <AuthProvider>
+        <App />
+      </AuthProvider>
     </BrowserRouter>
   </StrictMode>,
 );

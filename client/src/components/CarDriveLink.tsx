@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { DRIVE_ARRIVAL_STATE } from '../lib/carArrival';
 import { prefersReducedMotion } from '../lib/motion';
 import { CarIcon } from './RoadIcons';
+import '../styles/transitions.css';
 
 const DRIVE_MS = 880;
 const CAR_START_DELAY_MS = 80;

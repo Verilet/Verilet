@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { useInView } from '../lib/useInView';
+import '../styles/landing.css';
 
 /** Fades its content up the first time it scrolls into view. */
 export default function Reveal({ children }: { children: ReactNode }) {

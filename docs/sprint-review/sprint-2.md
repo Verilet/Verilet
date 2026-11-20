@@ -88,7 +88,7 @@ _The following 5 user stories were planned for Sprint 2 (and part of the sprint 
 4. **User Story 4: As a student, I want to be told if the listing is greatly below the average rental price so that I don't fall for a listing that's too good to be true.**
    - _Story Points:_ 5 | _Priority Rating:_ 3
    - _Completed in Sprint 2:_ 1 task (`SCRUM-19-T-2` [5.0 hrs]: HUD Fair Market Rent benchmark tables).
-   - _Remaining Work / Reason Not Completed:_ The outlier comparison math / service logic (`SCRUM-19-T-1` [6.0 hrs]) and MongoDB Atlas test database setup (`SCRUM-19-T-3` [2.0 hrs]) roll over into Sprint 3.
+   - _Remaining Work / Reason Not Completed:_ The outlier comparison math / service logic (`SCRUM-19-T-1` [6.0 hrs]) and MongoDB Atlas test database setup (`SCRUM-19-T-3` [3.0 hrs]) roll over into Sprint 3.
 
 5. **User Story 5: As a student, I want to fill out a simple form about a rental listing, so I can check if it's a scam.**
    - _Story Points:_ 8 | _Priority Rating:_ 1
@@ -135,7 +135,7 @@ _Computed across all sprints to date (Sprint 1: 14 days, Sprint 2: 14 days; Tota
 
 ## Sprint Burnup Chart
 
-![Sprint 2 Burnup Chart](../assets/sprint_2_final_burnup.svg)
+![Sprint 2 Burnup Chart](../assets/sprint_2_burnup_chart.svg)
 
 _The final sprint burnup chart for Sprint 2 is embedded above, available for viewing in the lab, and submitted alongside this report._
 

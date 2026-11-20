@@ -29,7 +29,8 @@ interface ScanSummaryOptions {
 }
 
 /**
- * Describes a scan in one line: bedrooms, rent and place. The titles below all use this.
+ * Describes a scan in one line: bedrooms, rent and place. The titles below all use this. An empty
+ * place is left out, along with its separator.
  *
  * @param scan The scan.
  * @param options Whether to add "/ month" or show the city only.
@@ -41,7 +42,7 @@ export function scanSummary(
 ): string {
   const rent = perMonth ? `${formatRent(scan.rent)} / month` : formatRent(scan.rent);
   const place = cityOnly ? scan.location.split(',')[0].trim() : scan.location;
-  return `${bedroomLabel(scan.bedrooms)} · ${rent} · ${place}`;
+  return [bedroomLabel(scan.bedrooms), rent, place].filter((part) => part !== '').join(' · ');
 }
 
 /**
@@ -103,10 +104,14 @@ function startOfDay(date: Date): number {
  *
  * @param iso ISO timestamp of the scan.
  * @param now The current time. Defaults to now.
- * @returns "Today", "Yesterday", or a date like "Oct 15".
+ * @returns "Today", "Yesterday", a date like "Oct 15", a date with its year like "Oct 15, 2025"
+ *   when it isn't this year, or "Unknown date" when the timestamp can't be read.
  */
 export function formatScanDate(iso: string, now: Date = new Date()): string {
   const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) {
+    return 'Unknown date';
+  }
   const days = Math.round((startOfDay(now) - startOfDay(date)) / 86_400_000);
   if (days <= 0) {
     return 'Today';
@@ -114,5 +119,11 @@ export function formatScanDate(iso: string, now: Date = new Date()): string {
   if (days === 1) {
     return 'Yesterday';
   }
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  // Show the year once a scan is from another year, so last year's scans can be told apart.
+  const sameYear = date.getFullYear() === now.getFullYear();
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    ...(sameYear ? {} : { year: 'numeric' }),
+  });
 }

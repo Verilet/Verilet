@@ -1,3 +1,4 @@
+import '../styles/about.css';
 interface HouseProps {
   /** Body colour, set per stop. */
   color: string;

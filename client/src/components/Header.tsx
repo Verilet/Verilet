@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { AUTH_PATHS, signInPathFor } from '../auth/authState';
 import { GUIDE } from '../content/guide';
+import '../styles/header.css';
 
 /** The account menu uses Clerk's account button, so it loads only for signed-in visitors. */
 const AccountMenu = lazy(() => import('../auth/AccountMenu'));

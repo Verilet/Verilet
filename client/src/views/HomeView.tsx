@@ -1,10 +1,12 @@
 import { useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { RatingChip } from '../components/Chip';
 import ListingForm from '../components/ListingForm';
 import type { CarArrivalInfo } from '../lib/carArrival';
 import { formatScanDate, scanShortTitle } from '../lib/format';
 import { ratingFromScore } from '../lib/risk';
 import type { ListingInput, ScanResult } from '../types';
+import '../styles/home.css';
 
 /** Props for the signed-in home page. */
 interface HomeViewProps {
@@ -18,10 +20,6 @@ interface HomeViewProps {
   submitError: string | null;
   /** Set when the visitor arrives through a car transition. */
   carArrival?: CarArrivalInfo | null;
-  /** Opens one scan's result. */
-  onViewScan: (scanId: string) => void;
-  /** Opens My scans. */
-  onViewAll: () => void;
 }
 
 /** How many recent scans the home page lists. */
@@ -39,8 +37,6 @@ export default function HomeView({
   submitting,
   submitError,
   carArrival,
-  onViewScan,
-  onViewAll,
 }: HomeViewProps) {
   // Titles, dates and ratings are only worked out again when the scans change.
   const recent = useMemo(
@@ -78,10 +74,11 @@ export default function HomeView({
             <h2 className="card__heading" id="recent-heading">
               Recent scans
             </h2>
-            {recent.length > 0 && (
-              <button type="button" className="text-button" onClick={onViewAll}>
+            {/* Only worth linking to My scans when it holds more than this card shows. */}
+            {scans.length > RECENT_COUNT && (
+              <Link to="/scans" className="text-button">
                 View all
-              </button>
+              </Link>
             )}
           </div>
           {recent.length === 0 ? (
@@ -90,13 +87,13 @@ export default function HomeView({
             <ul className="recent-list">
               {recent.map(({ scan, title, date, rating }) => (
                 <li key={scan.id} className="recent-list__item">
-                  <button type="button" className="recent-row" onClick={() => onViewScan(scan.id)}>
+                  <Link to={`/results/${scan.id}`} className="recent-row">
                     <span className="recent-row__text">
                       <span className="recent-row__title">{title}</span>
                       <span className="recent-row__date">{date}</span>
                     </span>
                     <RatingChip rating={rating} />
-                  </button>
+                  </Link>
                 </li>
               ))}
             </ul>

@@ -11,6 +11,7 @@ import { carArrivalState, type CarBox } from '../lib/carArrival';
 import { CAR_HEIGHT, CAR_WIDTH } from '../lib/carShape';
 import { prefersReducedMotion } from '../lib/motion';
 import { CarIcon } from './RoadIcons';
+import '../styles/transitions.css';
 
 const PAGE_FADE_MS = 180;
 

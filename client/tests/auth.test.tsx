@@ -3,8 +3,10 @@ import type { ReactNode } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import App from '../src/App';
+import { useEffect } from 'react';
 import AuthProvider from '../src/auth/AuthProvider';
 import {
+  isPublishableKey,
   redirectAfterSignIn,
   signInPathFor,
   useAuthState,
@@ -63,7 +65,7 @@ function renderAt(path: string, publishableKey: string | undefined = KEY) {
   return render(
     <MemoryRouter initialEntries={[path]}>
       <AuthProvider publishableKey={publishableKey}>
-        <App loggedIn={false} />
+        <App />
       </AuthProvider>
     </MemoryRouter>,
   );
@@ -257,6 +259,65 @@ describe('Clerk setup', () => {
       'token_456',
     );
     expect(getToken).toHaveBeenCalledWith({ template: 'verilet-api', skipCache: true });
+  });
+});
+
+describe('Clerk key and token safety', () => {
+  it.each([
+    ['a test key', 'pk_test_ZXhhbXBsZS5jbGVyay5hY2NvdW50cy5kZXYk', true],
+    ['a live key', 'pk_live_ZXhhbXBsZS5jb20k', true],
+    ['a secret key pasted by mistake', 'sk_test_abc123', false],
+    ['a key with spaces inside', 'pk_test_abc 123', false],
+    ['an empty value', '', false],
+    ['no value', undefined, false],
+  ])('treats %s as valid: %s', (_name, key, valid) => {
+    expect(isPublishableKey(key)).toBe(valid);
+  });
+
+  it('turns sign-in off instead of loading Clerk with an invalid key', async () => {
+    renderAt('/login', 'sk_test_wrong_variable');
+    expect(await screen.findByRole('status')).toHaveTextContent(GUIDE.auth.unavailableTitle);
+    expect(clerk.providerProps).toEqual({});
+  });
+
+  it('gives null instead of an error when Clerk cannot get a token', async () => {
+    const getToken = vi.fn(async () => Promise.reject(new Error('network down')));
+    clerk.session = { ...clerk.session, isSignedIn: true, getToken };
+    const seen: AuthState[] = [];
+    /** Records each sign-in state the app sees. */
+    function StateReader() {
+      seen.push(useAuthState());
+      return null;
+    }
+    render(
+      <MemoryRouter>
+        <AuthProvider publishableKey={KEY}>
+          <StateReader />
+        </AuthProvider>
+      </MemoryRouter>,
+    );
+    await waitFor(() => expect(seen.at(-1)?.isSignedIn).toBe(true));
+    await expect(seen.at(-1)?.getToken()).resolves.toBeNull();
+  });
+
+  it('mounts the app once, after Clerk has loaded, instead of mounting it twice', async () => {
+    let mounts = 0;
+    /** Counts how many times it is mounted. */
+    function MountCounter() {
+      useEffect(() => {
+        mounts += 1;
+      }, []);
+      return <p>App content</p>;
+    }
+    render(
+      <MemoryRouter>
+        <AuthProvider publishableKey={KEY}>
+          <MountCounter />
+        </AuthProvider>
+      </MemoryRouter>,
+    );
+    expect(await screen.findByText('App content')).toBeInTheDocument();
+    expect(mounts).toBe(1);
   });
 });
 

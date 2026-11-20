@@ -2,20 +2,18 @@
 const STORAGE_KEY = 'verilet:loggedIn';
 
 /**
- * Reads the development preview choice without changing anything. `?loggedIn=true` in the address
- * previews the signed-in screens and `?loggedIn=false` clears the preview; otherwise the choice
- * saved for this tab is used.
+ * Reads the development preview choice without changing anything. `?loggedIn=true` previews the
+ * signed-in screens and `?loggedIn=false` the signed-out ones; without the flag, the choice saved
+ * for this tab is used.
  *
- * @param search Query string to read the flag from. Defaults to the current page's.
- * @returns True to preview signed in, false to preview signed out, or null to follow real sign-in.
+ * @param search The page's query string, from React Router's `useLocation().search`.
+ * @returns True to preview signed in, false to preview signed out, or null when no preview was
+ *   chosen, so the real sign-in state is used.
  */
-export function readPreviewFlag(search: string = window.location.search): boolean | null {
+export function readPreviewFlag(search: string): boolean | null {
   const flag = new URLSearchParams(search).get('loggedIn');
-  if (flag === 'true') {
-    return true;
-  }
-  if (flag === 'false') {
-    return null;
+  if (flag === 'true' || flag === 'false') {
+    return flag === 'true';
   }
   try {
     const saved = sessionStorage.getItem(STORAGE_KEY);

@@ -123,7 +123,7 @@ export const GUIDE = {
   howLabel: 'See how it works',
   tripLinkLabel: 'See every stop on the road',
   auth: {
-    eyebrow: 'VERILET ACCOUNT',
+    eyebrow: 'Verilet account',
     signIn: {
       title: 'Log in to Verilet',
       text: 'Log in to keep your checks and come back to them later.',

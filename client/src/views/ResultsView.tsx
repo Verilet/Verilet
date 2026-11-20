@@ -5,6 +5,7 @@ import { GUIDE } from '../content/guide';
 import { scanMeta } from '../lib/format';
 import { RATING_HEADLINE, ratingFromScore, ratingTone } from '../lib/risk';
 import type { ScanResult } from '../types';
+import '../styles/results.css';
 
 /** Props for the results page. */
 interface ResultsViewProps {
@@ -78,6 +79,10 @@ export default function ResultsView({
               Check another listing
             </button>
           </div>
+          {/* Tells screen readers whether the copy worked; the button text changes for sighted users. */}
+          <p className="visually-hidden" aria-live="polite">
+            {shareLabel === 'Share result' ? '' : shareLabel}
+          </p>
         </section>
 
         <section

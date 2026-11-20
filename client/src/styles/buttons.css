@@ -37,6 +37,7 @@
 
 .text-button {
   padding: 0;
+  text-decoration: none;
   border: 0;
   background: none;
   font-size: 14px;
@@ -61,7 +62,7 @@
   font-size: 16px;
 }
 
-.theme-warm .button--secondary {
+:where(.theme-warm) .button--secondary {
   background: var(--color-card);
   height: 52px;
   padding: 0 28px;

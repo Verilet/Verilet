@@ -1,9 +1,8 @@
 import { SignIn, SignUp } from '@clerk/react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { AUTH_PATHS, redirectAfterSignIn, useAuthState } from '../auth/authState';
-import PageFadeIn from '../components/PageFadeIn';
 import { GUIDE } from '../content/guide';
-import { readCarArrival } from '../lib/carArrival';
+import '../styles/auth.css';
 
 /** Props for the log in and sign up pages. */
 interface AuthViewProps {
@@ -20,7 +19,11 @@ function SignInUnavailable() {
   return (
     <div className="guide-card auth-page__unavailable" role="status">
       <h2 className="auth-page__unavailable-title">{GUIDE.auth.unavailableTitle}</h2>
-      <p>{import.meta.env.DEV ? GUIDE.auth.unavailableDevText : GUIDE.auth.unavailableText}</p>
+      <p>
+        {import.meta.env.MODE === 'development'
+          ? GUIDE.auth.unavailableDevText
+          : GUIDE.auth.unavailableText}
+      </p>
     </div>
   );
 }
@@ -37,8 +40,6 @@ function SignInUnavailable() {
 export default function AuthView({ mode }: AuthViewProps) {
   const { configured, isLoaded, isSignedIn } = useAuthState();
   const location = useLocation();
-  // A car transition to the check form ends here for signed-out visitors.
-  const arrivedByCar = readCarArrival(location.state) !== null;
   const returnTo = redirectAfterSignIn(location.search);
   const copy = mode === 'sign-in' ? GUIDE.auth.signIn : GUIDE.auth.signUp;
 
@@ -91,7 +92,6 @@ export default function AuthView({ mode }: AuthViewProps) {
         </section>
         <div className="auth-page__form">{form}</div>
       </div>
-      {arrivedByCar && <PageFadeIn />}
     </main>
   );
 }

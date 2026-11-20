@@ -38,6 +38,8 @@
   font-size: 12px;
   font-weight: 600;
   text-align: left;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
   color: var(--color-muted);
   background: var(--color-surface-muted);
   border-bottom: 1px solid var(--color-border);
@@ -100,25 +102,14 @@
   color: var(--color-muted);
 }
 
-.scans-table td.score {
+.score {
   font-size: 16px;
   font-weight: 700;
 }
 
-.scans-table td.score--danger {
-  color: var(--color-danger);
-}
-
-.scans-table td.score--warn {
-  color: var(--color-warn);
-}
-
-.scans-table td.score--ok {
-  color: var(--color-ok);
-}
-
 .row-action {
   margin-left: 20px;
+  text-decoration: none;
   padding: 0;
   border: 0;
   background: none;
@@ -129,4 +120,70 @@
 .row-action--strong {
   font-weight: 600;
   color: var(--color-ink);
+}
+
+@media (max-width: 720px) {
+  .table-card {
+    overflow-x: visible;
+  }
+
+  .scans-table,
+  .scans-table tbody {
+    display: block;
+    min-width: 0;
+  }
+
+  .scans-table thead {
+    display: none;
+  }
+
+  .scans-table tr {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    grid-template-areas:
+      'listing listing listing'
+      'rating score date'
+      'actions actions actions';
+    align-items: center;
+    gap: 10px 12px;
+    padding: 16px;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .scans-table tbody tr:last-child {
+    border-bottom: 0;
+  }
+
+  .scans-table td,
+  .scans-table td:first-child,
+  .scans-table td:last-child {
+    width: auto;
+    padding: 0;
+    border-bottom: 0;
+  }
+
+  .scans-table .col-listing {
+    grid-area: listing;
+  }
+
+  .scans-table .col-rating {
+    grid-area: rating;
+  }
+
+  .scans-table .col-score {
+    grid-area: score;
+  }
+
+  .scans-table .col-date {
+    grid-area: date;
+  }
+
+  .scans-table .col-actions {
+    grid-area: actions;
+    text-align: left;
+  }
+
+  .scans-table .row-action:first-child {
+    margin-left: 0;
+  }
 }

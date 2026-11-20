@@ -3,6 +3,9 @@ import CarFlightLink from '../components/CarFlightLink';
 import { CarIcon, HouseIcon } from '../components/RoadIcons';
 import { GUIDE } from '../content/guide';
 import { prefersReducedMotion } from '../lib/motion';
+import '../styles/about.css';
+import '../styles/landing.css';
+import '../styles/transitions.css';
 
 const HOUSE_COLORS = ['#ead7b5', '#d8e3d3', '#ecd1cb', '#d3dee9', '#e6dcef', '#f3d9cd'];
 const CAR_HEIGHT = 62;

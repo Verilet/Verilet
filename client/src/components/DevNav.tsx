@@ -1,3 +1,4 @@
+import '../styles/dev-nav.css';
 /** Props for the development Preview bar. */
 interface DevNavProps {
   /** Whether the signed-in screens are showing. */

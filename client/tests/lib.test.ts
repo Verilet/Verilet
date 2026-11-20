@@ -33,6 +33,15 @@ describe('formatScanDate', () => {
     expect(formatScanDate(new Date(2026, 9, 25, 23, 0).toISOString(), now)).toBe('Yesterday');
     expect(formatScanDate(new Date(2026, 9, 15, 12, 0).toISOString(), now)).toBe('Oct 15');
   });
+
+  it('adds the year for scans from an earlier year', () => {
+    expect(formatScanDate(new Date(2025, 9, 15, 12, 0).toISOString(), now)).toBe('Oct 15, 2025');
+  });
+
+  it('shows "Unknown date" instead of "Invalid Date" for a timestamp it cannot read', () => {
+    expect(formatScanDate('not a date', now)).toBe('Unknown date');
+    expect(formatScanDate('', now)).toBe('Unknown date');
+  });
 });
 
 describe('scoreListing (placeholder)', () => {
@@ -94,6 +103,11 @@ describe('scan summary formatters', () => {
     expect(scanShortTitle({ ...SCAN, location: 'Aptos' })).toBe('2 bed · $1,200 · Aptos');
   });
 
+  it('leaves out the place and its separator when the location is empty', () => {
+    expect(scanTitle({ ...SCAN, location: '' })).toBe('2 bed · $1,200');
+    expect(scanShortTitle({ ...SCAN, location: '' })).toBe('2 bed · $1,200');
+  });
+
   it('adds "/ month" after the rent for the results header', () => {
     expect(scanMeta(SCAN)).toBe('2 bed · $1,200 / month · Santa Cruz, CA');
   });
@@ -144,10 +158,12 @@ describe('development preview flag', () => {
     expect(sessionStorage.length).toBe(0);
   });
 
-  it('follows real sign-in with ?loggedIn=false or when nothing is saved', () => {
+  it('previews the signed-out screens with ?loggedIn=false, whatever was saved', () => {
     savePreviewFlag(true);
-    expect(readPreviewFlag('?loggedIn=false')).toBeNull();
-    sessionStorage.clear();
+    expect(readPreviewFlag('?loggedIn=false')).toBe(false);
+  });
+
+  it('follows real sign-in when there is no flag and nothing is saved', () => {
     expect(readPreviewFlag('')).toBeNull();
   });
 

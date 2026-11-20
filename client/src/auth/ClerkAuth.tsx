@@ -32,8 +32,9 @@ function ClerkAuthBridge({ children }: ClerkAuthBridgeProps) {
       configured: true,
       isLoaded,
       isSignedIn: Boolean(isSignedIn),
-      // Options such as a JWT template are passed straight through to Clerk.
-      getToken: (options) => getToken(options),
+      // Options such as a JWT template are passed straight through to Clerk. A failed request
+      // gives null, like being signed out, instead of an error the caller has to handle.
+      getToken: (options) => getToken(options).catch(() => null),
     }),
     [isLoaded, isSignedIn, getToken],
   );

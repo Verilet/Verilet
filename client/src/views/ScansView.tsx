@@ -1,7 +1,9 @@
 import { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { RatingChip } from '../components/Chip';
 import { formatScanDate, listingHost, scanTitle } from '../lib/format';
 import { RATING_TONE, ratingFromScore } from '../lib/risk';
+import '../styles/scans.css';
 import type { Rating, ScanResult } from '../types';
 
 /** Which ratings the table shows. */
@@ -41,8 +43,6 @@ function toRows(scans: ScanResult[]): ScanRow[] {
 interface ScansViewProps {
   /** The visitor's scans, newest first. */
   scans: ScanResult[];
-  /** Opens one scan's result. */
-  onViewScan: (scanId: string) => void;
   /** Copies a short summary of a scan. */
   onShareScan: (scan: ScanResult) => void;
   /** Outcome of the most recent share attempt, for brief feedback on that row. */
@@ -58,12 +58,27 @@ const FILTERS: { value: Filter; label: string }[] = [
 ];
 
 /**
- * The signed-in table of past scans, with rating filters.
+ * The text of a row's share button: "Share", or how the last copy went for a moment after.
+ *
+ * @param scanId The row's scan.
+ * @param shareStatus The most recent share attempt.
+ * @returns "Share", "Copied" or "Couldn't copy".
+ */
+function shareLabelFor(scanId: string, shareStatus: ScansViewProps['shareStatus']): string {
+  if (shareStatus?.id !== scanId) {
+    return 'Share';
+  }
+  return shareStatus.ok ? 'Copied' : "Couldn't copy";
+}
+
+/**
+ * The signed-in table of past scans, with rating filters. On phones each row becomes a card, so
+ * the page never scrolls sideways.
  *
  * @param props The page's props.
  * @returns The My scans page.
  */
-export default function ScansView({ scans, onViewScan, onShareScan, shareStatus }: ScansViewProps) {
+export default function ScansView({ scans, onShareScan, shareStatus }: ScansViewProps) {
   const [filter, setFilter] = useState<Filter>('ALL');
   // Rows are only rebuilt when the scans change, and only re-filtered when the filter changes.
   const rows = useMemo(() => toRows(scans), [scans]);
@@ -71,6 +86,7 @@ export default function ScansView({ scans, onViewScan, onShareScan, shareStatus 
     () => (filter === 'ALL' ? rows : rows.filter((row) => row.rating === filter)),
     [rows, filter],
   );
+  const sharedTitle = rows.find((row) => row.scan.id === shareStatus?.id)?.title;
 
   return (
     <main className="main">
@@ -93,6 +109,13 @@ export default function ScansView({ scans, onViewScan, onShareScan, shareStatus 
         ))}
       </div>
 
+      {/* Tells screen readers whether a copy worked; the button text changes for sighted users. */}
+      <p className="visually-hidden" aria-live="polite">
+        {shareStatus && sharedTitle
+          ? `${shareStatus.ok ? 'Copied' : "Couldn't copy"} the result for ${sharedTitle}`
+          : ''}
+      </p>
+
       {scans.length === 0 ? (
         <p className="empty empty--panel">You haven&rsquo;t checked any listings yet.</p>
       ) : visible.length === 0 ? (
@@ -103,24 +126,25 @@ export default function ScansView({ scans, onViewScan, onShareScan, shareStatus 
             <thead>
               <tr>
                 <th scope="col" className="col-listing">
-                  LISTING
+                  Listing
                 </th>
                 <th scope="col" className="col-rating">
-                  RATING
+                  Rating
                 </th>
                 <th scope="col" className="col-score">
-                  SCORE
+                  Score
                 </th>
                 <th scope="col" className="col-date">
-                  DATE
+                  Date
                 </th>
                 <th scope="col" className="col-actions">
-                  ACTIONS
+                  Actions
                 </th>
               </tr>
             </thead>
             <tbody>
               {visible.map(({ scan, rating, title, host, date }) => {
+                const shareLabel = shareLabelFor(scan.id, shareStatus);
                 return (
                   <tr key={scan.id}>
                     <td className="col-listing">
@@ -130,28 +154,25 @@ export default function ScansView({ scans, onViewScan, onShareScan, shareStatus 
                     <td className="col-rating">
                       <RatingChip rating={rating} />
                     </td>
-                    <td className={`col-score score score--${RATING_TONE[rating]}`}>
-                      {scan.score}
+                    <td className="col-score">
+                      <span className={`score score--${RATING_TONE[rating]}`}>{scan.score}</span>
                     </td>
                     <td className="col-date">{date}</td>
                     <td className="col-actions">
-                      <button
-                        type="button"
+                      <Link
+                        to={`/results/${scan.id}`}
                         className="row-action row-action--strong"
-                        onClick={() => onViewScan(scan.id)}
+                        aria-label={`View result for ${title}`}
                       >
                         View
-                      </button>
+                      </Link>
                       <button
                         type="button"
                         className="row-action"
+                        aria-label={`${shareLabel} result for ${title}`}
                         onClick={() => onShareScan(scan)}
                       >
-                        {shareStatus?.id === scan.id
-                          ? shareStatus.ok
-                            ? 'Copied'
-                            : "Couldn't copy"
-                          : 'Share'}
+                        {shareLabel}
                       </button>
                     </td>
                   </tr>

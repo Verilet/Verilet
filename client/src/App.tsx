@@ -20,9 +20,7 @@ import {
   useParams,
 } from 'react-router-dom';
 import { AUTH_PATHS, useAuthState } from './auth/authState';
-import DevNav from './components/DevNav';
 import Header from './components/Header';
-import { MOCK_SCANS } from './data/mockScans';
 import { readCarArrival } from './lib/carArrival';
 import { loadScans, saveScans } from './lib/scanStorage';
 import { readPreviewFlag, savePreviewFlag } from './lib/session';
@@ -39,8 +37,8 @@ import ScansView from './views/ScansView';
 /** Props for the app root. */
 interface AppProps {
   /**
-   * Preview the signed-in screens without an account, using sample scans kept in this tab.
-   * Left out, the dev server reads the `?loggedIn=true` flag; false follows real sign-in.
+   * Preview the signed-in (true) or signed-out (false) screens, whatever the real session is.
+   * Left out, the dev server reads the `?loggedIn` flag and everyone else follows real sign-in.
    */
   loggedIn?: boolean;
   /** Scans to start with instead of the ones saved in this browser tab. */
@@ -51,6 +49,22 @@ interface AppProps {
 
 /** The log in and sign up pages use Clerk's forms, so they load only when someone opens them. */
 const AuthView = lazy(() => import('./views/AuthView'));
+
+/**
+ * The Preview bar is a development tool. Every development-only check in the app is written as
+ * `import.meta.env.MODE === 'development'` so the build can drop that code from production.
+ */
+const DevNav =
+  import.meta.env.MODE === 'development' ? lazy(() => import('./components/DevNav')) : null;
+
+/**
+ * Loads the sample scans the Preview bar shows. Only exists on the dev server, so the samples are
+ * never bundled for users.
+ */
+const loadSampleScans =
+  import.meta.env.MODE === 'development'
+    ? async (): Promise<ScanResult[]> => (await import('./data/mockScans')).MOCK_SCANS
+    : null;
 
 /** Shown on the form when a check fails. */
 const SUBMIT_ERROR = "We couldn't check that listing. Please try again.";
@@ -151,7 +165,7 @@ function ResultsRoute({ scans, loggedIn, goTo, onShare, shareStatus }: ResultsRo
  * The app: header, routes, and the development Preview bar. Keeps scans in the browser tab.
  *
  * @param props The app's props.
- * @param props.loggedIn Preview the signed-in screens without an account.
+ * @param props.loggedIn Preview the signed-in (true) or signed-out (false) screens.
  * @param props.initialScans Scans to start with.
  * @param props.checkListing Scores a listing; defaults to the placeholder scorer.
  * @returns The app.
@@ -178,24 +192,30 @@ function App({
   // The Preview bar overrides real sign-in in either direction; null follows the real session.
   const [preview, setPreview] = useState<boolean | null>(() => {
     if (previewProp !== undefined) {
-      return previewProp ? true : null;
+      return previewProp;
     }
-    return import.meta.env.DEV ? readPreviewFlag() : null;
+    return import.meta.env.MODE === 'development' ? readPreviewFlag(location.search) : null;
   });
   const loggedIn = preview ?? auth.isSignedIn;
   const authPending = preview === null && auth.configured && !auth.isLoaded;
 
   // Remember the preview for this tab, outside of rendering.
   useEffect(() => {
-    if (import.meta.env.DEV && previewProp === undefined) {
+    if (import.meta.env.MODE === 'development' && previewProp === undefined) {
       savePreviewFlag(preview);
     }
   }, [preview, previewProp]);
 
-  // Scans are kept in this browser tab for now, whether signed in or previewing.
-  const [scans, setScans] = useState<ScanResult[]>(
-    () => initialScans ?? loadScans() ?? (preview ? MOCK_SCANS : []),
+  // Real scans are kept in this browser tab. Sample scans for the preview are only loaded on the
+  // dev server, are kept in memory, and are never saved with the real ones.
+  const [scans, setScans] = useState<ScanResult[]>(() => initialScans ?? loadScans() ?? []);
+  const [samples, setSamples] = useState<ScanResult[]>([]);
+  const [showSamples, setShowSamples] = useState(preview === true && initialScans === undefined);
+  const visibleScans = useMemo(
+    () => (showSamples ? [...scans, ...samples] : scans),
+    [scans, samples, showSamples],
   );
+
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [shareStatus, setShareStatus] = useState<{ id: string; ok: boolean } | null>(null);
@@ -204,6 +224,21 @@ function App({
   useEffect(() => () => clearTimeout(shareTimer.current), []);
 
   useEffect(() => saveScans(scans), [scans]);
+
+  useEffect(() => {
+    if (!showSamples || !loadSampleScans || samples.length > 0) {
+      return;
+    }
+    let active = true;
+    loadSampleScans().then((sampleScans) => {
+      if (active) {
+        setSamples(sampleScans);
+      }
+    });
+    return () => {
+      active = false;
+    };
+  }, [showSamples, samples.length]);
 
   /**
    * Goes to another page and clears any error from the last check.
@@ -246,17 +281,22 @@ function App({
     shareTimer.current = setTimeout(() => setShareStatus(null), 2000);
   }
 
-  /** Opens a sample result from the Preview bar, adding it to the list first if needed. */
-  function previewResults() {
-    const sample = MOCK_SCANS[0];
-    setScans((current) =>
-      current.some((scan) => scan.id === sample.id) ? current : [sample, ...current],
-    );
-    goTo(`/results/${sample.id}`);
+  /** Opens a sample result from the Preview bar, loading the sample scans first if needed. */
+  async function previewResults() {
+    if (!loadSampleScans) {
+      return;
+    }
+    const sampleScans = samples.length > 0 ? samples : await loadSampleScans();
+    setSamples(sampleScans);
+    setShowSamples(true);
+    goTo(`/results/${sampleScans[0].id}`);
   }
 
   /** Switches the Preview bar between the signed-in and signed-out screens, even when signed in. */
   function toggleLoggedIn() {
+    if (!loggedIn) {
+      setShowSamples(true);
+    }
     setPreview(!loggedIn);
     goTo('/');
   }
@@ -278,25 +318,56 @@ function App({
     return <Navigate to="/" replace state={location.state} />;
   }
 
-  const home = (
-    <HomeView
-      scans={scans}
-      onSubmit={handleSubmit}
-      submitting={submitting}
-      submitError={submitError}
-      carArrival={carArrival}
-      onViewScan={(scanId) => goTo(`/results/${scanId}`)}
-      onViewAll={() => goTo('/scans')}
-    />
-  );
-  const checkForm = (
-    <CheckView
-      onSubmit={handleSubmit}
-      submitting={submitting}
-      submitError={submitError}
-      carArrival={carArrival}
-    />
-  );
+  /**
+   * The signed-in home page. Only called by the routes that show it.
+   *
+   * @returns The home page with the listing form and recent scans.
+   */
+  function renderHome() {
+    return (
+      <HomeView
+        scans={visibleScans}
+        onSubmit={handleSubmit}
+        submitting={submitting}
+        submitError={submitError}
+        carArrival={carArrival}
+      />
+    );
+  }
+
+  /**
+   * The page for `/`: a loading message while sign-in is checked, then home or the landing page.
+   *
+   * @returns The page to show at `/`.
+   */
+  function renderRoot() {
+    if (authPending) {
+      return <Loading />;
+    }
+    return loggedIn ? renderHome() : <LandingView />;
+  }
+
+  /**
+   * The page for `/check`: the signed-in home page, or the check form for everyone else.
+   *
+   * @returns The page to show at `/check`.
+   */
+  function renderCheck() {
+    if (authPending) {
+      return <Loading />;
+    }
+    if (loggedIn) {
+      return renderHome();
+    }
+    return (
+      <CheckView
+        onSubmit={handleSubmit}
+        submitting={submitting}
+        submitError={submitError}
+        carArrival={carArrival}
+      />
+    );
+  }
 
   const warm = !loggedIn;
 
@@ -304,8 +375,8 @@ function App({
     <div className={warm ? 'app theme-warm' : 'app'}>
       <Header loggedIn={loggedIn} pending={authPending} />
       <Routes>
-        <Route path="/" element={authPending ? <Loading /> : loggedIn ? home : <LandingView />} />
-        <Route path="/check" element={authPending ? <Loading /> : loggedIn ? home : checkForm} />
+        <Route path="/" element={renderRoot()} />
+        <Route path="/check" element={renderCheck()} />
         <Route
           path={`${AUTH_PATHS.signIn}/*`}
           element={
@@ -326,19 +397,14 @@ function App({
         <Route
           path="/scans"
           element={requireAccount(
-            <ScansView
-              scans={scans}
-              onViewScan={(scanId) => goTo(`/results/${scanId}`)}
-              onShareScan={handleShare}
-              shareStatus={shareStatus}
-            />,
+            <ScansView scans={visibleScans} onShareScan={handleShare} shareStatus={shareStatus} />,
           )}
         />
         <Route
           path="/results/:scanId"
           element={
             <ResultsRoute
-              scans={scans}
+              scans={visibleScans}
               loggedIn={loggedIn}
               goTo={goTo}
               onShare={handleShare}
@@ -351,14 +417,16 @@ function App({
           element={<NotFound title="Page not found" text="That page doesn't exist or has moved." />}
         />
       </Routes>
-      {import.meta.env.MODE === 'development' && (
-        <DevNav
-          loggedIn={loggedIn}
-          onToggleLoggedIn={toggleLoggedIn}
-          onShowCheck={() => goTo(loggedIn ? '/' : '/check')}
-          onShowResults={previewResults}
-          onShowScans={() => goTo('/scans')}
-        />
+      {DevNav && (
+        <Suspense fallback={null}>
+          <DevNav
+            loggedIn={loggedIn}
+            onToggleLoggedIn={toggleLoggedIn}
+            onShowCheck={() => goTo(loggedIn ? '/' : '/check')}
+            onShowResults={previewResults}
+            onShowScans={() => goTo('/scans')}
+          />
+        </Suspense>
       )}
     </div>
   );

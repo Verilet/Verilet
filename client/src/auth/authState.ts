@@ -77,3 +77,17 @@ export function redirectAfterSignIn(search: string): string {
     (target.startsWith(AUTH_PATHS.signIn) || target.startsWith(AUTH_PATHS.signUp));
   return isSitePath && !isAuthPage ? target : AUTH_PATHS.afterSignIn;
 }
+
+/** Clerk publishable keys look like `pk_test_…` or `pk_live_…` followed by base64 text. */
+const PUBLISHABLE_KEY_PATTERN = /^pk_(test|live)_[A-Za-z0-9+/=_-]+$/;
+
+/**
+ * Checks that a value looks like a Clerk publishable key, so a typo or a secret key pasted into
+ * the wrong variable turns sign-in off instead of breaking every page.
+ *
+ * @param key The configured key, if any.
+ * @returns True when the key has the shape of a publishable key.
+ */
+export function isPublishableKey(key: string | undefined): key is string {
+  return key !== undefined && PUBLISHABLE_KEY_PATTERN.test(key.trim());
+}

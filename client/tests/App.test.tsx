@@ -175,13 +175,26 @@ describe('logged-in flow', () => {
     const recent = screen.getByRole('region', { name: 'Recent scans' });
     expect(within(recent).getAllByRole('listitem')).toHaveLength(3);
     expect(within(recent).getByText('HIGH RISK')).toBeInTheDocument();
-    expect(within(recent).getByRole('button', { name: 'View all' })).toBeInTheDocument();
+    expect(within(recent).getAllByRole('link')[0]).toHaveAttribute('href', '/results/a');
+    // Every scan fits on the card, so there is nothing more for View all to show.
+    expect(within(recent).queryByRole('link', { name: 'View all' })).not.toBeInTheDocument();
+  });
+
+  it('links to My scans with View all once there are more scans than the card shows', () => {
+    const many = ['a', 'b', 'c', 'd', 'e'].map((id) => seedScan(id, 50, 'Santa Cruz, CA'));
+    renderApp(<App loggedIn initialScans={many} />);
+    const recent = screen.getByRole('region', { name: 'Recent scans' });
+    expect(within(recent).getAllByRole('listitem')).toHaveLength(4);
+    expect(within(recent).getByRole('link', { name: 'View all' })).toHaveAttribute(
+      'href',
+      '/scans',
+    );
   });
 
   it('shows an empty state without a View all button when there are no scans', () => {
     renderApp(<App loggedIn initialScans={[]} />);
     expect(screen.getByText(/No scans yet/)).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'View all' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'View all' })).not.toBeInTheDocument();
   });
 
   it('filters My scans by rating', async () => {
@@ -207,13 +220,27 @@ describe('logged-in flow', () => {
     renderApp(<App loggedIn initialScans={scans} />);
 
     await user.click(screen.getByRole('link', { name: 'My scans' }));
-    await user.click(within(screen.getAllByRole('row')[1]).getByRole('button', { name: 'View' }));
+    const firstRow = within(screen.getAllByRole('row')[1]);
+    // The row's actions say which listing they are for.
+    expect(firstRow.getByRole('button', { name: /^Share result for 2 bed/ })).toBeInTheDocument();
+    await user.click(firstRow.getByRole('link', { name: /^View result for 2 bed/ }));
 
     expect(await screen.findByRole('button', { name: 'Hide details' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Share result' })).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: '← My scans' }));
     expect(screen.getByRole('heading', { level: 1, name: 'My scans' })).toBeInTheDocument();
+  });
+
+  it('tells screen readers whether sharing a result worked', async () => {
+    const user = userEvent.setup();
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText: vi.fn(async () => undefined) },
+    });
+    renderApp(<App loggedIn initialScans={scans} />, '/results/a');
+    await user.click(screen.getByRole('button', { name: 'Share result' }));
+    expect(await screen.findByText('Copied', { selector: '[aria-live]' })).toBeInTheDocument();
   });
 
   it('adds a newly checked listing to My scans', async () => {

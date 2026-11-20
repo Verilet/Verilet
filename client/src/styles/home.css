@@ -42,9 +42,6 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  border: 0;
-  background: none;
-  text-align: left;
 }
 
 .recent-list__item:last-child .recent-row {

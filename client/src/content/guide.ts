@@ -114,7 +114,7 @@ const STOPS: GuideStop[] = [
 
 /** All the wording for the landing, How it works, results and log in pages. */
 export const GUIDE = {
-  eyebrow: 'RENTAL SCAM CHECK FOR STUDENTS',
+  eyebrow: 'Rental scam check for students',
   headline: { prefix: 'Check a rental listing', accent: 'before you pay' },
   pitch:
     'Verilet looks for common scam signs in a rental listing and gives you a clear risk rating, with the reasons behind it.',
@@ -145,7 +145,7 @@ export const GUIDE = {
   },
   legendHeading: 'How to read your result',
   listingDemo: {
-    label: 'EXAMPLE LISTING',
+    label: 'Example listing',
     title: 'Sunny 2 bed near campus',
     description: 'Available now. Must rent this week. No viewings, the owner is overseas.',
     rent: '$1,200 / month',

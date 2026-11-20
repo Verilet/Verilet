@@ -1,4 +1,5 @@
 import { useId, useState } from 'react';
+import { Link } from 'react-router-dom';
 import ChevronIcon from '../components/ChevronIcon';
 import { RatingChip, StatusChip } from '../components/Chip';
 import { GUIDE } from '../content/guide';
@@ -13,10 +14,10 @@ interface ResultsViewProps {
   scan: ScanResult;
   /** Text of the back link, e.g. "← My scans". */
   backLabel: string;
-  /** Called by the back link. */
-  onBack: () => void;
-  /** Starts a new check. */
-  onCheckAnother: () => void;
+  /** Where the back link goes, e.g. `/scans`. */
+  backTo: string;
+  /** Where "Check another listing" goes: the check form. */
+  checkAnotherTo: string;
   /** Copies a short summary of the result. */
   onShare: () => void;
   /** Text of the share button, which briefly confirms a copy. */
@@ -34,8 +35,8 @@ interface ResultsViewProps {
 export default function ResultsView({
   scan,
   backLabel,
-  onBack,
-  onCheckAnother,
+  backTo,
+  checkAnotherTo,
   onShare,
   shareLabel,
   defaultExpanded,
@@ -48,9 +49,9 @@ export default function ResultsView({
   return (
     <main className="main main--center">
       <div className="results">
-        <button type="button" className="back-link" onClick={onBack}>
+        <Link to={backTo} className="back-link">
           {backLabel}
-        </button>
+        </Link>
 
         <section className="card card--summary" aria-labelledby="result-heading">
           <div className="summary__meta">
@@ -75,9 +76,9 @@ export default function ResultsView({
             <button type="button" className="button button--secondary" onClick={onShare}>
               {shareLabel}
             </button>
-            <button type="button" className="button button--secondary" onClick={onCheckAnother}>
+            <Link to={checkAnotherTo} className="button button--secondary">
               Check another listing
-            </button>
+            </Link>
           </div>
           {/* Tells screen readers whether the copy worked; the button text changes for sighted users. */}
           <p className="visually-hidden" aria-live="polite">

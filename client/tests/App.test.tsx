@@ -145,7 +145,7 @@ describe('logged-out flow', () => {
     await fillAndSubmit(user);
     await screen.findByRole('heading', { level: 1, name: /scam signals/i });
 
-    await user.click(screen.getByRole('button', { name: 'Check another listing' }));
+    await user.click(screen.getByRole('link', { name: 'Check another listing' }));
     expect(screen.getByLabelText('Listing link')).toHaveValue('');
   });
 
@@ -228,7 +228,7 @@ describe('logged-in flow', () => {
     expect(await screen.findByRole('button', { name: 'Hide details' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Share result' })).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: '← My scans' }));
+    await user.click(screen.getByRole('link', { name: '← My scans' }));
     expect(screen.getByRole('heading', { level: 1, name: 'My scans' })).toBeInTheDocument();
   });
 
@@ -248,8 +248,8 @@ describe('logged-in flow', () => {
     renderApp(<App loggedIn initialScans={[]} checkListing={fakeCheck} />);
 
     await fillAndSubmit(user);
-    await screen.findByRole('button', { name: '← My scans' });
-    await user.click(screen.getByRole('button', { name: '← My scans' }));
+    await screen.findByRole('link', { name: '← My scans' });
+    await user.click(screen.getByRole('link', { name: '← My scans' }));
     expect(screen.getByRole('button', { name: 'All (1)' })).toBeInTheDocument();
   });
 });

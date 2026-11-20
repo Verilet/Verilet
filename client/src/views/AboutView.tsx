@@ -256,7 +256,7 @@ export default function AboutView() {
     <main className="guide">
       <div className="guide__column guide__column--road">
         <header className="road-intro">
-          <p className="eyebrow">HOW IT WORKS</p>
+          <p className="eyebrow">How it works</p>
           <h1 className="road-intro__title">Follow the road to your risk rating</h1>
           <p className="road-intro__text">
             Every listing takes the same trip. Here is what we check at each stop.
@@ -290,8 +290,8 @@ export default function AboutView() {
 
           <div className="road" ref={roadRef}>
             <div className="road__lane" aria-hidden="true">
-              <span className="road__tag road__tag--start">START</span>
-              <span className="road__tag road__tag--finish">FINISH</span>
+              <span className="road__tag road__tag--start">Start</span>
+              <span className="road__tag road__tag--finish">Finish</span>
             </div>
 
             <ol className="road__stops">

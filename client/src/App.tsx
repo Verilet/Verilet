@@ -120,8 +120,6 @@ interface ResultsRouteProps {
   scans: ScanResult[];
   /** Whether the visitor is signed in, which changes the back link and details panel. */
   loggedIn: boolean;
-  /** Navigates to another page. */
-  goTo: (path: string) => void;
   /** Copies a short summary of a scan. */
   onShare: (scan: ScanResult) => void;
   /** Outcome of the most recent share, for brief feedback on the button. */
@@ -134,7 +132,7 @@ interface ResultsRouteProps {
  * @param props The route's props.
  * @returns The results page for the scan, or a not-found page.
  */
-function ResultsRoute({ scans, loggedIn, goTo, onShare, shareStatus }: ResultsRouteProps) {
+function ResultsRoute({ scans, loggedIn, onShare, shareStatus }: ResultsRouteProps) {
   const { scanId } = useParams();
   const scan = scans.find((candidate) => candidate.id === scanId);
   if (!scan) {
@@ -150,8 +148,8 @@ function ResultsRoute({ scans, loggedIn, goTo, onShare, shareStatus }: ResultsRo
       key={scan.id}
       scan={scan}
       backLabel={loggedIn ? '← My scans' : '← Check another listing'}
-      onBack={() => goTo(loggedIn ? '/scans' : '/check')}
-      onCheckAnother={() => goTo(loggedIn ? '/' : '/check')}
+      backTo={loggedIn ? '/scans' : '/check'}
+      checkAnotherTo={loggedIn ? '/' : '/check'}
       onShare={() => onShare(scan)}
       shareLabel={
         shareStatus?.id === scan.id ? (shareStatus.ok ? 'Copied' : "Couldn't copy") : 'Share result'
@@ -406,7 +404,6 @@ function App({
             <ResultsRoute
               scans={visibleScans}
               loggedIn={loggedIn}
-              goTo={goTo}
               onShare={handleShare}
               shareStatus={shareStatus}
             />

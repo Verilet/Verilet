@@ -4,8 +4,8 @@
 - **Product Name:** Verilet
 - **Team Name:** Verilet
 - **Sprint Completion Date:** November 19, 2026
-- **Revision Number:** Revision 1.2
-- **Revision Date:** November 11, 2026
+- **Revision Number:** Revision 1.3
+- **Revision Date:** November 19, 2026
 
 ---
 
@@ -81,11 +81,12 @@ _User stories and items from the Jira backlog (Sprint 3: 5 Nov – 19 Nov) are l
 - **Priority Rating:** 3
 - **Story Points:** 5
 - **Assignee:** Lars Voigt-Bui
-- **Sprint 2 Completed Tasks:** `SCRUM-18-T-1` (Regex crypto, wire transfer, and gift card scanner · 6h)
-- **Sprint 3 Remaining Sub-tasks:**
-  1. Build proximity regex detecting P2P cash apps (Zelle, Venmo, CashApp, Chime) paired with advance deposit terms (before tour, holding fee) (`SCRUM-18-T-2`) (6 ideal hours)
+- **Sprint 2 Completed Tasks:** None (re-scoped to Sprint 3)
+- **Sprint 3 Remaining Tasks:**
+  1. Flag untraceable payment terms (crypto, wire transfers, gift cards) in listing text (`SCRUM-18-T-1` · Jira `SCRUM-36`) (6 ideal hours)
+  2. Build proximity regex detecting P2P cash apps (Zelle, Venmo, CashApp, Chime) paired with advance deposit terms (before tour, holding fee) (`SCRUM-18-T-2` · Jira `SCRUM-37`) (6 ideal hours)
 
-**Total for user story 5:** 6 ideal hours
+**Total for user story 5:** 12 ideal hours
 
 ---
 
@@ -96,11 +97,11 @@ _User stories and items from the Jira backlog (Sprint 3: 5 Nov – 19 Nov) are l
 - **Story Points:** 5
 - **Assignee:** Yifei Peng
 - **Sprint 2 Completed Tasks:** `SCRUM-19-T-2` (HUD Fair Market Rent benchmark tables · 5h)
-- **Sprint 3 Remaining Sub-tasks:**
+- **Sprint 3 Remaining Tasks:**
   1. Implement `price.checker.ts` outlier comparison service comparing listing rent against Santa Cruz median rent thresholds (`SCRUM-19-T-1`) (6 ideal hours)
-  2. Set up test MongoDB Atlas replica cluster and write backend Vitest tests verifying median comparisons, room adjustments, and boundary thresholds (`SCRUM-19-T-3`) (2 ideal hours)
+  2. Set up test MongoDB Atlas replica cluster and write backend Vitest tests verifying median comparisons, room adjustments, and boundary thresholds (`SCRUM-19-T-3`) (3 ideal hours — updated from initial 2h estimate)
 
-**Total for user story 6:** 8 ideal hours
+**Total for user story 6:** 9 ideal hours
 
 ---
 
@@ -119,10 +120,10 @@ _User stories and items from the Jira backlog (Sprint 3: 5 Nov – 19 Nov) are l
 
 ### Total Planned Sprint Effort
 
-- **Sprint 2 Carried-Over Scope:** 29.0 ideal work hours across 5 stories (`SCRUM-3-T-3` [5h], `SCRUM-3-T-4` [5h], `SCRUM-18-T-2` [6h], `SCRUM-19-T-1` [6h], `SCRUM-19-T-3` [2h], `SCRUM-48-T-8` [5h])
+- **Sprint 2 Carried-Over Scope:** 36.0 ideal work hours across 5 stories (`SCRUM-3-T-3` [5h], `SCRUM-3-T-4` [5h], `SCRUM-18-T-1` [6h], `SCRUM-18-T-2` [6h], `SCRUM-19-T-1` [6h], `SCRUM-19-T-3` [3h], `SCRUM-48-T-8` [5h])
 - **New Stories Scope:** 16.0 ideal work hours (`SCRUM-21-T-1` [4h], `SCRUM-21-T-2` [4h], `SCRUM-20-T-1` [4h], `SCRUM-20-T-2` [4h])
-- **Total Planned Sprint 3 Scope:** **45.0 ideal work hours** across 7 user stories (10 discrete technical tasks)
-- **Average Task Size:** 4.50 ideal hours per task (all $\le 6$ hours)
+- **Total Planned Sprint 3 Scope:** **52.0 ideal work hours** across 7 user stories (11 discrete technical tasks)
+- **Average Task Size:** 4.73 ideal hours per task (all $\le 6$ hours)
 
 ---
 
@@ -169,7 +170,7 @@ The digital board is organized into standard Jira workflow columns (**To Do**, *
 | **`SCRUM-15`** | Fill out simple listing form (8 pts · Devarsh)              | _(None)_                                                                                | `SCRUM-15-T-1`: Form PR review revisions & merge (Devarsh)              | In Review                |
 | **`SCRUM-21`** | Flag illegal security deposits & fees (Aubrey)              | `SCRUM-21-T-1`: AB 12 deposit service (4h)<br>`SCRUM-21-T-2`: § 1950.6 fee service (4h) | _(Queued for immediate pickup)_                                         | To Do / Ready            |
 | **`SCRUM-20`** | Confirm property exists & residential zoning (5 pts · Adan) | `SCRUM-20-T-2`: Zoning use code evaluation & offline tests (4h)                         | `SCRUM-20-T-1`: Santa Cruz MapServer ArcGIS query builder (4h · Adan)   | In Progress              |
-| **`SCRUM-18`** | High-risk payment method alerts (5 pts · Lars)              | _(None)_                                                                                | `SCRUM-18-T-2`: P2P advance deposit proximity regex (6h · Lars)         | In Progress              |
+| **`SCRUM-18`** | High-risk payment method alerts (5 pts · Lars)              | `SCRUM-18-T-1`: Untraceable payment scanner (6h · Lars)                                 | `SCRUM-18-T-2`: P2P advance deposit proximity regex (6h · Lars)         | In Progress              |
 | **`SCRUM-19`** | Below-market price outlier alert (5 pts · Yifei)            | `SCRUM-19-T-3`: MongoDB Atlas test DB & boundary tests (2h)                             | `SCRUM-19-T-1`: Santa Cruz rent outlier comparison service (6h · Yifei) | In Progress              |
 | **`SCRUM-48`** | Short explanation of how Verilet works (Devarsh)            | _(None)_                                                                                | `SCRUM-48-T-8`: Road-style animated walkthrough route (5h · Devarsh)    | In Progress              |
 

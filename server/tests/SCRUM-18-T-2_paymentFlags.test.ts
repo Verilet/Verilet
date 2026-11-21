@@ -19,11 +19,11 @@ describe('detectAdvanceFee: Samples of Scamming', () => {
     ],
     [
       'before viewing',
-      'Venmo or CashApp me $500 prior to touring the property if you are interested.',
+      'Venmo or CashApp me $500 before viewing the property if you are interested.',
     ],
     [
       'deposit via Chime',
-      'Only those serious on renting the property must Venmo $400 before viewing the property.',
+      'Only those serious on renting the property must pay a deposit via Chime to reserve it.',
     ],
   ])(
     'Testing for P2P app payments with deposit/holding fee terms %s',
@@ -57,7 +57,7 @@ describe('detectAdvanceFee: Samples of Scamming', () => {
       'Please send deposit via Zelle prior to viewing the property.',
     );
     expect(curr_violation.explanation).toMatch(
-      'No legitimate landload requests non-refundable funds prior to a tour/viewing.  ' +
+      'No legitimate landload requests non-refundable funds prior to a tour/viewing. ' +
         'Scammers tend to use P2P apps like Cash App, Venmo, Zelle, Chime, etc. to ask for deposits before touring the property. ' +
         'These types of transctions are irreversible and untraceable. ' +
         'Make sure to avoid these types of payment methods and see the property before signing a lease.',

@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 /** The interface for a payment violation detected in listing description. */
 export interface PaymentViolation {
-  code: 'UNTRACEABLE_PAYMENT';
+  code: 'UNTRACEABLE_PAYMENT' | 'ADVANCE_FEE_DEPOSIT' | 'HIGH_RISK_PAYMENT_METHOD';
   severity: 'critical';
   title: string;
   explanation: string;
@@ -15,11 +15,17 @@ interface PaymentCategoryPattern {
   suffix?: string;
 }
 
-/** The Zod schema for the input to the payment flags service. */
+/** The Zod schema for the a listing description to be analyzed when passed to all payment flag detectors. */
 export const PaymentFlagInputSchema = z.string().trim().min(1).nullish();
 
-/** A listing description where untraceable payment methods may be scanned from. */
+/** The Zod schema for the high-risk payment selection array to be analyzed when passed to the high-risk payment selection detector. */
+export const HighRiskSelectionSchema = z.array(z.unknown()).nullish();
+
+/** A listing description where untraceable payment methods and in-advanced free requests may be scanned from. Could be a string or null/undefined. */
 export type PaymentFlagInput = z.infer<typeof PaymentFlagInputSchema>;
+
+/** An array of payment methods selected by a user that may be scanned for high-risk payment methods. Could be an array of strings or null/undefined. */
+export type HighRiskSelectionInput = z.infer<typeof HighRiskSelectionSchema>;
 
 /** An array of objects that define different categories of untraceable payment methods. */
 const CATEGORIES_OF_PAYMENT = [
@@ -152,23 +158,46 @@ export function detectUntraceablePayment(description: PaymentFlagInput): Payment
   return violations;
 }
 
+/**
+ * Creates a regex pattern from an array of terms.
+ *
+ * @param terms The array of terms to create a regex from.
+ * @return A regex pattern that matches any of the terms.
+ */
 function createRegexFromTerms(terms: readonly string[]) {
   return `(?:${terms.map(termToRegex).join('|')})`;
 }
 
+/** Creates a regex pattern for P2P payment apps.*/
 const p2pPayAppRegex = createRegexFromTerms(p2pPaymenntApps);
+/**Create a regex pattern for in advance payment terms. */
 const inAdvancePaymentRegex = createRegexFromTerms(inAdvancePaymentTerms);
+/**The acceptable gap between the P2P payment app and the in advance payment term. */
 const gapBetween = `[\\s\\S]{0,${p2pToDepositRange}}?`;
 
+/** Creates a regex pattern for detecting in advance fee payments. */
 const InAdvance_Fee_Pattern = new RegExp(
   `\\b${p2pPayAppRegex}\\b${gapBetween}\\b${inAdvancePaymentRegex}\\b|\\b${inAdvancePaymentRegex}\\b${gapBetween}\\b${p2pPayAppRegex}\\b`,
   'i',
 );
 
-function detectAdvanceFee(description: string) {
-  if (typeof description !== 'string' || description.trim() === '') return [];
+/**
+ * @param description The listing description where in advance fee payments may be detected.
+ * @returns An array of payment violation objects, each representing a detected in advance fee payment, or [] if none are detected.
+ */
+export function detectAdvanceFee(description: PaymentFlagInput): PaymentViolation[] {
+  const parsedDescription = PaymentFlagInputSchema.safeParse(description);
 
-  const advanceFeeFound = description.match(InAdvance_Fee_Pattern);
+  if (
+    !parsedDescription.success ||
+    parsedDescription.data === '' ||
+    parsedDescription.data === null ||
+    parsedDescription.data === undefined
+  ) {
+    return [];
+  }
+
+  const advanceFeeFound = parsedDescription.data.match(InAdvance_Fee_Pattern);
 
   if (!advanceFeeFound) return [];
 
@@ -187,50 +216,68 @@ function detectAdvanceFee(description: string) {
   ];
 }
 
-const createKey = (payMethod: string) =>
-  payMethod
+/**
+ * Creates a key from a payment method.
+ * @param payMethod The payment method to create a key for.
+ * @returns The created key.
+ */
+function createKey(payMethod: string): string {
+  return payMethod
     .trim()
     .toLowerCase()
     .replace(/[\s-]+/g, '_');
+}
 
-//Second function of Scrum-18-T-2: detectHighRiskPayment()
-function detectHighRiskSelections(paymentMethods: string[]) {
-  if (!Array.isArray(paymentMethods)) return [];
+/**
+ * Detects high-risk payment selections.
+ * @param paymentMethods The array of payment methods to check.
+ * @returns An array of payment violation objects, each representing a detected high-risk payment method, or [] if none are detected.
+ */
+export function detectHighRiskSelections(
+  paymentMethods: HighRiskSelectionInput,
+): PaymentViolation[] {
+  const parsedPaymentMethods = HighRiskSelectionSchema.safeParse(paymentMethods);
 
-  const violations_detected = [];
-  const reported_values = new Set();
-  const no_methods = paymentMethods.length;
+  if (
+    !parsedPaymentMethods.success ||
+    parsedPaymentMethods.data === null ||
+    parsedPaymentMethods.data === undefined
+  ) {
+    return [];
+  }
 
-  for (let i = 0; i < no_methods; i++) {
-    const method = paymentMethods[i];
+  const violationsDetected: PaymentViolation[] = [];
+  const reportedValues = new Set<string>();
+  const noMethods = parsedPaymentMethods.data.length;
+
+  for (let i = 0; i < noMethods; i++) {
+    const method = parsedPaymentMethods.data[i];
     if (typeof method !== 'string' || method.trim() === '') continue;
 
     const key = createKey(method);
 
-    //using Object the built-in Javascript constrcutor
-    //find out if key is not in the HIGH_RISK_PAYMENTS structure
-    //OR if the key has already been reported
+    // using Object the built-in Javascript constrcutor
+    // find out if key is not in the HIGH_RISK_PAYMENTS structure
+    // OR if the key has already been reported
     const hasKey = Object.prototype.hasOwnProperty.call(HIGH_RISK_PAYMENTS, key);
-    const seenBefore = reported_values.has(key);
+    const seenBefore = reportedValues.has(key);
 
     if (!hasKey || seenBefore) continue;
 
-    reported_values.add(key);
+    reportedValues.add(key);
 
-    const the_high_risk_payment = HIGH_RISK_PAYMENTS[key];
+    const theHighRiskPayment = HIGH_RISK_PAYMENTS[key];
 
-    violations_detected.push({
+    violationsDetected.push({
       code: 'HIGH_RISK_PAYMENT_METHOD',
       severity: 'critical',
-      title: `${the_high_risk_payment} payment method has been requested.`,
+      title: `${theHighRiskPayment} payment method has been requested.`,
       explanation:
-        `${the_high_risk_payment} payments are irreversible and untraceable.` +
-        'Payments through checks and bank transfers are traceable and are commonly used by legitimate landlords.' +
-        'Do not send money through ${the_high_risk_payment}. Make sure to see property prior to signing a lease.',
+        `${theHighRiskPayment} payments are irreversible and untraceable. ` +
+        `Payments through checks and bank transfers are traceable and are commonly used by legitimate landlords.  ` +
+        `Do not send money through ${theHighRiskPayment}. Make sure to see property prior to signing a lease.`,
       evidence: method,
     });
   }
-  return violations_detected;
+  return violationsDetected;
 }
-
-export { detectAdvanceFee, detectHighRiskSelections, HIGH_RISK_PAYMENTS };

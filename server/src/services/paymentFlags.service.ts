@@ -62,7 +62,7 @@ const CATEGORIES_OF_PAYMENT = [
 /** An array of terms for P2P payment apps. */
 const p2pPaymenntApps = ['Venmo', 'Chime', 'CashApp', 'Zelle', 'Cash App'];
 /** An array of terms for in-advance payments. */
-const inAdvancePaymentTerms = ['deposit', 'before tour', 'before viweing', 'holding fee'];
+const inAdvancePaymentTerms = ['deposit', 'before tour', 'before viewing', 'holding fee'];
 /** The max number of characters allowed between a P2P payment app term AND an in-advance payment term. */
 const p2pToDepositRange = 80;
 

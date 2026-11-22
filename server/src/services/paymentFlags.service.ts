@@ -96,7 +96,7 @@ function escapeRegexSpecialCharacters(s: string): string {
  * @return The term converted into a regex pattern, e.g. 'wire\s+transfer'.
  */
 function termToRegex(term: string): string {
-  return escapeRegexSpecialCharacters(term).replace(/ /g, '\\s+');
+  return escapeRegexSpecialCharacters(term).replace(/ /g, '[\\s-]*');
 }
 
 /**

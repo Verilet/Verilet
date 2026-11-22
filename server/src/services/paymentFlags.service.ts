@@ -162,16 +162,17 @@ export function detectUntraceablePayment(description: PaymentFlagInput): Payment
  * Creates a regex pattern from an array of terms.
  *
  * @param terms The array of terms to create a regex from.
+ * @param pluralization An optional string to append to the regex pattern for pluralization.
  * @return A regex pattern that matches any of the terms.
  */
-function createRegexFromTerms(terms: readonly string[]) {
-  return `(?:${terms.map(termToRegex).join('|')})`;
+function createRegexFromTerms(terms: readonly string[], pluralization = '') {
+  return `(?:${terms.map(termToRegex).join('|')})${pluralization}`;
 }
 
 /** Creates a regex pattern for P2P payment apps.*/
 const p2pPayAppRegex = createRegexFromTerms(p2pPaymenntApps);
 /**Create a regex pattern for in advance payment terms. */
-const inAdvancePaymentRegex = createRegexFromTerms(inAdvancePaymentTerms);
+const inAdvancePaymentRegex = createRegexFromTerms(inAdvancePaymentTerms, '(?:s|es|ing|ed)?');
 /**The acceptable gap between the P2P payment app and the in advance payment term. */
 const gapBetween = `[\\s\\S]{0,${p2pToDepositRange}}?`;
 

@@ -17,7 +17,7 @@ export async function evaluateListing(req: Request, res: Response): Promise<void
     res.status(500).json({
       success: false,
       error: 'Internal evaluation error',
-      details: error instanceof Error ? error.message : 'Unknown internal error',
+      details: [error instanceof Error ? error.message : 'Unknown internal error'],
     });
   }
 }

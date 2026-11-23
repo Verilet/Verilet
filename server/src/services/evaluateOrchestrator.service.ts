@@ -98,10 +98,11 @@ export async function withTimeout<T>(
     }
   });
 
+  const actionPromise = Promise.resolve().then(() => action());
+  // Prevent unhandled rejections if actionPromise rejects after the timeout window
+  actionPromise.catch(() => {});
+
   try {
-    const actionPromise = new Promise<T>((resolve) => {
-      resolve(action());
-    });
     return await Promise.race([actionPromise, timeoutPromise]);
   } finally {
     if (timer) {
@@ -189,7 +190,7 @@ export async function orchestrateEvaluation(
     timeoutMs,
   );
 
-  const landUsePromise = (async () => {
+  const landUsePromise = withTimeout(async () => {
     let parcel = null;
     try {
       const gisResult = await gisQueryPromise;
@@ -204,7 +205,7 @@ export async function orchestrateEvaluation(
       useCode: parcel?.useCode ?? null,
       useDescription: parcel?.useDescription ?? null,
     });
-  })();
+  }, timeoutMs);
 
   const contactPhonePromise = withTimeout(
     () => evaluateContactPhone(input.contactPhone),

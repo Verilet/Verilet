@@ -29,8 +29,13 @@ export type PaymentValue = (typeof PAYMENT_VALUES)[number];
 
 /** Zod schema validating incoming rental listing payloads for full evaluation. */
 export const EvaluateRequestSchema = z.object({
-  /** Source listing URL. */
-  listingUrl: z.string().url('A valid URL is required'),
+  /** Source listing URL (must be valid HTTP/HTTPS URL). */
+  listingUrl: z
+    .string()
+    .url('A valid URL is required')
+    .refine((url) => /^https?:\/\//i.test(url), {
+      message: 'Listing URL must use HTTP or HTTPS protocol',
+    }),
   /** Monthly rent price in USD. */
   rent: z.number().positive('Rent must be greater than 0').finite('Rent must be a finite number'),
   /** Space / bedroom category. */

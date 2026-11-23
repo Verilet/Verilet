@@ -18,7 +18,12 @@ const BLOCKED_HOSTNAMES = new Set([
  * @param next Express next middleware function
  */
 export function validateScrapeRequest(req: Request, res: Response, next: NextFunction): void {
-  const url: string = req.body?.url;
+  const url: unknown = req.body?.url;
+  if (typeof url !== 'string' || !url.trim()) {
+    res.status(400).json({ error: 'Invalid listing URL' });
+    return;
+  }
+
   let parsedUrl: URL;
 
   // Check for empty or undefined or malformed url

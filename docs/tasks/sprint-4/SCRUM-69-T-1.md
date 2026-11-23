@@ -12,8 +12,6 @@ estimate_hours: 6
 
 Serves SCRUM-69 (As a student, I want to save the results of my scans to look at later). This task adds the backend that stores a signed-in student's checked listings and gives them back: Clerk authentication on the server, a MongoDB saved-scan model, a persistence service, and authenticated `/api/scans` endpoints. Every saved scan belongs to one verified Clerk user, and nobody can read or delete another user's scans. Jira: SCRUM-79.
 
-Out of scope: scoring a listing (SCRUM-70-T-2), the `/api/evaluate` orchestrator (SCRUM-70-T-1), checks for guests without an account, and the client screens that use this API (SCRUM-69-T-2).
-
 ## Specs
 
 - Every `/api/scans` request is checked in this order:

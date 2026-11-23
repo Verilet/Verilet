@@ -57,6 +57,12 @@ Serves SCRUM-16 (detect contact anomalies and out-of-state listers). This task i
 
 - If targetState is omitted, the service evaluates the phone number against California (CA).
 
+- International phone numbers provided in international format with a leading `+` and a non-U.S. country calling code return warning status with the `INTERNATIONAL_PHONE_NUMBER` flag.
+
+- International phone numbers are not evaluated against the U.S. state area-code mappings.
+
+- U.S. phone numbers with a `+1` country code continue to be normalized and evaluated using their 10-digit national number.
+
 ## Requirements
 
 - Implement the Mongoose model in server/src/models/areaCode.model.ts.
@@ -105,6 +111,8 @@ Serves SCRUM-16 (detect contact anomalies and out-of-state listers). This task i
 
 10. The target state is normalized to uppercase before the database query, and California (CA) is used as the default target state when no target state is supplied.
 
+11. An international phone number provided with a leading `+` and a non-U.S. country calling code returns status "warning" and flag "INTERNATIONAL_PHONE_NUMBER". The number is not evaluated against the U.S. state area-code mappings.
+
 ## Tests
 
 File: server/tests/SCRUM-16-T-1_phoneFlags.test.ts
@@ -130,5 +138,7 @@ Setup for all: Offline unit tests directly invoking the exported phone area code
 - Criterion 9: SCRUM-16-T-1 rejects non-string phone input, SCRUM-16-T-1 rejects boolean phone input, and SCRUM-16-T-1 rejects object phone input — evaluates numeric, boolean, and object inputs and asserts { success: false, error: "Invalid phone input parameter" } without throwing exceptions.
 
 - Criterion 10: SCRUM-16-T-1 schema accepts strings, empty strings, and nullish values and SCRUM-16-T-1 converts the listing state to uppercase — verifies the Zod input schema and confirms lowercase target states are normalized to uppercase before the MongoDB query.
+
+- Criterion 11: SCRUM-16-T-1 flags an international phone number and SCRUM-16-T-1 flags another international phone number — evaluates international numbers such as +44 20 7946 0958 and +61 2 9374 4000, asserting status "warning", flag "INTERNATIONAL_PHONE_NUMBER", areaCode null, and that the MongoDB query is never called.
 
 Error handling: SCRUM-16-T-1 returns failure when the state mapping is missing and SCRUM-16-T-1 handles database lookup failures — mocks a missing state mapping and a rejected database query, asserting the expected failure envelopes without unhandled exceptions.

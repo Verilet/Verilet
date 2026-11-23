@@ -352,3 +352,27 @@ describe('evaluatePhoneAreaCode - target state handling', () => {
     expect(findOneMock).toHaveBeenCalledWith({ state: 'CA' });
   });
 });
+
+// Criterion 11:
+// International phone numbers with a leading "+" and a non-U.S.
+// country calling code return an international warning without
+// querying U.S. state area-code mappings.
+describe('evaluatePhoneAreaCode - international phone numbers', () => {
+  it.each(['+44 20 7946 0958', '+61 2 9374 4000'])(
+    'SCRUM-16-T-1 flags international phone number %s',
+    async (phone) => {
+      const result = await evaluatePhoneAreaCode(phone, 'CA');
+      expect(result).toEqual({
+        success: true,
+        data: {
+          status: 'warning',
+          flag: 'INTERNATIONAL_PHONE_NUMBER',
+          message:
+            'International phone number; country is outside the supported U.S. area-code mappings',
+          areaCode: null,
+        },
+      });
+      expect(findOneMock).not.toHaveBeenCalled();
+    },
+  );
+});

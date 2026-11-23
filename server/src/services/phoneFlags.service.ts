@@ -9,7 +9,7 @@ export type PhoneFlagInput = z.infer<typeof PhoneFlagInputSchema>;
 
 export type PhoneFlagStatus = 'compliant' | 'warning' | 'skipped';
 
-export type PhoneFlag = 'NON_LOCAL_AREA_CODE' | null;
+export type PhoneFlag = 'NON_LOCAL_AREA_CODE' | 'INTERNATIONAL_PHONE_NUMBER' | null;
 
 /** Phone classification result data. */
 export interface PhoneFlagData {
@@ -61,6 +61,19 @@ export async function evaluatePhoneAreaCode(
   if (parsed.data === null || parsed.data === undefined || parsed.data === '') {
     return skippedResult('Phone number not specified; check skipped');
   }
+  if (parsed.data.startsWith('+') && !parsed.data.startsWith('+1')) {
+    return {
+      success: true,
+      data: {
+        status: 'warning',
+        flag: 'INTERNATIONAL_PHONE_NUMBER',
+        message:
+          'International phone number; country is outside the supported U.S. area-code mappings',
+        areaCode: null,
+      },
+    };
+  }
+
   // Remove formatting characters, leaving only digits
   let digits = parsed.data.replace(/\D/g, '');
 

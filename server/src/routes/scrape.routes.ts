@@ -1,5 +1,5 @@
 import { Router, type Request, type Response } from 'express';
-import validateScrapeRequest from '../middleware/validate.middleware.js';
+import { validateScrapeRequest } from '../middleware/validate.middleware.js';
 import { scrapeListing } from '../services/scraper.service.js';
 
 const router = Router();

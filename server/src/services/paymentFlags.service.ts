@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 /** The interface for a payment violation detected in listing description. */
 export interface PaymentViolation {
-  code: 'UNTRACEABLE_PAYMENT';
+  code: 'UNTRACEABLE_PAYMENT' | 'ADVANCE_FEE_DEPOSIT' | 'HIGH_RISK_PAYMENT_METHOD';
   severity: 'critical';
   title: string;
   explanation: string;
@@ -15,11 +15,17 @@ interface PaymentCategoryPattern {
   suffix?: string;
 }
 
-/** The Zod schema for the input to the payment flags service. */
+/** The Zod schema for the a listing description to be analyzed when passed to all payment flag detectors. */
 export const PaymentFlagInputSchema = z.string().trim().min(1).nullish();
 
-/** A listing description where untraceable payment methods may be scanned from. */
+/** The Zod schema for the high-risk payment selection array to be analyzed when passed to the high-risk payment selection detector. */
+export const HighRiskSelectionSchema = z.array(z.unknown()).nullish();
+
+/** A listing description where untraceable payment methods and in-advanced free requests may be scanned from. Could be a string or null/undefined. */
 export type PaymentFlagInput = z.infer<typeof PaymentFlagInputSchema>;
+
+/** An array of payment methods selected by a user that may be scanned for high-risk payment methods. Could be an array of strings or null/undefined. */
+export type HighRiskSelectionInput = z.infer<typeof HighRiskSelectionSchema>;
 
 /** An array of objects that define different categories of untraceable payment methods. */
 const CATEGORIES_OF_PAYMENT = [
@@ -53,6 +59,24 @@ const CATEGORIES_OF_PAYMENT = [
   },
 ] as const;
 
+/** An array of terms for P2P payment apps. */
+const p2pPaymenntApps = ['Venmo', 'Chime', 'CashApp', 'Zelle', 'Cash App'];
+/** An array of terms for in-advance payments. */
+const inAdvancePaymentTerms = ['deposit', 'before tour', 'before viewing', 'holding fee'];
+/** The max number of characters allowed between a P2P payment app term AND an in-advance payment term. */
+const p2pToDepositRange = 80;
+
+// use Record<string, string> to resolve key error
+const HIGH_RISK_PAYMENTS: Record<string, string> = {
+  crypto: 'Cryptocurrency',
+  wire_transfer: 'Wire Transfer',
+  gift_card: 'Gift Card',
+  zelle: 'Zelle',
+  venmo: 'Venmo',
+  cashapp: 'Cash App',
+  chime: 'Chime',
+};
+
 /**
  * Make certain special characters in a string safe for regex matching.
  *
@@ -72,7 +96,7 @@ function escapeRegexSpecialCharacters(s: string): string {
  * @return The term converted into a regex pattern, e.g. 'wire\s+transfer'.
  */
 function termToRegex(term: string): string {
-  return escapeRegexSpecialCharacters(term).replace(/ /g, '\\s+');
+  return escapeRegexSpecialCharacters(term).replace(/ /g, '[\\s-]*');
 }
 
 /**
@@ -132,4 +156,129 @@ export function detectUntraceablePayment(description: PaymentFlagInput): Payment
     }
   }
   return violations;
+}
+
+/**
+ * Creates a regex pattern from an array of terms.
+ *
+ * @param terms The array of terms to create a regex from.
+ * @param pluralization An optional string to append to the regex pattern for pluralization.
+ * @return A regex pattern that matches any of the terms.
+ */
+function createRegexFromTerms(terms: readonly string[], pluralization = '') {
+  return `(?:${terms.map(termToRegex).join('|')})${pluralization}`;
+}
+
+/** Creates a regex pattern for P2P payment apps.*/
+const p2pPayAppRegex = createRegexFromTerms(p2pPaymenntApps);
+/**Create a regex pattern for in advance payment terms. */
+const inAdvancePaymentRegex = createRegexFromTerms(inAdvancePaymentTerms, '(?:s|es|ing|ed)?');
+/**The acceptable gap between the P2P payment app and the in advance payment term. */
+const gapBetween = `[\\s\\S]{0,${p2pToDepositRange}}?`;
+
+/** Creates a regex pattern for detecting in advance fee payments. */
+const InAdvance_Fee_Pattern = new RegExp(
+  `\\b${p2pPayAppRegex}\\b${gapBetween}\\b${inAdvancePaymentRegex}\\b|\\b${inAdvancePaymentRegex}\\b${gapBetween}\\b${p2pPayAppRegex}\\b`,
+  'i',
+);
+
+/**
+ * @param description The listing description where in advance fee payments may be detected.
+ * @returns An array of payment violation objects, each representing a detected in advance fee payment, or [] if none are detected.
+ */
+export function detectAdvanceFee(description: PaymentFlagInput): PaymentViolation[] {
+  const parsedDescription = PaymentFlagInputSchema.safeParse(description);
+
+  if (
+    !parsedDescription.success ||
+    parsedDescription.data === '' ||
+    parsedDescription.data === null ||
+    parsedDescription.data === undefined
+  ) {
+    return [];
+  }
+
+  const advanceFeeFound = parsedDescription.data.match(InAdvance_Fee_Pattern);
+
+  if (!advanceFeeFound) return [];
+
+  return [
+    {
+      code: 'ADVANCE_FEE_DEPOSIT',
+      severity: 'critical',
+      title: 'An in advance deposit fee has been requested prior to tour.',
+      explanation:
+        'No legitimate landload requests non-refundable funds prior to a tour/viewing. ' +
+        'Scammers tend to use P2P apps like Cash App, Venmo, Zelle, Chime, etc. to ask for deposits before touring the property. ' +
+        'These types of transctions are irreversible and untraceable. ' +
+        'Make sure to avoid these types of payment methods and see the property before signing a lease.',
+      evidence: advanceFeeFound[0],
+    },
+  ];
+}
+
+/**
+ * Creates a key from a payment method.
+ * @param payMethod The payment method to create a key for.
+ * @returns The created key.
+ */
+function createKey(payMethod: string): string {
+  return payMethod
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/g, '_');
+}
+
+/**
+ * Detects high-risk payment selections.
+ * @param paymentMethods The array of payment methods to check.
+ * @returns An array of payment violation objects, each representing a detected high-risk payment method, or [] if none are detected.
+ */
+export function detectHighRiskSelections(
+  paymentMethods: HighRiskSelectionInput,
+): PaymentViolation[] {
+  const parsedPaymentMethods = HighRiskSelectionSchema.safeParse(paymentMethods);
+
+  if (
+    !parsedPaymentMethods.success ||
+    parsedPaymentMethods.data === null ||
+    parsedPaymentMethods.data === undefined
+  ) {
+    return [];
+  }
+
+  const violationsDetected: PaymentViolation[] = [];
+  const reportedValues = new Set<string>();
+  const noMethods = parsedPaymentMethods.data.length;
+
+  for (let i = 0; i < noMethods; i++) {
+    const method = parsedPaymentMethods.data[i];
+    if (typeof method !== 'string' || method.trim() === '') continue;
+
+    const key = createKey(method);
+
+    // using Object the built-in Javascript constrcutor
+    // find out if key is not in the HIGH_RISK_PAYMENTS structure
+    // OR if the key has already been reported
+    const hasKey = Object.prototype.hasOwnProperty.call(HIGH_RISK_PAYMENTS, key);
+    const seenBefore = reportedValues.has(key);
+
+    if (!hasKey || seenBefore) continue;
+
+    reportedValues.add(key);
+
+    const theHighRiskPayment = HIGH_RISK_PAYMENTS[key];
+
+    violationsDetected.push({
+      code: 'HIGH_RISK_PAYMENT_METHOD',
+      severity: 'critical',
+      title: `${theHighRiskPayment} payment method has been requested.`,
+      explanation:
+        `${theHighRiskPayment} payments are irreversible and untraceable. ` +
+        `Payments through checks and bank transfers are traceable and are commonly used by legitimate landlords.  ` +
+        `Do not send money through ${theHighRiskPayment}. Make sure to see property prior to signing a lease.`,
+      evidence: method,
+    });
+  }
+  return violationsDetected;
 }

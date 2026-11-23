@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { RatingChip } from '../components/Chip';
 import { formatScanDate, listingHost, scanTitle } from '../lib/format';
 import { RATING_TONE, ratingFromScore } from '../lib/risk';
+import { shareButtonLabel, type ShareStatus } from '../lib/share';
 import '../styles/scans.css';
 import type { Rating, ScanResult } from '../types';
 
@@ -46,30 +47,24 @@ interface ScansViewProps {
   /** Copies a short summary of a scan. */
   onShareScan: (scan: ScanResult) => void;
   /** Outcome of the most recent share attempt, for brief feedback on that row. */
-  shareStatus: { id: string; ok: boolean } | null;
+  shareStatus: ShareStatus | null;
+}
+
+/** One rating filter button. */
+interface FilterOption {
+  /** The rating it shows, or every rating. */
+  value: Filter;
+  /** The button's text. */
+  label: string;
 }
 
 /** The rating filter buttons above the table. */
-const FILTERS: { value: Filter; label: string }[] = [
+const FILTERS: FilterOption[] = [
   { value: 'ALL', label: 'All' },
   { value: 'HIGH', label: 'High risk' },
   { value: 'MEDIUM', label: 'Medium risk' },
   { value: 'LOW', label: 'Low risk' },
 ];
-
-/**
- * The text of a row's share button: "Share", or how the last copy went for a moment after.
- *
- * @param scanId The row's scan.
- * @param shareStatus The most recent share attempt.
- * @returns "Share", "Copied" or "Couldn't copy".
- */
-function shareLabelFor(scanId: string, shareStatus: ScansViewProps['shareStatus']): string {
-  if (shareStatus?.id !== scanId) {
-    return 'Share';
-  }
-  return shareStatus.ok ? 'Copied' : "Couldn't copy";
-}
 
 /**
  * The signed-in table of past scans, with rating filters. On phones each row becomes a card, so
@@ -144,7 +139,7 @@ export default function ScansView({ scans, onShareScan, shareStatus }: ScansView
             </thead>
             <tbody>
               {visible.map(({ scan, rating, title, host, date }) => {
-                const shareLabel = shareLabelFor(scan.id, shareStatus);
+                const shareLabel = shareButtonLabel(scan.id, shareStatus, 'Share');
                 return (
                   <tr key={scan.id}>
                     <td className="col-listing">

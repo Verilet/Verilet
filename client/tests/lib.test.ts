@@ -8,7 +8,8 @@ import {
   scanTitle,
 } from '../src/lib/format';
 import { readPreviewFlag, savePreviewFlag } from '../src/lib/session';
-import { copyShareText, shareText } from '../src/lib/share';
+import { readClientEnv } from '../src/lib/env';
+import { copyShareText, shareButtonLabel, shareText } from '../src/lib/share';
 import { ratingFromScore } from '../src/lib/risk';
 import { scoreListing } from '../src/services/scanService';
 import type { ScanResult } from '../src/types';
@@ -146,6 +147,16 @@ describe('share helpers', () => {
     });
     await expect(copyShareText(SCAN)).resolves.toBe(false);
   });
+
+  it('labels a share button with how the last copy of its scan went', () => {
+    expect(shareButtonLabel('scan-1', { id: 'scan-1', ok: true }, 'Share')).toBe('Copied');
+    expect(shareButtonLabel('scan-1', { id: 'scan-1', ok: false }, 'Share')).toBe("Couldn't copy");
+  });
+
+  it("keeps a share button's usual label when nothing was shared or another scan was", () => {
+    expect(shareButtonLabel('scan-1', null, 'Share result')).toBe('Share result');
+    expect(shareButtonLabel('scan-1', { id: 'scan-2', ok: true }, 'Share')).toBe('Share');
+  });
 });
 
 describe('development preview flag', () => {
@@ -167,12 +178,89 @@ describe('development preview flag', () => {
     expect(readPreviewFlag('')).toBeNull();
   });
 
-  it('remembers either preview choice for the tab, and forgets it when cleared', () => {
-    savePreviewFlag(false);
-    expect(readPreviewFlag('')).toBe(false);
+  it('remembers the signed-in preview for the tab', () => {
     savePreviewFlag(true);
     expect(readPreviewFlag('')).toBe(true);
+  });
+
+  it('never saves the signed-out preview, so a refresh follows real sign-in again', () => {
+    savePreviewFlag(true);
+    savePreviewFlag(false);
+    expect(sessionStorage.length).toBe(0);
+    expect(readPreviewFlag('')).toBeNull();
+  });
+
+  it('does not save ?loggedIn=false either, so it only lasts for that page load', () => {
+    expect(readPreviewFlag('?loggedIn=false')).toBe(false);
+    expect(readPreviewFlag('')).toBeNull();
+  });
+
+  it('ignores an old saved signed-out preview instead of trapping the tab in it', () => {
+    sessionStorage.setItem('verilet:loggedIn', 'false');
+    expect(readPreviewFlag('')).toBeNull();
+  });
+
+  it('ignores flag values other than true and false', () => {
+    sessionStorage.setItem('verilet:loggedIn', 'yes');
+    expect(readPreviewFlag('?loggedIn=maybe')).toBeNull();
+  });
+
+  it('forgets the preview when cleared', () => {
+    savePreviewFlag(true);
     savePreviewFlag(null);
     expect(readPreviewFlag('')).toBeNull();
+  });
+});
+
+describe('client environment', () => {
+  it('reads a valid API address and Clerk key, trimming spaces and trailing slashes', () => {
+    expect(
+      readClientEnv({
+        VITE_API_URL: ' http://localhost:5000/ ',
+        VITE_CLERK_PUBLISHABLE_KEY: ' pk_test_abc123 ',
+      }),
+    ).toEqual({ apiUrl: 'http://localhost:5000', clerkPublishableKey: 'pk_test_abc123' });
+  });
+
+  it('calls the API on this site and turns sign-in off when the variables are missing or empty', () => {
+    const empty = { apiUrl: '', clerkPublishableKey: null };
+    expect(readClientEnv({})).toEqual(empty);
+    expect(readClientEnv({ VITE_API_URL: '  ', VITE_CLERK_PUBLISHABLE_KEY: '' })).toEqual(empty);
+  });
+
+  it.each(['localhost:5000', 'ftp://files.example', 'javascript:alert(1)', 'not a url'])(
+    'ignores the API address %s instead of building a broken request',
+    (url) => {
+      expect(readClientEnv({ VITE_API_URL: url }).apiUrl).toBe('');
+    },
+  );
+
+  it('turns sign-in off for a secret key or a value that is not a string', () => {
+    expect(
+      readClientEnv({ VITE_CLERK_PUBLISHABLE_KEY: 'sk_test_secret' }).clerkPublishableKey,
+    ).toBe(null);
+    expect(readClientEnv({ VITE_CLERK_PUBLISHABLE_KEY: 42 }).clerkPublishableKey).toBe(null);
+  });
+
+  it('keeps one valid variable when the other is invalid', () => {
+    expect(
+      readClientEnv({ VITE_API_URL: 'nope', VITE_CLERK_PUBLISHABLE_KEY: 'pk_live_abc' }),
+    ).toEqual({ apiUrl: '', clerkPublishableKey: 'pk_live_abc' });
+  });
+
+  it('reads either variable when the other is left out, like a real Vite env', () => {
+    const viteEnv = { BASE_URL: '/', DEV: true, MODE: 'development' };
+    expect(readClientEnv({ ...viteEnv, VITE_CLERK_PUBLISHABLE_KEY: 'pk_test_abc' })).toEqual({
+      apiUrl: '',
+      clerkPublishableKey: 'pk_test_abc',
+    });
+    expect(readClientEnv({ ...viteEnv, VITE_API_URL: 'https://api.example' })).toEqual({
+      apiUrl: 'https://api.example',
+      clerkPublishableKey: null,
+    });
+  });
+
+  it('falls back to the defaults when the environment is not an object', () => {
+    expect(readClientEnv(null)).toEqual({ apiUrl: '', clerkPublishableKey: null });
   });
 });

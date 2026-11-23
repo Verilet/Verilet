@@ -16,8 +16,6 @@ interface ResultsViewProps {
   backLabel: string;
   /** Where the back link goes, e.g. `/scans`. */
   backTo: string;
-  /** Where "Check another listing" goes: the check form. */
-  checkAnotherTo: string;
   /** Copies a short summary of the result. */
   onShare: () => void;
   /** Text of the share button, which briefly confirms a copy. */
@@ -36,7 +34,6 @@ export default function ResultsView({
   scan,
   backLabel,
   backTo,
-  checkAnotherTo,
   onShare,
   shareLabel,
   defaultExpanded,
@@ -76,7 +73,7 @@ export default function ResultsView({
             <button type="button" className="button button--secondary" onClick={onShare}>
               {shareLabel}
             </button>
-            <Link to={checkAnotherTo} className="button button--secondary">
+            <Link to="/check" className="button button--secondary">
               Check another listing
             </Link>
           </div>

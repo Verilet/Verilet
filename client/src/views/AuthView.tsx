@@ -1,6 +1,6 @@
 import { SignIn, SignUp } from '@clerk/react';
 import { Navigate, useLocation } from 'react-router-dom';
-import { AUTH_PATHS, redirectAfterSignIn, useAuthState } from '../auth/authState';
+import { AUTH_PATHS, authPathFor, redirectAfterSignIn, useAuthState } from '../auth/authState';
 import { GUIDE } from '../content/guide';
 import '../styles/auth.css';
 
@@ -40,7 +40,8 @@ function SignInUnavailable() {
 export default function AuthView({ mode }: AuthViewProps) {
   const { configured, isLoaded, isSignedIn } = useAuthState();
   const location = useLocation();
-  const returnTo = redirectAfterSignIn(location.search);
+  // Clerk writes the return page as a full address on this site, so the check needs the origin.
+  const returnTo = redirectAfterSignIn(location.search, window.location.origin);
   const copy = mode === 'sign-in' ? GUIDE.auth.signIn : GUIDE.auth.signUp;
 
   // Until Clerk knows whether there is a session, show neither the form nor a redirect.
@@ -62,14 +63,16 @@ export default function AuthView({ mode }: AuthViewProps) {
       <SignIn
         routing="path"
         path={AUTH_PATHS.signIn}
-        signUpUrl={AUTH_PATHS.signUp}
+        // Switching to sign up keeps the page to come back to.
+        signUpUrl={authPathFor(AUTH_PATHS.signUp, returnTo)}
         fallbackRedirectUrl={returnTo}
       />
     ) : (
       <SignUp
         routing="path"
         path={AUTH_PATHS.signUp}
-        signInUrl={AUTH_PATHS.signIn}
+        // Switching to log in keeps the page to come back to.
+        signInUrl={authPathFor(AUTH_PATHS.signIn, returnTo)}
         fallbackRedirectUrl={returnTo}
       />
     );

@@ -2,6 +2,33 @@ import { RATING_LABEL, ratingFromScore } from './risk';
 import { scanTitle } from './format';
 import type { ScanResult } from '../types';
 
+/** How the most recent share went, shown on that scan's share button for a moment. */
+export interface ShareStatus {
+  /** The scan that was shared. */
+  id: string;
+  /** Whether the summary was copied. */
+  ok: boolean;
+}
+
+/**
+ * The text of a scan's share button: its usual label, or how the last copy of that scan went.
+ *
+ * @param scanId The scan the button shares.
+ * @param status The most recent share, if any.
+ * @param idleLabel The button's usual text, e.g. "Share result".
+ * @returns The usual text, "Copied" or "Couldn't copy".
+ */
+export function shareButtonLabel(
+  scanId: string,
+  status: ShareStatus | null,
+  idleLabel: string,
+): string {
+  if (status?.id !== scanId) {
+    return idleLabel;
+  }
+  return status.ok ? 'Copied' : "Couldn't copy";
+}
+
 /**
  * Builds a one-line text summary of a scan.
  *

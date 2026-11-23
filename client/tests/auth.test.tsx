@@ -1,18 +1,27 @@
 import { act, render, screen, waitFor, within } from '@testing-library/react';
 import type { ReactNode } from 'react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, useLocation } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import App from '../src/App';
 import { useEffect } from 'react';
+import AccountMenu from '../src/auth/AccountMenu';
 import AuthProvider from '../src/auth/AuthProvider';
 import {
-  isPublishableKey,
+  AuthContext,
+  authPathFor,
+  parsePublishableKey,
   redirectAfterSignIn,
   signInPathFor,
+  SIGN_IN_UNAVAILABLE,
   useAuthState,
   type AuthState,
 } from '../src/auth/authState';
 import { GUIDE } from '../src/content/guide';
+
+/** The mocked Clerk provider's props: the app, plus whatever the test checks it was given. */
+interface ClerkProviderMockProps {
+  children: ReactNode;
+}
 
 /** The props the mocked Clerk forms record, so tests can check what the app passed. */
 interface ClerkFormProps {
@@ -28,7 +37,7 @@ const clerk = vi.hoisted(() => ({
 }));
 
 vi.mock('@clerk/react', () => ({
-  ClerkProvider: ({ children, ...props }: { children: ReactNode }) => {
+  ClerkProvider: ({ children, ...props }: ClerkProviderMockProps) => {
     clerk.providerProps = props;
     return children;
   },
@@ -54,6 +63,9 @@ vi.mock('@clerk/react', () => ({
 
 const KEY = 'pk_test_example';
 
+/** The origin the tests' jsdom window runs on. */
+const ORIGIN = window.location.origin;
+
 /**
  * Renders the app inside the sign-in provider at a page.
  *
@@ -66,9 +78,19 @@ function renderAt(path: string, publishableKey: string | undefined = KEY) {
     <MemoryRouter initialEntries={[path]}>
       <AuthProvider publishableKey={publishableKey}>
         <App />
+        <ShowPath />
       </AuthProvider>
     </MemoryRouter>,
   );
+}
+
+/**
+ * Prints the router's current path, so tests can check where a redirect ended up.
+ *
+ * @returns The path in an element tests can find by test id.
+ */
+function ShowPath() {
+  return <span data-testid="path">{useLocation().pathname}</span>;
 }
 
 beforeEach(() => {
@@ -170,6 +192,24 @@ describe('header', () => {
     expect(site.getByRole('link', { name: 'How it works' })).not.toHaveAttribute('aria-current');
   });
 
+  it('links Check a listing to the form at /check and marks it current there', async () => {
+    clerk.session = { ...clerk.session, isSignedIn: true };
+    renderAt('/check');
+    await screen.findByRole('heading', { level: 1, name: 'Welcome back' });
+    const link = within(screen.getByRole('navigation', { name: 'Site' })).getByRole('link', {
+      name: 'Check a listing',
+    });
+    expect(link).toHaveAttribute('href', '/check');
+    expect(link).toHaveAttribute('aria-current', 'page');
+  });
+
+  it('sends a signed-in visitor from / to /check, so the form has one address', async () => {
+    clerk.session = { ...clerk.session, isSignedIn: true };
+    renderAt('/');
+    await screen.findByRole('heading', { level: 1, name: 'Welcome back' });
+    expect(screen.getByTestId('path')).toHaveTextContent('/check');
+  });
+
   it('does not mark My scans as the current page on a result', async () => {
     clerk.session = { ...clerk.session, isSignedIn: true };
     renderAt('/results/missing');
@@ -264,14 +304,38 @@ describe('Clerk setup', () => {
 
 describe('Clerk key and token safety', () => {
   it.each([
-    ['a test key', 'pk_test_ZXhhbXBsZS5jbGVyay5hY2NvdW50cy5kZXYk', true],
-    ['a live key', 'pk_live_ZXhhbXBsZS5jb20k', true],
-    ['a secret key pasted by mistake', 'sk_test_abc123', false],
-    ['a key with spaces inside', 'pk_test_abc 123', false],
-    ['an empty value', '', false],
-    ['no value', undefined, false],
-  ])('treats %s as valid: %s', (_name, key, valid) => {
-    expect(isPublishableKey(key)).toBe(valid);
+    ['a test key', 'pk_test_ZXhhbXBsZS5jbGVyay5hY2NvdW50cy5kZXYk'],
+    ['a live key', 'pk_live_ZXhhbXBsZS5jb20k'],
+  ])('accepts %s', (_name, key) => {
+    expect(parsePublishableKey(key)).toBe(key);
+  });
+
+  it('trims spaces around a key, as can slip into an .env file', () => {
+    expect(parsePublishableKey('  pk_test_abc123  ')).toBe('pk_test_abc123');
+  });
+
+  it.each([
+    ['null', null],
+    ['undefined', undefined],
+    ['a number', 42],
+    ['an object', { key: 'pk_test_abc123' }],
+    ['an empty string', ''],
+    ['a secret key pasted by mistake', 'sk_test_abc123'],
+    ['a key with spaces inside', 'pk_test_abc 123'],
+  ])('gives null instead of crashing for %s', (_name, key) => {
+    expect(parsePublishableKey(key)).toBeNull();
+  });
+
+  it('still renders the app with sign-in turned off when the key is null', async () => {
+    render(
+      <MemoryRouter initialEntries={['/login']}>
+        <AuthProvider publishableKey={null}>
+          <App />
+        </AuthProvider>
+      </MemoryRouter>,
+    );
+    expect(await screen.findByRole('status')).toHaveTextContent(GUIDE.auth.unavailableTitle);
+    expect(clerk.providerProps).toEqual({});
   });
 
   it('turns sign-in off instead of loading Clerk with an invalid key', async () => {
@@ -337,6 +401,35 @@ describe('pages that need an account', () => {
     );
   });
 
+  it("carries the return page on log in's link to sign up", async () => {
+    renderAt('/login?redirect_url=%2Fscans');
+    expect(await screen.findByTestId('clerk-sign-in')).toHaveAttribute(
+      'data-sign-up-url',
+      '/sign-up?redirect_url=%2Fscans',
+    );
+  });
+
+  it("carries the return page on sign up's link back to log in", async () => {
+    renderAt('/sign-up?redirect_url=%2Fhow-it-works');
+    expect(await screen.findByTestId('clerk-sign-up')).toHaveAttribute(
+      'data-sign-in-url',
+      '/login?redirect_url=%2Fhow-it-works',
+    );
+  });
+
+  it('does not carry a return page that leaves the site', async () => {
+    renderAt('/login?redirect_url=%2F%2Fevil.example');
+    expect(await screen.findByTestId('clerk-sign-in')).toHaveAttribute(
+      'data-sign-up-url',
+      '/sign-up',
+    );
+  });
+
+  it('only adds a return page to the form links when there is one besides the default', () => {
+    expect(authPathFor('/sign-up', '/scans')).toBe('/sign-up?redirect_url=%2Fscans');
+    expect(authPathFor('/sign-up', '/check')).toBe('/sign-up');
+  });
+
   it('takes a signed-in visitor straight to the page they asked for', async () => {
     clerk.session = { ...clerk.session, isSignedIn: true };
     renderAt('/login?redirect_url=%2Fscans');
@@ -351,16 +444,30 @@ describe('pages that need an account', () => {
     ['nothing', null],
   ])('falls back to the check form when the return page is %s', (_name, target) => {
     const search = target === null ? '' : `?${new URLSearchParams({ redirect_url: target })}`;
-    expect(redirectAfterSignIn(search)).toBe('/check');
+    expect(redirectAfterSignIn(search, ORIGIN)).toBe('/check');
   });
 
   it('builds a log in link that carries the page and its query', () => {
     expect(signInPathFor('/results/scan-1?tab=details')).toBe(
       '/login?redirect_url=%2Fresults%2Fscan-1%3Ftab%3Ddetails',
     );
-    expect(redirectAfterSignIn('?redirect_url=%2Fresults%2Fscan-1%3Ftab%3Ddetails')).toBe(
+    expect(redirectAfterSignIn('?redirect_url=%2Fresults%2Fscan-1%3Ftab%3Ddetails', ORIGIN)).toBe(
       '/results/scan-1?tab=details',
     );
+  });
+
+  it('accepts the full address for this site that Clerk writes, and gives back the path', () => {
+    const search = `?${new URLSearchParams({ redirect_url: `${ORIGIN}/how-it-works` })}`;
+    expect(redirectAfterSignIn(search, ORIGIN)).toBe('/how-it-works');
+  });
+
+  it.each([
+    ['another site', 'https://evil.example/how-it-works'],
+    ['a javascript: link', 'javascript:alert(1)'],
+    ['a full address for the log in page', '/login?x=1'],
+  ])('rejects %s', (_name, target) => {
+    const search = `?${new URLSearchParams({ redirect_url: target })}`;
+    expect(redirectAfterSignIn(search, ORIGIN)).toBe('/check');
   });
 });
 
@@ -374,5 +481,16 @@ describe('preview account menu', () => {
     const avatar = await screen.findByRole('img', { name: 'Preview account' });
     expect(avatar).toHaveTextContent('');
     expect(screen.queryByText('JD')).not.toBeInTheDocument();
+  });
+
+  it('draws the preview avatar straight away, without loading the Clerk account button', () => {
+    render(
+      <AuthContext.Provider value={SIGN_IN_UNAVAILABLE}>
+        <AccountMenu />
+      </AuthContext.Provider>,
+    );
+    // No await: the avatar is there on the first render, so nothing had to be downloaded.
+    expect(screen.getByRole('img', { name: 'Preview account' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Account' })).not.toBeInTheDocument();
   });
 });

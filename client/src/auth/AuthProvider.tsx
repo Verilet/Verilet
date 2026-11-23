@@ -1,13 +1,14 @@
 import { lazy, Suspense, type ReactNode } from 'react';
-import { AuthContext, isPublishableKey, SIGN_IN_UNAVAILABLE } from './authState';
+import { readClientEnv } from '../lib/env';
+import { AuthContext, parsePublishableKey, SIGN_IN_UNAVAILABLE } from './authState';
 
 /** Clerk is a large download, so it is split out and only fetched when sign-in is set up. */
 const ClerkAuth = lazy(() => import('./ClerkAuth'));
 
 /** Props for the app-wide sign-in provider. */
 interface AuthProviderProps {
-  /** Clerk publishable key. Defaults to `VITE_CLERK_PUBLISHABLE_KEY`. */
-  publishableKey?: string;
+  /** Clerk publishable key. Defaults to the checked `VITE_CLERK_PUBLISHABLE_KEY`. Null turns sign-in off. */
+  publishableKey?: string | null;
   /** The app, which can then read the sign-in state with `useAuthState`. */
   children: ReactNode;
 }
@@ -39,16 +40,17 @@ function ClerkLoading() {
  * @returns The app wrapped in Clerk, or in the sign-in-unavailable state.
  */
 export default function AuthProvider({
-  publishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY,
+  publishableKey = readClientEnv().clerkPublishableKey,
   children,
 }: AuthProviderProps) {
-  if (!isPublishableKey(publishableKey)) {
+  const key = parsePublishableKey(publishableKey);
+  if (key === null) {
     return <AuthContext.Provider value={SIGN_IN_UNAVAILABLE}>{children}</AuthContext.Provider>;
   }
 
   return (
     <Suspense fallback={<ClerkLoading />}>
-      <ClerkAuth publishableKey={publishableKey.trim()}>{children}</ClerkAuth>
+      <ClerkAuth publishableKey={key}>{children}</ClerkAuth>
     </Suspense>
   );
 }

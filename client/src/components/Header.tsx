@@ -1,11 +1,8 @@
-import { lazy, Suspense } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import AccountMenu from '../auth/AccountMenu';
 import { AUTH_PATHS, signInPathFor } from '../auth/authState';
 import { GUIDE } from '../content/guide';
 import '../styles/header.css';
-
-/** The account menu uses Clerk's account button, so it loads only for signed-in visitors. */
-const AccountMenu = lazy(() => import('../auth/AccountMenu'));
 
 /** Props for the site header. */
 interface HeaderProps {
@@ -52,7 +49,7 @@ export default function Header({ loggedIn, pending = false }: HeaderProps) {
         <nav className="nav" aria-label="Site">
           {loggedIn && (
             <>
-              <Link to="/" className="nav__link" aria-current={currentFor('/')}>
+              <Link to="/check" className="nav__link" aria-current={currentFor('/check')}>
                 Check a listing
               </Link>
               <Link to="/scans" className="nav__link" aria-current={currentFor('/scans')}>
@@ -66,11 +63,7 @@ export default function Header({ loggedIn, pending = false }: HeaderProps) {
         </nav>
       </div>
       <div className="header__right">
-        {!pending && loggedIn && (
-          <Suspense fallback={<span className="avatar" aria-hidden="true" />}>
-            <AccountMenu />
-          </Suspense>
-        )}
+        {!pending && loggedIn && <AccountMenu />}
         {!pending && !loggedIn && !onAuthPage && (
           // Logging in from here brings the visitor back to this page afterwards.
           <Link

@@ -24,7 +24,7 @@ import Header from './components/Header';
 import { readCarArrival } from './lib/carArrival';
 import { loadScans, saveScans } from './lib/scanStorage';
 import { readPreviewFlag, savePreviewFlag } from './lib/session';
-import { copyShareText } from './lib/share';
+import { copyShareText, shareButtonLabel, type ShareStatus } from './lib/share';
 import { checkListing as defaultCheckListing, type CheckListing } from './services/scanService';
 import type { ListingInput, ScanResult } from './types';
 import AboutView from './views/AboutView';
@@ -91,9 +91,15 @@ function NotFound({ title, text }: NotFoundProps) {
       <div className="intro">
         <h1 className="intro__title">{title}</h1>
         <p className="intro__text">{text}</p>
-        <Link to="/" className="button button--primary">
-          {title === "We couldn't find that scan" ? 'Check a listing' : 'Go to the home page'}
-        </Link>
+        {title === "We couldn't find that scan" ? (
+          <Link to="/check" className="button button--primary">
+            Check a listing
+          </Link>
+        ) : (
+          <Link to="/" className="button button--primary">
+            Go to the home page
+          </Link>
+        )}
       </div>
     </main>
   );
@@ -114,6 +120,109 @@ function Loading() {
   );
 }
 
+/** Props shared by the routes that depend on sign-in. */
+interface SignInRouteProps {
+  /** Whether the visitor is signed in. */
+  loggedIn: boolean;
+  /** True while sign-in is still checking for a session. */
+  pending: boolean;
+}
+
+/** Props for a route that needs an account. */
+interface RequireAccountProps extends SignInRouteProps {
+  /** The page that needs an account. */
+  children: ReactNode;
+}
+
+/**
+ * Shows a page only to signed-in visitors. Others go to the landing page, keeping any car
+ * transition (SCRUM-48-T-7 criterion 10).
+ *
+ * @param props The route's props.
+ * @returns The page, a loading message while sign-in is checked, or a redirect home.
+ */
+function RequireAccount({ loggedIn, pending, children }: RequireAccountProps) {
+  const { state } = useLocation();
+  if (pending) {
+    return <Loading />;
+  }
+  if (loggedIn) {
+    return children;
+  }
+  return <Navigate to="/" replace state={state} />;
+}
+
+/**
+ * The page for `/`: the landing page for signed-out visitors. Signed-in visitors have no use for
+ * it, so they go on to `/check`, the one page with the listing form, keeping any car transition.
+ *
+ * @param props The route's props.
+ * @returns The landing page, a loading message while sign-in is checked, or a redirect.
+ */
+function RootRoute({ loggedIn, pending }: SignInRouteProps) {
+  const { state } = useLocation();
+  if (pending) {
+    return <Loading />;
+  }
+  if (loggedIn) {
+    return <Navigate to="/check" replace state={state} />;
+  }
+  return <LandingView />;
+}
+
+/** Props for the `/check` route. */
+interface CheckRouteProps extends SignInRouteProps {
+  /** Scans kept in this browser tab, listed under the form for signed-in visitors. */
+  scans: ScanResult[];
+  /** Checks the submitted listing. */
+  onSubmit: (input: ListingInput) => void;
+  /** Whether a check is running. */
+  submitting: boolean;
+  /** Message from the last failed check, if any. */
+  submitError: string | null;
+}
+
+/**
+ * The page for `/check`, the listing form for everyone: signed-in visitors also see their recent
+ * scans under it. Picks up the car transition from the page that linked here.
+ *
+ * @param props The route's props.
+ * @returns The form page, or a loading message while sign-in is checked.
+ */
+function CheckRoute({
+  loggedIn,
+  pending,
+  scans,
+  onSubmit,
+  submitting,
+  submitError,
+}: CheckRouteProps) {
+  const { state } = useLocation();
+  const carArrival = useMemo(() => readCarArrival(state), [state]);
+  if (pending) {
+    return <Loading />;
+  }
+  if (loggedIn) {
+    return (
+      <HomeView
+        scans={scans}
+        onSubmit={onSubmit}
+        submitting={submitting}
+        submitError={submitError}
+        carArrival={carArrival}
+      />
+    );
+  }
+  return (
+    <CheckView
+      onSubmit={onSubmit}
+      submitting={submitting}
+      submitError={submitError}
+      carArrival={carArrival}
+    />
+  );
+}
+
 /** Props for the results route. */
 interface ResultsRouteProps {
   /** Scans kept in this browser tab. */
@@ -123,7 +232,7 @@ interface ResultsRouteProps {
   /** Copies a short summary of a scan. */
   onShare: (scan: ScanResult) => void;
   /** Outcome of the most recent share, for brief feedback on the button. */
-  shareStatus: { id: string; ok: boolean } | null;
+  shareStatus: ShareStatus | null;
 }
 
 /**
@@ -149,11 +258,8 @@ function ResultsRoute({ scans, loggedIn, onShare, shareStatus }: ResultsRoutePro
       scan={scan}
       backLabel={loggedIn ? '← My scans' : '← Check another listing'}
       backTo={loggedIn ? '/scans' : '/check'}
-      checkAnotherTo={loggedIn ? '/' : '/check'}
       onShare={() => onShare(scan)}
-      shareLabel={
-        shareStatus?.id === scan.id ? (shareStatus.ok ? 'Copied' : "Couldn't copy") : 'Share result'
-      }
+      shareLabel={shareButtonLabel(scan.id, shareStatus, 'Share result')}
       defaultExpanded={loggedIn}
     />
   );
@@ -185,7 +291,6 @@ function App({
     }
   }, [location.pathname, navigationType]);
 
-  const carArrival = useMemo(() => readCarArrival(location.state), [location.state]);
   const auth = useAuthState();
   // The Preview bar overrides real sign-in in either direction; null follows the real session.
   const [preview, setPreview] = useState<boolean | null>(() => {
@@ -216,7 +321,7 @@ function App({
 
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [shareStatus, setShareStatus] = useState<{ id: string; ok: boolean } | null>(null);
+  const [shareStatus, setShareStatus] = useState<ShareStatus | null>(null);
   const shareTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   useEffect(() => () => clearTimeout(shareTimer.current), []);
@@ -299,82 +404,26 @@ function App({
     goTo('/');
   }
 
-  /**
-   * Shows a page only to signed-in visitors. Others go to the landing page, keeping any car
-   * transition (SCRUM-48-T-7 criterion 10).
-   *
-   * @param page The page that needs an account.
-   * @returns The page, a loading message while sign-in is checked, or a redirect home.
-   */
-  function requireAccount(page: ReactNode) {
-    if (authPending) {
-      return <Loading />;
-    }
-    if (loggedIn) {
-      return page;
-    }
-    return <Navigate to="/" replace state={location.state} />;
-  }
-
-  /**
-   * The signed-in home page. Only called by the routes that show it.
-   *
-   * @returns The home page with the listing form and recent scans.
-   */
-  function renderHome() {
-    return (
-      <HomeView
-        scans={visibleScans}
-        onSubmit={handleSubmit}
-        submitting={submitting}
-        submitError={submitError}
-        carArrival={carArrival}
-      />
-    );
-  }
-
-  /**
-   * The page for `/`: a loading message while sign-in is checked, then home or the landing page.
-   *
-   * @returns The page to show at `/`.
-   */
-  function renderRoot() {
-    if (authPending) {
-      return <Loading />;
-    }
-    return loggedIn ? renderHome() : <LandingView />;
-  }
-
-  /**
-   * The page for `/check`: the signed-in home page, or the check form for everyone else.
-   *
-   * @returns The page to show at `/check`.
-   */
-  function renderCheck() {
-    if (authPending) {
-      return <Loading />;
-    }
-    if (loggedIn) {
-      return renderHome();
-    }
-    return (
-      <CheckView
-        onSubmit={handleSubmit}
-        submitting={submitting}
-        submitError={submitError}
-        carArrival={carArrival}
-      />
-    );
-  }
-
   const warm = !loggedIn;
 
   return (
     <div className={warm ? 'app theme-warm' : 'app'}>
       <Header loggedIn={loggedIn} pending={authPending} />
       <Routes>
-        <Route path="/" element={renderRoot()} />
-        <Route path="/check" element={renderCheck()} />
+        <Route path="/" element={<RootRoute loggedIn={loggedIn} pending={authPending} />} />
+        <Route
+          path="/check"
+          element={
+            <CheckRoute
+              loggedIn={loggedIn}
+              pending={authPending}
+              scans={visibleScans}
+              onSubmit={handleSubmit}
+              submitting={submitting}
+              submitError={submitError}
+            />
+          }
+        />
         <Route
           path={`${AUTH_PATHS.signIn}/*`}
           element={
@@ -394,9 +443,11 @@ function App({
         <Route path="/how-it-works" element={<AboutView />} />
         <Route
           path="/scans"
-          element={requireAccount(
-            <ScansView scans={visibleScans} onShareScan={handleShare} shareStatus={shareStatus} />,
-          )}
+          element={
+            <RequireAccount loggedIn={loggedIn} pending={authPending}>
+              <ScansView scans={visibleScans} onShareScan={handleShare} shareStatus={shareStatus} />
+            </RequireAccount>
+          }
         />
         <Route
           path="/results/:scanId"
@@ -419,7 +470,7 @@ function App({
           <DevNav
             loggedIn={loggedIn}
             onToggleLoggedIn={toggleLoggedIn}
-            onShowCheck={() => goTo(loggedIn ? '/' : '/check')}
+            onShowCheck={() => goTo('/check')}
             onShowResults={previewResults}
             onShowScans={() => goTo('/scans')}
           />

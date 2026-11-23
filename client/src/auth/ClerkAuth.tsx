@@ -1,7 +1,7 @@
 import { ClerkProvider, useAuth } from '@clerk/react';
-import { useMemo, type ReactNode } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { AUTH_PATHS, AuthContext, type AuthState } from './authState';
+import { useEffect, useMemo, type ReactNode } from 'react';
+import { useNavigate, type NavigateFunction } from 'react-router-dom';
+import { AUTH_PATHS, AuthContext, toAppPath, type AuthState } from './authState';
 import { CLERK_APPEARANCE } from './clerkAppearance';
 
 /** Props for the Clerk-backed sign-in provider. */
@@ -41,6 +41,51 @@ function ClerkAuthBridge({ children }: ClerkAuthBridgeProps) {
   return <AuthContext.Provider value={state}>{children}</AuthContext.Provider>;
 }
 
+/** Holds the navigate function Clerk's page changes go through. */
+interface RouterHolder {
+  /** React Router's navigate for the mounted app, or null before it mounts. */
+  navigate: NavigateFunction | null;
+}
+
+/**
+ * The router's current navigate function, for Clerk's page changes. Clerk keeps the router
+ * functions it is given the first time it starts and never takes new ones, so they can't hold
+ * on to any one render's navigate (that render may be thrown away, leaving a navigate React
+ * Router ignores). They read this instead, which `RouterBridge` keeps up to date.
+ */
+const router: RouterHolder = { navigate: null };
+
+/**
+ * Opens a page for Clerk, e.g. when switching from log in to sign up.
+ *
+ * @param to The address from Clerk.
+ */
+function routerPush(to: string) {
+  router.navigate?.(toAppPath(to));
+}
+
+/**
+ * Replaces the current page for Clerk, e.g. between the steps of a sign-in.
+ *
+ * @param to The address from Clerk.
+ */
+function routerReplace(to: string) {
+  router.navigate?.(toAppPath(to), { replace: true });
+}
+
+/**
+ * Keeps `router.navigate` pointing at the navigate function of the mounted app.
+ *
+ * @returns Nothing; it only runs an effect.
+ */
+function RouterBridge() {
+  const navigate = useNavigate();
+  useEffect(() => {
+    router.navigate = navigate;
+  }, [navigate]);
+  return null;
+}
+
 /**
  * Wraps the app in Clerk, using React Router for Clerk's page changes. Loaded on demand by
  * `AuthProvider`, so Clerk's code is only downloaded when sign-in is set up.
@@ -51,18 +96,17 @@ function ClerkAuthBridge({ children }: ClerkAuthBridgeProps) {
  * @returns The app wrapped in Clerk.
  */
 export default function ClerkAuth({ publishableKey, children }: ClerkAuthProps) {
-  const navigate = useNavigate();
-
   return (
     <ClerkProvider
       publishableKey={publishableKey}
-      routerPush={(to) => navigate(to)}
-      routerReplace={(to) => navigate(to, { replace: true })}
+      routerPush={routerPush}
+      routerReplace={routerReplace}
       signInUrl={AUTH_PATHS.signIn}
       signUpUrl={AUTH_PATHS.signUp}
       afterSignOutUrl={AUTH_PATHS.afterSignOut}
       appearance={CLERK_APPEARANCE}
     >
+      <RouterBridge />
       <ClerkAuthBridge>{children}</ClerkAuthBridge>
     </ClerkProvider>
   );

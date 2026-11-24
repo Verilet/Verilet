@@ -20,6 +20,9 @@ export function bedroomLabel(bedrooms: ScanResult['bedrooms']): string {
   return BEDROOM_OPTIONS.find((option) => option.value === bedrooms)?.label ?? bedrooms;
 }
 
+/** The parts of a scan its one-line summary needs, so a shared result can use it too. */
+type SummaryFields = Pick<ScanResult, 'bedrooms' | 'rent' | 'location'>;
+
 /** Ways to shorten or extend a scan's one-line summary. */
 interface ScanSummaryOptions {
   /** Add " / month" after the rent. */
@@ -37,7 +40,7 @@ interface ScanSummaryOptions {
  * @returns e.g. "2 bed · $1,200 · Santa Cruz, CA".
  */
 export function scanSummary(
-  scan: ScanResult,
+  scan: SummaryFields,
   { perMonth = false, cityOnly = false }: ScanSummaryOptions = {},
 ): string {
   const rent = perMonth ? `${formatRent(scan.rent)} / month` : formatRent(scan.rent);
@@ -71,7 +74,7 @@ export function scanShortTitle(scan: ScanResult): string {
  * @param scan The scan.
  * @returns e.g. "2 bed · $1,200 / month · Santa Cruz, CA".
  */
-export function scanMeta(scan: ScanResult): string {
+export function scanMeta(scan: SummaryFields): string {
   return scanSummary(scan, { perMonth: true });
 }
 

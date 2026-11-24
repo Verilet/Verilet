@@ -96,10 +96,14 @@ describe('SCRUM-70-T-1: Listing evaluation orchestrator & POST /api/evaluate', (
       },
     });
 
-    vi.spyOn(phoneFlagsService, 'evaluateContactPhone').mockResolvedValue({
-      status: 'compliant',
-      flag: null,
-      message: 'Phone area code matches listing region',
+    vi.spyOn(phoneFlagsService, 'evaluatePhoneAreaCode').mockResolvedValue({
+      success: true,
+      data: {
+        status: 'compliant',
+        flag: null,
+        message: 'Phone area code matches listing region',
+        areaCode: '831',
+      },
     });
 
     vi.spyOn(agencyVerificationService, 'verifyAgencyStanding').mockResolvedValue({
@@ -186,7 +190,10 @@ describe('SCRUM-70-T-1: Listing evaluation orchestrator & POST /api/evaluate', (
       useCode: '020',
       useDescription: 'Single family residential',
     });
-    expect(rawChecks.contactPhone).toMatchObject({ status: 'compliant' });
+    expect(rawChecks.contactPhone).toMatchObject({
+      success: true,
+      data: { status: 'compliant' },
+    });
     expect(rawChecks.agencyStanding).toMatchObject({ status: 'compliant' });
     expect(rawChecks.listingSearch).toMatchObject({ matches: [] });
 
@@ -296,9 +303,18 @@ describe('SCRUM-70-T-1: Listing evaluation orchestrator & POST /api/evaluate', (
         category: null,
       },
     });
-    vi.spyOn(phoneFlagsService, 'evaluateContactPhone').mockImplementation(async () =>
-      delayWorker('phone'),
-    );
+    vi.spyOn(phoneFlagsService, 'evaluatePhoneAreaCode').mockImplementation(async () => {
+      await delayWorker('phone');
+      return {
+        success: true,
+        data: {
+          status: 'compliant',
+          flag: null,
+          message: 'Phone area code matches listing region',
+          areaCode: '831',
+        },
+      };
+    });
     vi.spyOn(agencyVerificationService, 'verifyAgencyStanding').mockImplementation(async () =>
       delayWorker('agency'),
     );
@@ -409,7 +425,7 @@ describe('SCRUM-70-T-1: Listing evaluation orchestrator & POST /api/evaluate', (
 
     // Ensure all workers are mocked offline, then simulate phone worker timeout error
     mockAllWorkers();
-    vi.spyOn(phoneFlagsService, 'evaluateContactPhone').mockRejectedValue(
+    vi.spyOn(phoneFlagsService, 'evaluatePhoneAreaCode').mockRejectedValue(
       new Error('WORKER_TIMEOUT'),
     );
 

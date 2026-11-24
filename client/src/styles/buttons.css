@@ -36,9 +36,7 @@
 }
 
 .text-button {
-  padding: 0;
-  border: 0;
-  background: none;
+  text-decoration: none;
   font-size: 14px;
   font-weight: 500;
   color: var(--color-muted);
@@ -46,9 +44,7 @@
 
 .back-link {
   align-self: flex-start;
-  padding: 0;
-  border: 0;
-  background: none;
+  text-decoration: none;
   font-size: 14px;
   color: var(--color-muted);
 }
@@ -61,7 +57,7 @@
   font-size: 16px;
 }
 
-.theme-warm .button--secondary {
+:where(.theme-warm) .button--secondary {
   background: var(--color-card);
   height: 52px;
   padding: 0 28px;

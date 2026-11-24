@@ -1,5 +1,6 @@
 import { useLayoutEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import '../styles/transitions.css';
 
 const FADE_MS = 300;
 

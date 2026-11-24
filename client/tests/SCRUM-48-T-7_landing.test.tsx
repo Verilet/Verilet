@@ -30,7 +30,11 @@ describe('SCRUM-48-T-7 landing page', () => {
       '/how-it-works',
     );
     expect(header.queryByText('About')).not.toBeInTheDocument();
-    expect(header.getAllByRole('link')).toHaveLength(2);
+    // The logo and How it works are the only site links; Log in is the account button beside them.
+    const siteLinks = header
+      .getAllByRole('link')
+      .filter((link) => link.textContent !== GUIDE.auth.logInLabel);
+    expect(siteLinks).toHaveLength(2);
   });
 
   it('SCRUM-48-T-7 check route shows the form', () => {

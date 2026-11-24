@@ -25,6 +25,7 @@ import {
   type AutofillListing,
 } from '../services/autofillService';
 import { BEDROOM_OPTIONS, PAYMENT_OPTIONS, type ListingInput } from '../types';
+import '../styles/form.css';
 
 interface ListingFormProps {
   onSubmit: (input: ListingInput) => void;

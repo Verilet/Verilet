@@ -10,7 +10,7 @@ import { evaluateApplicationFee } from './applicationFee.service.js';
 import { detectUntraceablePayment } from './paymentFlags.service.js';
 import { evaluateGisQuery } from './gisQuery.service.js';
 import { evaluateLandUse } from './landUse.service.js';
-import { evaluateContactPhone } from './phoneFlags.service.js';
+import { evaluatePhoneAreaCode } from './phoneFlags.service.js';
 import { verifyAgencyStanding } from './agencyVerification.service.js';
 import { listingSearch } from './listingSearch.service.js';
 
@@ -208,7 +208,7 @@ export async function orchestrateEvaluation(
   }, timeoutMs);
 
   const contactPhonePromise = withTimeout(
-    () => evaluateContactPhone(input.contactPhone),
+    () => evaluatePhoneAreaCode(input.contactPhone),
     timeoutMs,
   );
 

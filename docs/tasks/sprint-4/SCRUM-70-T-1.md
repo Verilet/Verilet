@@ -37,7 +37,7 @@ Serves SCRUM-70 (orchestrate full listing evaluation). This task implements the 
     4. `untraceablePayment`: `detectUntraceablePayment(input.description)`.
     5. `gisQuery`: `evaluateGisQuery({ address: input.location })`.
     6. `landUse`: `evaluateLandUse({ useCode, useDescription })` (chained with `gisQuery` parcel records when available, defaulting safely to null if unverified or failed).
-    7. `contactPhone`: `evaluateContactPhone(input.contactPhone)` (stubbed/delegated to phone flags service).
+    7. `contactPhone`: `evaluatePhoneAreaCode(input.contactPhone)` (delegated to phone flags service).
     8. `agencyStanding`: `verifyAgencyStanding(input.landlord)` (stubbed/delegated to agency verification service).
     9. `listingSearch`: `listingSearch(input)` (stubbed/delegated to duplicate listing search service).
   - Enforces a 5,000ms timeout per worker invocation.

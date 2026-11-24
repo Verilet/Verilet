@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { readClientEnv } from '../lib/env';
 
 /** Listing fields that can be populated into the submission form from an external listing URL. */
 export const listingAutofillSchema = z.object({
@@ -60,9 +61,7 @@ const AUTOFILL_TIMEOUT_MS = 10_000;
 export const autofillListing: AutofillListing = async (
   listingUrl: string,
 ): Promise<ListingAutofill> => {
-  const rawApiUrl = (import.meta.env.VITE_API_URL ?? '').trim();
-  const apiUrl = rawApiUrl.replace(/\/+$/, '');
-  const endpoint = `${apiUrl}/api/scrape`;
+  const endpoint = `${readClientEnv().apiUrl}/api/scrape`;
 
   const response = await fetch(endpoint, {
     method: 'POST',

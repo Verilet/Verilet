@@ -18,6 +18,11 @@
   --color-ok: #15803d;
   --color-ok-bg: #dcfce7;
 
+  --color-card: #ffffff;
+  --color-accent: #b84a29;
+  --color-accent-bg: #f8e3da;
+  --color-sand: #e7eaef;
+
   --radius-card: 12px;
   --radius-control: 8px;
   --radius-pill: 999px;

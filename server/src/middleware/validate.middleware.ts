@@ -1,4 +1,5 @@
-import { type Request, type Response, type NextFunction } from 'express';
+import { type Request, type Response, type NextFunction, type RequestHandler } from 'express';
+import { type ZodSchema } from 'zod';
 
 const BLOCKED_HOSTNAMES = new Set([
   'localhost',
@@ -12,24 +13,31 @@ const BLOCKED_HOSTNAMES = new Set([
  * Express middleware to validate the incoming scrape request URL.
  * Rejects missing, malformed, non-HTTP/HTTPS, or loopback/private URLs with HTTP 400.
  *
- * @param req - Express request object containing `req.body.url`
- * @param res - Express response object used to return 400 errors
- * @param next - Express next middleware function
+ * @param req Express request object containing `req.body.url`
+ * @param res Express response object used to return 400 errors
+ * @param next Express next middleware function
  */
-function validateScrapeRequest(req: Request, res: Response, next: NextFunction) {
-  const url: string = req.body?.url;
+export function validateScrapeRequest(req: Request, res: Response, next: NextFunction): void {
+  const url: unknown = req.body?.url;
+  if (typeof url !== 'string' || !url.trim()) {
+    res.status(400).json({ error: 'Invalid listing URL' });
+    return;
+  }
+
   let parsedUrl: URL;
 
   // Check for empty or undefined or malformed url
   try {
     parsedUrl = new URL(url);
   } catch {
-    return res.status(400).json({ error: 'Invalid listing URL' });
+    res.status(400).json({ error: 'Invalid listing URL' });
+    return;
   }
 
   // Check for non-HTTP/HTTPS protocols
   if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
-    return res.status(400).json({ error: 'Invalid listing URL' });
+    res.status(400).json({ error: 'Invalid listing URL' });
+    return;
   }
 
   // Check for loopback or private IPs
@@ -39,10 +47,32 @@ function validateScrapeRequest(req: Request, res: Response, next: NextFunction) 
     hostname.endsWith('.local') ||
     hostname.endsWith('.internal')
   ) {
-    return res.status(400).json({ error: 'Invalid listing URL' });
+    res.status(400).json({ error: 'Invalid listing URL' });
+    return;
   }
 
   next();
 }
 
-export default validateScrapeRequest;
+/**
+ * Express middleware factory that validates `req.body` against a given Zod schema.
+ * Rejects invalid payloads with HTTP 400 and a standardized error envelope.
+ *
+ * @param schema Zod schema to parse req.body with
+ * @returns Express RequestHandler middleware function
+ */
+export function validateBody<T>(schema: ZodSchema<T>): RequestHandler {
+  return (req: Request, res: Response, next: NextFunction): void => {
+    const result = schema.safeParse(req.body);
+    if (!result.success) {
+      res.status(400).json({
+        success: false,
+        error: 'Validation failed',
+        details: result.error.format(),
+      });
+      return;
+    }
+    req.body = result.data;
+    next();
+  };
+}

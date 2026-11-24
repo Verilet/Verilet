@@ -229,6 +229,19 @@ function createKey(payMethod: string): string {
     .replace(/[\s-]+/g, '_');
 }
 
+/** Normalized payment keys classified as P2P apps rather than crypto/wire/gift-card methods. */
+const P2P_HIGH_RISK_KEYS = new Set(['zelle', 'venmo', 'cashapp', 'cash_app', 'chime']);
+
+/**
+ * Checks whether a payment method token or evidence string represents a P2P payment app.
+ *
+ * @param paymentMethod Payment method token or evidence string from a payment violation.
+ * @returns True if the method matches a recognized P2P payment app.
+ */
+export function isP2pPaymentMethod(paymentMethod: string): boolean {
+  return P2P_HIGH_RISK_KEYS.has(createKey(paymentMethod));
+}
+
 /**
  * Detects high-risk payment selections.
  * @param paymentMethods The array of payment methods to check.

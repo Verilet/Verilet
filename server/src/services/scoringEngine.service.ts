@@ -1,5 +1,5 @@
 import type { RawChecks, WorkerFailureFallback } from '../schemas/evaluate.schema.js';
-import type { ListingMatch } from './listingSearch.service.js';
+import { isP2pPaymentMethod } from './paymentFlags.service.js';
 
 /** Evaluation status of an individual diagnostic check. */
 export type CheckStatus = 'FLAG' | 'UNKNOWN' | 'OK' | 'SKIPPED';
@@ -19,8 +19,8 @@ export interface CheckResult {
   readonly scoreImpact: number;
   /** Clear explanation of the check finding or compliance state. */
   readonly detail: string;
-  /** Optional matched evidence string, citation, or key triggering the finding. */
-  readonly evidence?: string | null;
+  /** Matched evidence string, citation, or key triggering the finding, or null when absent. */
+  readonly evidence: string | null;
 }
 
 /** Comprehensive composite score result returned by the scoring engine. */
@@ -80,26 +80,69 @@ export const POINTS_EXCESSIVE_FEE = 15;
 /** Minimum number of evaluated checks required to produce a composite risk score. */
 export const MIN_EVALUATED_CHECKS_THRESHOLD = 3;
 
+/** Minimum composite score bound. */
+const MIN_SCORE = 0;
+
+/** Maximum composite score bound. */
+const MAX_SCORE = 100;
+
+/** Minimum score classified as HIGH risk. */
+const HIGH_RISK_SCORE_THRESHOLD = 70;
+
+/** Minimum score classified as MEDIUM risk. */
+const MEDIUM_RISK_SCORE_THRESHOLD = 40;
+
+/** Percentage-of-baseline cutoff below which rent is flagged as a severe outlier. */
+const RENT_SEVERE_PERCENT_THRESHOLD = 50;
+
+/** Percentage-of-baseline cutoff at or below which rent is flagged as a moderate outlier. */
+const RENT_MODERATE_PERCENT_THRESHOLD = 75;
+
 /** Number of cross-platform duplicate search providers ('address' and 'photo'). */
 const LISTING_SEARCH_SOURCE_COUNT = 2;
-
-/** P2P payment app tokens classified separately from crypto/wire/gift-card untraceable methods. */
-const P2P_PAYMENT_KEYS = new Set(['zelle', 'venmo', 'cashapp', 'chime']);
 
 /** Standard explanation returned when listing has insufficient evaluable data. */
 export const INSUFFICIENT_DATA_SUMMARY =
   'Could not evaluate listing due to insufficient data. Please add details to calculate risk.';
 
 /** Standard success/failure envelope shape shared by evaluation worker services. */
-type WorkerEnvelope<TData> =
-  | { readonly success: true; readonly data: TData }
+type WorkerEnvelope<Data> =
+  | { readonly success: true; readonly data: Data }
   | { readonly success: false; readonly error: string };
+
+/** Minimum payload structure shared by envelope-based evaluation workers. */
+interface WorkerCheckData {
+  /** Raw worker status string (e.g., 'compliant', 'warning', 'violation', 'skipped'). */
+  readonly status: string;
+  /** Optional human-readable explanation returned by the worker. */
+  readonly message?: string;
+}
 
 /** Default messages used when unwrapping standard worker envelopes. */
 interface EnvelopeFallbackMessages {
   readonly workerFailureDetail: string;
   readonly invalidInputDetail: string;
   readonly skippedDetail: string;
+}
+
+/** Bound CheckResult factory helpers scoped to a single check's id and title. */
+interface CheckBuilder {
+  /** Creates an UNKNOWN CheckResult with 0 score impact. */
+  readonly unknown: (detail: string) => CheckResult;
+  /** Creates a SKIPPED CheckResult with 0 score impact. */
+  readonly skipped: (detail: string) => CheckResult;
+  /** Creates an OK CheckResult with 0 score impact. */
+  readonly ok: (detail: string, evidence?: string | null) => CheckResult;
+  /** Creates a FLAG CheckResult with positive score impact. */
+  readonly flag: (scoreImpact: number, detail: string, evidence?: string | null) => CheckResult;
+}
+
+/** Configuration object for normalizing an envelope-based worker output. */
+interface NormalizeEnvelopeParams<Data extends WorkerCheckData> {
+  readonly raw: WorkerEnvelope<Data> | WorkerFailureFallback;
+  readonly builder: CheckBuilder;
+  readonly defaults: EnvelopeFallbackMessages;
+  readonly mapData: (data: Data, check: CheckBuilder) => CheckResult;
 }
 
 /**
@@ -114,6 +157,10 @@ export function isWorkerFailure(val: unknown): val is WorkerFailureFallback {
 
 /**
  * Returns a trimmed non-empty message or a descriptive fallback when blank/nullish.
+ *
+ * @param message Raw message string from a worker service.
+ * @param fallback Default explanation to use when message is blank or missing.
+ * @returns Non-empty explanation string.
  */
 function nonEmptyDetail(message: string | null | undefined, fallback: string): string {
   const trimmed = message?.trim();
@@ -121,73 +168,61 @@ function nonEmptyDetail(message: string | null | undefined, fallback: string): s
 }
 
 /**
- * Constructs a normalized CheckResult object.
+ * Creates bound CheckResult factory methods for a specific diagnostic check id and title.
+ *
+ * @param id Unique diagnostic check identifier.
+ * @param title Human-readable check label.
+ * @returns CheckBuilder scoped to the given id and title.
  */
-function createCheckResult(
-  id: string,
-  title: string,
-  status: CheckStatus,
-  scoreImpact: number,
-  detail: string,
-  evidence: string | null = null,
-): CheckResult {
-  return { id, title, status, scoreImpact, detail, evidence };
-}
+function createCheckBuilder(id: string, title: string): CheckBuilder {
+  const build = (
+    status: CheckStatus,
+    scoreImpact: number,
+    detail: string,
+    evidence: string | null = null,
+  ): CheckResult => ({ id, title, status, scoreImpact, detail, evidence });
 
-function unknownCheck(id: string, title: string, detail: string): CheckResult {
-  return createCheckResult(id, title, 'UNKNOWN', 0, detail, null);
-}
-
-function skippedCheck(id: string, title: string, detail: string): CheckResult {
-  return createCheckResult(id, title, 'SKIPPED', 0, detail, null);
-}
-
-function okCheck(
-  id: string,
-  title: string,
-  detail: string,
-  evidence: string | null = null,
-): CheckResult {
-  return createCheckResult(id, title, 'OK', 0, detail, evidence);
-}
-
-function flagCheck(
-  id: string,
-  title: string,
-  scoreImpact: number,
-  detail: string,
-  evidence: string | null = null,
-): CheckResult {
-  return createCheckResult(id, title, 'FLAG', scoreImpact, detail, evidence);
+  return {
+    unknown: (detail: string) => build('UNKNOWN', 0, detail, null),
+    skipped: (detail: string) => build('SKIPPED', 0, detail, null),
+    ok: (detail: string, evidence: string | null = null) => build('OK', 0, detail, evidence),
+    flag: (scoreImpact: number, detail: string, evidence: string | null = null) =>
+      build('FLAG', scoreImpact, detail, evidence),
+  };
 }
 
 /**
  * Handles common worker-failure, invalid-input, and skipped states for envelope-based workers
  * before delegating active findings to the check-specific mapper.
+ *
+ * @param params Envelope normalization configuration including raw output, builder, and mapper.
+ * @returns Normalized CheckResult for the envelope worker.
  */
-function normalizeEnvelopeCheck<
-  TData extends { readonly status: string; readonly message?: string },
->(
-  raw: WorkerEnvelope<TData> | WorkerFailureFallback | undefined,
-  id: string,
-  title: string,
-  defaults: EnvelopeFallbackMessages,
-  mapData: (data: TData) => CheckResult,
-): CheckResult {
+function normalizeEnvelopeCheck<Data extends WorkerCheckData>({
+  raw,
+  builder,
+  defaults,
+  mapData,
+}: NormalizeEnvelopeParams<Data>): CheckResult {
   if (!raw || isWorkerFailure(raw)) {
-    return unknownCheck(id, title, defaults.workerFailureDetail);
+    return builder.unknown(defaults.workerFailureDetail);
   }
   if (!raw.success) {
-    return unknownCheck(id, title, nonEmptyDetail(raw.error, defaults.invalidInputDetail));
+    return builder.unknown(nonEmptyDetail(raw.error, defaults.invalidInputDetail));
   }
   if (raw.data.status === 'skipped') {
-    return skippedCheck(id, title, nonEmptyDetail(raw.data.message, defaults.skippedDetail));
+    return builder.skipped(nonEmptyDetail(raw.data.message, defaults.skippedDetail));
   }
-  return mapData(raw.data);
+  return mapData(raw.data, builder);
 }
 
 /**
  * Builds a fallback price explanation when the price worker provides an empty explanation.
+ *
+ * @param rent Listing monthly rent amount.
+ * @param baseline Regional baseline average rent, or null if unavailable.
+ * @param severityLabel Severity descriptor for how far below baseline the rent falls.
+ * @returns Human-readable fallback price explanation.
  */
 function buildPriceFallbackDetail(
   rent: number,
@@ -206,21 +241,14 @@ function buildPriceFallbackDetail(
  * @returns Normalized price CheckResult.
  */
 function normalizePrice(price: RawChecks['price']): CheckResult {
-  const id = 'price';
-  const title = 'Price Baseline Comparison';
+  const check = createCheckBuilder('price', 'Price Baseline Comparison');
 
   if (!price || isWorkerFailure(price)) {
-    return unknownCheck(
-      id,
-      title,
-      'Price evaluation could not be completed due to worker failure.',
-    );
+    return check.unknown('Price evaluation could not be completed due to worker failure.');
   }
 
   if (price.status === 'not_evaluated') {
-    return unknownCheck(
-      id,
-      title,
+    return check.unknown(
       nonEmptyDetail(
         price.explanation,
         'No regional baseline price data found for comparison in this space type or location.',
@@ -231,10 +259,11 @@ function normalizePrice(price: RawChecks['price']): CheckResult {
   const percent = price.percentOfBaseline;
   const evidence = percent != null ? `${percent}% of baseline` : null;
 
-  if (price.status === 'violation' || (percent != null && percent < 50)) {
-    return flagCheck(
-      id,
-      title,
+  if (
+    price.status === 'violation' ||
+    (percent != null && percent < RENT_SEVERE_PERCENT_THRESHOLD)
+  ) {
+    return check.flag(
       POINTS_RENT_UNDER_50,
       nonEmptyDetail(
         price.explanation,
@@ -245,17 +274,13 @@ function normalizePrice(price: RawChecks['price']): CheckResult {
   }
 
   if (percent == null) {
-    return unknownCheck(
-      id,
-      title,
+    return check.unknown(
       nonEmptyDetail(price.explanation, 'Price baseline comparison percentage is unavailable.'),
     );
   }
 
-  if (percent <= 75) {
-    return flagCheck(
-      id,
-      title,
+  if (percent <= RENT_MODERATE_PERCENT_THRESHOLD) {
+    return check.flag(
       POINTS_RENT_UNDER_75,
       nonEmptyDetail(
         price.explanation,
@@ -265,9 +290,7 @@ function normalizePrice(price: RawChecks['price']): CheckResult {
     );
   }
 
-  return okCheck(
-    id,
-    title,
+  return check.ok(
     nonEmptyDetail(price.explanation, 'Rent is consistent with regional baseline averages.'),
     evidence,
   );
@@ -280,23 +303,17 @@ function normalizePrice(price: RawChecks['price']): CheckResult {
  * @returns Normalized security deposit CheckResult.
  */
 function normalizeSecurityDeposit(deposit: RawChecks['securityDeposit']): CheckResult {
-  const id = 'securityDeposit';
-  const title = 'Security Deposit Legal Cap';
-
-  return normalizeEnvelopeCheck(
-    deposit,
-    id,
-    title,
-    {
+  return normalizeEnvelopeCheck({
+    raw: deposit,
+    builder: createCheckBuilder('securityDeposit', 'Security Deposit Legal Cap'),
+    defaults: {
       workerFailureDetail: 'Security deposit check could not be completed due to worker failure.',
       invalidInputDetail: 'Invalid security deposit input parameters.',
       skippedDetail: 'Security deposit not specified; check skipped.',
     },
-    (data) => {
-      if (data.flag === 'ILLEGAL_SECURITY_DEPOSIT') {
-        return flagCheck(
-          id,
-          title,
+    mapData: (data, check) => {
+      if (data.status === 'violation' || data.flag === 'ILLEGAL_SECURITY_DEPOSIT') {
+        return check.flag(
           POINTS_DEPOSIT_OVER_2X,
           nonEmptyDetail(
             data.message,
@@ -306,19 +323,15 @@ function normalizeSecurityDeposit(deposit: RawChecks['securityDeposit']): CheckR
         );
       }
 
-      if (data.flag === 'EXCEEDS_STANDARD_DEPOSIT_CAP') {
-        return flagCheck(
-          id,
-          title,
+      if (data.status === 'warning' || data.flag === 'EXCEEDS_STANDARD_DEPOSIT_CAP') {
+        return check.flag(
           POINTS_DEPOSIT_OVER_1X,
           nonEmptyDetail(data.message, 'Security deposit exceeds standard California 1x rent cap.'),
           data.statutoryCitation ?? 'Cal. Civ. Code § 1950.5(c)',
         );
       }
 
-      return okCheck(
-        id,
-        title,
+      return check.ok(
         nonEmptyDetail(
           data.message,
           'Security deposit complies with California AB 12 statutory cap.',
@@ -326,7 +339,7 @@ function normalizeSecurityDeposit(deposit: RawChecks['securityDeposit']): CheckR
         data.statutoryCitation ?? null,
       );
     },
-  );
+  });
 }
 
 /**
@@ -336,32 +349,24 @@ function normalizeSecurityDeposit(deposit: RawChecks['securityDeposit']): CheckR
  * @returns Normalized application fee CheckResult.
  */
 function normalizeApplicationFee(fee: RawChecks['applicationFee']): CheckResult {
-  const id = 'applicationFee';
-  const title = 'Application Screening Fee Cap';
-
-  return normalizeEnvelopeCheck(
-    fee,
-    id,
-    title,
-    {
+  return normalizeEnvelopeCheck({
+    raw: fee,
+    builder: createCheckBuilder('applicationFee', 'Application Screening Fee Cap'),
+    defaults: {
       workerFailureDetail: 'Application fee check could not be completed due to worker failure.',
       invalidInputDetail: 'Invalid application fee input parameters.',
       skippedDetail: 'Application fee not specified; check skipped.',
     },
-    (data) => {
+    mapData: (data, check) => {
       if (data.status === 'violation' || data.flag === 'EXCESSIVE_APPLICATION_FEE') {
-        return flagCheck(
-          id,
-          title,
+        return check.flag(
           POINTS_EXCESSIVE_FEE,
           nonEmptyDetail(data.message, 'Application screening fee exceeds statutory limit.'),
           data.statutoryCitation ?? 'Cal. Civ. Code § 1950.6',
         );
       }
 
-      return okCheck(
-        id,
-        title,
+      return check.ok(
         nonEmptyDetail(
           data.message,
           'Application screening fee complies with California statutory limits.',
@@ -369,17 +374,7 @@ function normalizeApplicationFee(fee: RawChecks['applicationFee']): CheckResult 
         data.statutoryCitation ?? null,
       );
     },
-  );
-}
-
-/**
- * Normalizes a payment evidence string to match P2P lookup keys.
- */
-function normalizePaymentKey(value: string): string {
-  return value
-    .trim()
-    .toLowerCase()
-    .replace(/[\s-]+/g, '_');
+  });
 }
 
 /**
@@ -389,22 +384,17 @@ function normalizePaymentKey(value: string): string {
  * @returns Normalized payment method CheckResult.
  */
 function normalizePayment(payment: RawChecks['untraceablePayment']): CheckResult {
-  const id = 'untraceablePayment';
-  const title = 'Payment Method Security';
+  const check = createCheckBuilder('untraceablePayment', 'Payment Method Security');
 
   if (!payment || isWorkerFailure(payment) || !Array.isArray(payment)) {
-    return unknownCheck(
-      id,
-      title,
-      'Payment risk check could not be completed due to worker failure.',
-    );
+    return check.unknown('Payment risk check could not be completed due to worker failure.');
   }
 
   if (payment.length === 0) {
-    return okCheck(id, title, 'No high-risk or untraceable payment demands detected.');
+    return check.ok('No high-risk or untraceable payment demands detected.');
   }
 
-  // Cap each payment risk category once; route P2P selections to advance-fee weight and crypto/wire/gift to untraceable.
+  // Cap each payment risk category once; delegate P2P vs untraceable classification to paymentFlags.
   let hasUntraceable = false;
   let hasAdvanceFee = false;
   const titles = new Set<string>();
@@ -417,8 +407,7 @@ function normalizePayment(payment: RawChecks['untraceablePayment']): CheckResult
         break;
       }
       case 'HIGH_RISK_PAYMENT_METHOD': {
-        const key = normalizePaymentKey(violation.evidence);
-        if (P2P_PAYMENT_KEYS.has(key)) {
+        if (isP2pPaymentMethod(violation.evidence)) {
           hasAdvanceFee = true;
         } else {
           hasUntraceable = true;
@@ -445,12 +434,12 @@ function normalizePayment(payment: RawChecks['untraceablePayment']): CheckResult
     (hasUntraceable ? POINTS_UNTRACEABLE_PAYMENT : 0) + (hasAdvanceFee ? POINTS_ADVANCE_FEE : 0);
 
   if (points === 0) {
-    return unknownCheck(id, title, 'Payment risk check returned unrecognized violation data.');
+    return check.unknown('Payment risk check returned unrecognized violation data.');
   }
 
   const detail = [...titles].join(' ') || 'High-risk or untraceable payment method detected.';
 
-  return flagCheck(id, title, points, detail, [...evidences].join(', ') || null);
+  return check.flag(points, detail, [...evidences].join(', ') || null);
 }
 
 /**
@@ -460,24 +449,26 @@ function normalizePayment(payment: RawChecks['untraceablePayment']): CheckResult
  * @returns Normalized GIS query CheckResult.
  */
 function normalizeGisQuery(gis: RawChecks['gisQuery']): CheckResult {
-  const id = 'gisQuery';
-  const title = 'County GIS Property Records';
+  const check = createCheckBuilder('gisQuery', 'County GIS Property Records');
 
-  return normalizeEnvelopeCheck(
-    gis,
-    id,
-    title,
-    {
+  if (gis && !isWorkerFailure(gis) && gis.success && gis.data.flag === 'GIS_SERVICE_UNAVAILABLE') {
+    return check.unknown(
+      nonEmptyDetail(gis.data.message, 'County GIS service timed out or is currently unavailable.'),
+    );
+  }
+
+  return normalizeEnvelopeCheck({
+    raw: gis,
+    builder: check,
+    defaults: {
       workerFailureDetail:
         'County GIS property check could not be completed due to worker failure.',
       invalidInputDetail: 'Invalid address for county GIS verification.',
-      skippedDetail: 'Address not specified or GIS service unavailable; check skipped.',
+      skippedDetail: 'Address not specified; check skipped.',
     },
-    (data) => {
+    mapData: (data, activeCheck) => {
       if (data.flag === 'UNVERIFIED_ADDRESS' || data.status === 'warning') {
-        return flagCheck(
-          id,
-          title,
+        return activeCheck.flag(
           POINTS_UNVERIFIED_ADDRESS,
           nonEmptyDetail(
             data.message,
@@ -486,14 +477,13 @@ function normalizeGisQuery(gis: RawChecks['gisQuery']): CheckResult {
         );
       }
 
-      return okCheck(
-        id,
-        title,
+      const apn = data.parcel?.apn.trim();
+      return activeCheck.ok(
         nonEmptyDetail(data.message, 'Address verified in county parcel records.'),
-        data.parcel ? `APN: ${data.parcel.apn}` : null,
+        apn ? `APN: ${apn}` : null,
       );
     },
-  );
+  });
 }
 
 /**
@@ -503,20 +493,16 @@ function normalizeGisQuery(gis: RawChecks['gisQuery']): CheckResult {
  * @returns Normalized land use CheckResult.
  */
 function normalizeLandUse(landUse: RawChecks['landUse']): CheckResult {
-  const id = 'landUse';
-  const title = 'Zoning and Land Use Compliance';
-
-  return normalizeEnvelopeCheck(
-    landUse,
-    id,
-    title,
-    {
+  return normalizeEnvelopeCheck({
+    raw: landUse,
+    builder: createCheckBuilder('landUse', 'Zoning and Land Use Compliance'),
+    defaults: {
       workerFailureDetail:
         'Zoning and land use check could not be completed due to worker failure.',
       invalidInputDetail: 'Invalid land use input parameters.',
       skippedDetail: 'Land use information not specified; check skipped.',
     },
-    (data) => {
+    mapData: (data, check) => {
       const evidence = data.category ? `Category: ${data.category}` : null;
 
       if (
@@ -525,9 +511,7 @@ function normalizeLandUse(landUse: RawChecks['landUse']): CheckResult {
         data.flag === 'NON_RESIDENTIAL_LAND_USE' ||
         data.flag === 'VACANT_OR_UNBUILT_PARCEL'
       ) {
-        return flagCheck(
-          id,
-          title,
+        return check.flag(
           POINTS_LAND_USE_MISMATCH,
           nonEmptyDetail(
             data.message,
@@ -537,14 +521,12 @@ function normalizeLandUse(landUse: RawChecks['landUse']): CheckResult {
         );
       }
 
-      return okCheck(
-        id,
-        title,
+      return check.ok(
         nonEmptyDetail(data.message, 'Complies with lawful residential land use.'),
         evidence,
       );
     },
-  );
+  });
 }
 
 /**
@@ -554,26 +536,20 @@ function normalizeLandUse(landUse: RawChecks['landUse']): CheckResult {
  * @returns Normalized contact phone CheckResult.
  */
 function normalizeContactPhone(phone: RawChecks['contactPhone']): CheckResult {
-  const id = 'contactPhone';
-  const title = 'Contact Phone Verification';
-
-  return normalizeEnvelopeCheck(
-    phone,
-    id,
-    title,
-    {
+  return normalizeEnvelopeCheck({
+    raw: phone,
+    builder: createCheckBuilder('contactPhone', 'Contact Phone Verification'),
+    defaults: {
       workerFailureDetail:
         'Contact phone verification could not be completed due to worker failure.',
       invalidInputDetail: 'Invalid contact phone input parameters.',
       skippedDetail: 'Contact phone number not specified; check skipped.',
     },
-    (data) => {
+    mapData: (data, check) => {
       const evidence = data.areaCode ? `Area code: ${data.areaCode}` : null;
 
       if (data.flag === 'OBFUSCATED_PHONE_NUMBER') {
-        return flagCheck(
-          id,
-          title,
+        return check.flag(
           POINTS_OBFUSCATED_CONTACT,
           nonEmptyDetail(
             data.message,
@@ -588,23 +564,19 @@ function normalizeContactPhone(phone: RawChecks['contactPhone']): CheckResult {
         data.flag === 'INTERNATIONAL_PHONE_NUMBER' ||
         data.status === 'warning'
       ) {
-        return flagCheck(
-          id,
-          title,
+        return check.flag(
           POINTS_NON_LOCAL_PHONE,
           nonEmptyDetail(data.message, 'Contact phone area code or country prefix is non-local.'),
           evidence,
         );
       }
 
-      return okCheck(
-        id,
-        title,
+      return check.ok(
         nonEmptyDetail(data.message, 'Phone number verified with regional or commercial prefix.'),
         evidence,
       );
     },
-  );
+  });
 }
 
 /**
@@ -614,29 +586,22 @@ function normalizeContactPhone(phone: RawChecks['contactPhone']): CheckResult {
  * @returns Normalized agency standing CheckResult.
  */
 function normalizeAgencyStanding(agency: RawChecks['agencyStanding']): CheckResult {
-  const id = 'agencyStanding';
-  const title = 'Rental Agency Business Registry';
+  const check = createCheckBuilder('agencyStanding', 'Rental Agency Business Registry');
 
   if (!agency || isWorkerFailure(agency)) {
-    return unknownCheck(
-      id,
-      title,
+    return check.unknown(
       'Agency business registry verification could not be completed due to worker failure.',
     );
   }
 
   if (agency.status === 'skipped') {
-    return skippedCheck(
-      id,
-      title,
+    return check.skipped(
       nonEmptyDetail(agency.message, 'Landlord or rental agency not specified; check skipped.'),
     );
   }
 
   if (agency.flag === 'SUSPENDED_ENTITY') {
-    return flagCheck(
-      id,
-      title,
+    return check.flag(
       POINTS_SUSPENDED_ENTITY,
       nonEmptyDetail(
         agency.message,
@@ -646,9 +611,7 @@ function normalizeAgencyStanding(agency: RawChecks['agencyStanding']): CheckResu
   }
 
   if (agency.flag === 'UNREGISTERED_ENTITY' || agency.status === 'warning') {
-    return flagCheck(
-      id,
-      title,
+    return check.flag(
       POINTS_UNREGISTERED_ENTITY,
       nonEmptyDetail(
         agency.message,
@@ -657,10 +620,14 @@ function normalizeAgencyStanding(agency: RawChecks['agencyStanding']): CheckResu
     );
   }
 
-  return okCheck(
-    id,
-    title,
-    nonEmptyDetail(agency.message, 'Entity verified in active corporate business registry.'),
+  if (agency.status === 'compliant') {
+    return check.ok(
+      nonEmptyDetail(agency.message, 'Entity verified in active corporate business registry.'),
+    );
+  }
+
+  return check.unknown(
+    nonEmptyDetail(agency.message, 'Agency business registry returned an unrecognized status.'),
   );
 }
 
@@ -671,26 +638,24 @@ function normalizeAgencyStanding(agency: RawChecks['agencyStanding']): CheckResu
  * @returns Normalized duplicate listing search CheckResult.
  */
 function normalizeListingSearch(search: RawChecks['listingSearch']): CheckResult {
-  const id = 'listingSearch';
-  const title = 'Cross-Platform Duplicate Detection';
+  const check = createCheckBuilder('listingSearch', 'Cross-Platform Duplicate Detection');
 
-  if (!search || isWorkerFailure(search)) {
-    return unknownCheck(
-      id,
-      title,
-      'Duplicate listing search could not be completed due to worker failure.',
-    );
+  if (
+    !search ||
+    isWorkerFailure(search) ||
+    !Array.isArray(search.matches) ||
+    !Array.isArray(search.failedSources)
+  ) {
+    return check.unknown('Duplicate listing search could not be completed due to worker failure.');
   }
 
   if (search.matches.length > 0) {
     const urls = search.matches
-      .map((m: ListingMatch) => m.url)
+      .map((match) => match.url)
       .filter(Boolean)
       .join(', ');
 
-    return flagCheck(
-      id,
-      title,
+    return check.flag(
       POINTS_DUPLICATE_MISMATCH,
       'Cross-platform duplicate listing match detected on other rental platforms.',
       urls || null,
@@ -699,19 +664,17 @@ function normalizeListingSearch(search: RawChecks['listingSearch']): CheckResult
 
   const uniqueFailedSources = [...new Set(search.failedSources)];
   if (uniqueFailedSources.length >= LISTING_SEARCH_SOURCE_COUNT) {
-    return unknownCheck(id, title, 'External duplicate search providers were unavailable.');
+    return check.unknown('External duplicate search providers were unavailable.');
   }
 
   if (uniqueFailedSources.length > 0) {
-    return okCheck(
-      id,
-      title,
+    return check.ok(
       'No duplicate listings detected on available sources ' +
         `(unavailable providers: ${uniqueFailedSources.join(', ')}).`,
     );
   }
 
-  return okCheck(id, title, 'No duplicate listings detected on other rental platforms.');
+  return check.ok('No duplicate listings detected on other rental platforms.');
 }
 
 /**
@@ -786,12 +749,12 @@ export function calculateListingScore(rawChecks: RawChecks): ScoreResult {
     };
   }
 
-  const score = Math.min(100, Math.max(0, totalPoints));
+  const score = Math.min(MAX_SCORE, Math.max(MIN_SCORE, totalPoints));
 
   let rating: Exclude<RiskRating, 'INSUFFICIENT_DATA'> = 'LOW';
-  if (score >= 70) {
+  if (score >= HIGH_RISK_SCORE_THRESHOLD) {
     rating = 'HIGH';
-  } else if (score >= 40) {
+  } else if (score >= MEDIUM_RISK_SCORE_THRESHOLD) {
     rating = 'MEDIUM';
   }
 

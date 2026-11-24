@@ -19,7 +19,6 @@ import {
   INSUFFICIENT_DATA_SUMMARY,
 } from '../src/services/scoringEngine.service.js';
 import type { RawChecks, WorkerFailureFallback } from '../src/schemas/evaluate.schema.js';
-import type { PaymentViolation } from '../src/services/paymentFlags.service.js';
 
 describe('SCRUM-70-T-2: Deterministic listing risk scoring engine', () => {
   const workerFallback: WorkerFailureFallback = Object.freeze({
@@ -220,6 +219,13 @@ describe('SCRUM-70-T-2: Deterministic listing risk scoring engine', () => {
       },
       ...overrides,
     };
+  }
+
+  /**
+   * Merges untyped runtime overrides onto compliant RawChecks without type assertions.
+   */
+  function createMalformedChecks(overrides: object): RawChecks {
+    return Object.assign(createCompliantChecks(), overrides);
   }
 
   /**
@@ -862,16 +868,16 @@ describe('SCRUM-70-T-2: Deterministic listing risk scoring engine', () => {
     });
 
     it('normalizes unrecognized runtime payment violation codes to UNKNOWN with 0 points', () => {
-      const unknownViolation = {
-        code: 'UNKNOWN_CODE',
-        severity: 'critical',
-        title: 'Unknown payment code',
-        explanation: 'Unknown',
-        evidence: 'unknown',
-      } as unknown as PaymentViolation;
-
-      const raw = createCompliantChecks({
-        untraceablePayment: [unknownViolation],
+      const raw = createMalformedChecks({
+        untraceablePayment: [
+          {
+            code: 'UNKNOWN_CODE',
+            severity: 'critical',
+            title: 'Unknown payment code',
+            explanation: 'Unknown',
+            evidence: 'unknown',
+          },
+        ],
       });
 
       const result = calculateListingScore(raw);
@@ -1062,6 +1068,138 @@ describe('SCRUM-70-T-2: Deterministic listing risk scoring engine', () => {
       expect(priceCheck?.status).toBe('FLAG');
       expect(priceCheck?.detail.trim().length).toBeGreaterThan(0);
       expect(priceCheck?.detail).not.toContain('null');
+    });
+
+    it('normalizes GIS_SERVICE_UNAVAILABLE to UNKNOWN with 0 points instead of SKIPPED', () => {
+      const raw = createCompliantChecks({
+        gisQuery: {
+          success: true,
+          data: {
+            status: 'skipped',
+            flag: 'GIS_SERVICE_UNAVAILABLE',
+            message: 'County GIS service timed out or unavailable; check skipped',
+            parcel: null,
+          },
+        },
+      });
+
+      const result = calculateListingScore(raw);
+      const gisCheck = result.checks.find((c) => c.id === 'gisQuery');
+
+      expect(gisCheck?.status).toBe('UNKNOWN');
+      expect(gisCheck?.scoreImpact).toBe(0);
+    });
+
+    it('sets gisQuery evidence to null when verified parcel has an empty APN', () => {
+      const raw = createCompliantChecks({
+        gisQuery: {
+          success: true,
+          data: {
+            status: 'compliant',
+            flag: null,
+            message: 'Address verified in county parcel records.',
+            parcel: {
+              apn: '   ',
+              siteAddress: '123 Ocean St',
+              city: 'Santa Cruz',
+              zip: '95060',
+              useCode: '020',
+              useDescription: 'Single family residential',
+            },
+          },
+        },
+      });
+
+      const result = calculateListingScore(raw);
+      const gisCheck = result.checks.find((c) => c.id === 'gisQuery');
+
+      expect(gisCheck?.status).toBe('OK');
+      expect(gisCheck?.evidence).toBeNull();
+    });
+
+    it('flags securityDeposit violations and warnings by status even when flag is null', () => {
+      const violationRaw = createCompliantChecks({
+        securityDeposit: {
+          success: true,
+          data: {
+            status: 'violation',
+            flag: null,
+            message: 'Security deposit exceeds 2x rent.',
+            statutoryCitation: 'Cal. Civ. Code § 1950.5(c)',
+          },
+        },
+      });
+      const violationResult = calculateListingScore(violationRaw);
+      const violationCheck = violationResult.checks.find((c) => c.id === 'securityDeposit');
+
+      expect(violationCheck?.status).toBe('FLAG');
+      expect(violationCheck?.scoreImpact).toBe(POINTS_DEPOSIT_OVER_2X);
+
+      const warningRaw = createCompliantChecks({
+        securityDeposit: {
+          success: true,
+          data: {
+            status: 'warning',
+            flag: null,
+            message: 'Security deposit exceeds 1x rent.',
+            statutoryCitation: 'Cal. Civ. Code § 1950.5(c)(4)',
+          },
+        },
+      });
+      const warningResult = calculateListingScore(warningRaw);
+      const warningCheck = warningResult.checks.find((c) => c.id === 'securityDeposit');
+
+      expect(warningCheck?.status).toBe('FLAG');
+      expect(warningCheck?.scoreImpact).toBe(POINTS_DEPOSIT_OVER_1X);
+    });
+
+    it('normalizes unrecognized agencyStanding status to UNKNOWN with 0 points', () => {
+      const raw = createMalformedChecks({
+        agencyStanding: {
+          status: 'error',
+          flag: null,
+          message: 'Unexpected registry status.',
+        },
+      });
+      const result = calculateListingScore(raw);
+      const agencyCheck = result.checks.find((c) => c.id === 'agencyStanding');
+
+      expect(agencyCheck?.status).toBe('UNKNOWN');
+      expect(agencyCheck?.scoreImpact).toBe(0);
+    });
+
+    it('normalizes malformed non-array listingSearch fields safely to UNKNOWN', () => {
+      const raw = createMalformedChecks({
+        listingSearch: {
+          matches: null,
+          failedSources: null,
+        },
+      });
+      const result = calculateListingScore(raw);
+      const searchCheck = result.checks.find((c) => c.id === 'listingSearch');
+
+      expect(searchCheck?.status).toBe('UNKNOWN');
+      expect(searchCheck?.scoreImpact).toBe(0);
+    });
+
+    it('scores Cash App HIGH_RISK_PAYMENT_METHOD evidence via P2P classification as POINTS_ADVANCE_FEE', () => {
+      const raw = createCompliantChecks({
+        untraceablePayment: [
+          {
+            code: 'HIGH_RISK_PAYMENT_METHOD',
+            severity: 'critical',
+            title: 'Cash App payment method has been requested.',
+            explanation: 'P2P payment requested.',
+            evidence: 'Cash App',
+          },
+        ],
+      });
+
+      const result = calculateListingScore(raw);
+      const paymentCheck = result.checks.find((c) => c.id === 'untraceablePayment');
+
+      expect(paymentCheck?.status).toBe('FLAG');
+      expect(paymentCheck?.scoreImpact).toBe(POINTS_ADVANCE_FEE);
     });
   });
 });

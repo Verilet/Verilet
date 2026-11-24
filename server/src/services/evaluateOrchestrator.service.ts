@@ -2,12 +2,17 @@ import {
   type BedroomValue,
   type EvaluateRequest,
   type EvaluateResponse,
+  type PaymentValue,
   type WorkerFailureFallback,
 } from '../schemas/evaluate.schema.js';
 import { checkPrice, type SpaceType } from './checkers/averagePrice.service.js';
 import { evaluateSecurityDeposit } from './securityDeposit.service.js';
 import { evaluateApplicationFee } from './applicationFee.service.js';
-import { detectUntraceablePayment } from './paymentFlags.service.js';
+import {
+  detectUntraceablePayment,
+  detectAdvanceFee,
+  detectHighRiskSelections,
+} from './paymentFlags.service.js';
 import { evaluateGisQuery } from './gisQuery.service.js';
 import { evaluateLandUse } from './landUse.service.js';
 import { evaluatePhoneAreaCode } from './phoneFlags.service.js';
@@ -54,6 +59,25 @@ export function mapBedroomsToSpaceType(bedrooms: BedroomValue): SpaceType {
       return 'single_room';
     }
   }
+}
+
+/**
+ * Maps the request's payment selection enum to terms recognized by detectHighRiskSelections.
+ *
+ * @param payment Optional selected payment method from EvaluateRequest
+ * @returns Array of payment method tokens for high-risk selection detection
+ */
+export function mapPaymentToSelections(payment?: PaymentValue | null): string[] {
+  if (!payment) {
+    return [];
+  }
+  if (payment === 'wire') {
+    return ['wire_transfer'];
+  }
+  if (payment === 'zelle-venmo') {
+    return ['zelle', 'venmo'];
+  }
+  return [payment];
 }
 
 /**
@@ -178,7 +202,11 @@ export async function orchestrateEvaluation(
   );
 
   const untraceablePaymentPromise = withTimeout(
-    () => detectUntraceablePayment(input.description),
+    () => [
+      ...detectUntraceablePayment(input.description),
+      ...detectAdvanceFee(input.description),
+      ...detectHighRiskSelections(mapPaymentToSelections(input.payment)),
+    ],
     timeoutMs,
   );
 
@@ -198,7 +226,7 @@ export async function orchestrateEvaluation(
         parcel = gisResult.data.parcel;
       }
     } catch {
-      // If GIS service throws or times out, proceed gracefully with null parcel so land-use skips cleanly
+      // If GIS service throws or times out, proceed with null parcel so land-use skips cleanly.
     }
 
     return evaluateLandUse({

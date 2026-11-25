@@ -6,7 +6,7 @@ assignee: Adan Magana
 estimate_hours: 5
 ---
 
-# Classify phone numbers by geographic area code
+# Detect obfuscated contact numbers in listing descriptions
 
 ## Description
 
@@ -27,24 +27,16 @@ Serves SCRUM-16 (detect contact anomalies and disguised contact details). This t
 - If the description is missing, null, undefined, empty, or whitespace-only, return { success: true, data: { status: 'skipped', flag: null, message: 'Description not provided; check skipped', evidence: null } }.
 
 - Detect spelled-out phone digits:
-
-- Recognize the number words zero through nine, as well as oh, as digit representations.
-
-- Detect a contiguous sequence of at least seven number words or numeric digits separated only by spaces or punctuation.
-
-- Support mixed sequences containing both spelled-out digits and numeric digits.
-
-- Examples include eight three one five five five zero one nine nine and eight three one - five five five - 0199.
+  - Recognize the number words zero through nine, as well as oh, as digit representations.
+  - Detect a contiguous sequence containing at least seven decoded digits, with at least one digit represented by a spelled-out number word. Numeric digit groups and spelled-out digits may be mixed.
+  - Allow digits to be separated only by spaces or punctuation.
+  - Examples include eight three one five five five zero one nine nine and eight three one - five five five - 0199.
 
 - Detect leetspeak substitutions in phone-shaped patterns:
-
-- Recognize O or o as a substitution for 0.
-
-- Recognize I or i as a substitution for 1.
-
-- Detect phone-shaped patterns containing these substitutions, such as 831-555-O199 and 83I-555-0199.
-
-- Do not flag ordinary words or descriptive prose merely because they contain letters that resemble digits.
+  - Recognize O or o as a substitution for 0.
+  - Recognize I or i as a substitution for 1.
+  - Detect phone-shaped patterns containing these substitutions, such as 831-555-O199 and 83I-555-0199.
+  - Do not flag ordinary words or descriptive prose merely because they contain letters that resemble digits.
 
 - Store number word mappings and regex patterns in modular constants near the top of the service file.
 
@@ -56,7 +48,7 @@ Serves SCRUM-16 (detect contact anomalies and disguised contact details). This t
 
 - Also export extractPhoneFromDescription(description).
 
-- The extraction function identifies the first standard or unmasked 10-digit phone number candidate found in the description, including common formatting such as parentheses, spaces, periods, and hyphens.
+- The extraction function identifies the first standard numeric 10-digit phone number candidate found in the description, including common formatting such as parentheses, spaces, periods, and hyphens.
 
 - The extraction function returns the extracted phone number as a string, or null if no qualifying phone number is found.
 
@@ -102,17 +94,17 @@ Serves SCRUM-16 (detect contact anomalies and disguised contact details). This t
 
 ## Acceptance criteria
 
-1. A description containing at least seven consecutive spelled-out phone digits, such as eight three one five five five zero one nine nine, returns status: "violation" and flag: "OBFUSCATED_CONTACT", with the matched snippet provided as evidence.
+1. A description containing at least seven consecutive spelled-out phone digits, such as eight three one five five five zero one nine nine, returns status violation and flag OBFUSCATED_CONTACT, with the matched snippet provided as evidence.
 
-2. A description containing a sequence of spelled-out and numeric digits separated by spaces or punctuation, such as eight three one - five five five - 0199, returns status: "violation" and flag: "OBFUSCATED_CONTACT".
+2. A description containing a sequence of spelled-out and numeric digits separated by spaces or punctuation, such as eight three one - five five five - 0199, returns status violation and flag OBFUSCATED_CONTACT.
 
-3. A description containing leetspeak character substitutions in a phone-shaped pattern, such as 831-555-O199 or 83I-555-0199, returns status: "violation" and flag: "OBFUSCATED_CONTACT".
+3. A description containing leetspeak character substitutions in a phone-shaped pattern, such as 831-555-O199 or 83I-555-0199, returns status violation and flag OBFUSCATED_CONTACT.
 
-4. Natural descriptive prose containing number words, such as two bedrooms in three weeks, five minutes walk to campus, returns status: "compliant" and flag: null.
+4. Natural descriptive prose containing number words, such as two bedrooms in three weeks or five minutes walk to campus, returns status compliant and flag null.
 
-5. extractPhoneFromDescription(description) extracts the first standard or unmasked 10-digit phone number candidate from description text, including commonly formatted phone numbers, or returns null when no qualifying phone number is found.
+5. extractPhoneFromDescription(description) extracts the first standard numeric 10-digit phone number candidate from description text, including commonly formatted phone numbers, or returns null when no qualifying phone number is found.
 
-6. Missing descriptions (undefined, null, empty strings, or whitespace-only strings) return status: "skipped" and flag: null.
+6. Missing descriptions (undefined, null, empty strings, or whitespace-only strings) return status skipped and flag null.
 
 7. Non-string inputs, including numbers, booleans, and objects, return { success: false, error: 'Invalid description input parameter' } without crashing the process.
 
@@ -132,7 +124,7 @@ Setup for all: Offline unit tests directly invoking the exported description obf
 
 - Criterion 3: Tests leetspeak phone patterns such as 831-555-O199 and 83I-555-0199, asserting status violation and flag OBFUSCATED_CONTACT.
 
-- Criterion 4: Tests clean descriptive prose such as two bedrooms in three weeks, five minutes walk to campus, asserting status compliant, flag null, and evidence null.
+- Criterion 4: Tests clean descriptive prose such as two bedrooms in three weeks and five minutes walk to campus, asserting status compliant, flag null, and evidence null.
 
 - Criterion 5: Tests extraction of a standard 10-digit phone number, a formatted phone number, and a description without an extractable phone number, asserting the expected phone string or null.
 

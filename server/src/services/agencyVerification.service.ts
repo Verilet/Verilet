@@ -5,9 +5,11 @@
 
 export type AgencyVerificationStatus = 'compliant' | 'warning' | 'skipped';
 
+export type AgencyVerificationFlag = 'SUSPENDED_ENTITY' | 'UNREGISTERED_ENTITY' | null;
+
 export interface AgencyVerificationResult {
   readonly status: AgencyVerificationStatus;
-  readonly flag: string | null;
+  readonly flag: AgencyVerificationFlag;
   readonly message: string;
 }
 

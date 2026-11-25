@@ -9,7 +9,9 @@ export type PhoneFlagInput = z.infer<typeof PhoneFlagInputSchema>;
 
 export type PhoneFlagStatus = 'compliant' | 'warning' | 'skipped';
 
-export type PhoneFlag = 'NON_LOCAL_AREA_CODE' | 'INTERNATIONAL_PHONE_NUMBER' | null;
+/** Phone warning flags; OBFUSCATED_PHONE_NUMBER is reserved for SCRUM-16-T-2 text detection. */
+export type PhoneFlag =
+  'NON_LOCAL_AREA_CODE' | 'INTERNATIONAL_PHONE_NUMBER' | 'OBFUSCATED_PHONE_NUMBER' | null;
 
 /** Phone classification result data. */
 export interface PhoneFlagData {

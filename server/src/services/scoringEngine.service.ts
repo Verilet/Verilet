@@ -312,6 +312,8 @@ function normalizeSecurityDeposit(deposit: RawChecks['securityDeposit']): CheckR
       skippedDetail: 'Security deposit not specified; check skipped.',
     },
     mapData: (data, check) => {
+      const citation = data.statutoryCitation ?? null;
+
       if (data.status === 'violation' || data.flag === 'ILLEGAL_SECURITY_DEPOSIT') {
         return check.flag(
           POINTS_DEPOSIT_OVER_2X,
@@ -319,7 +321,7 @@ function normalizeSecurityDeposit(deposit: RawChecks['securityDeposit']): CheckR
             data.message,
             'Security deposit exceeds California statutory 2x rent cap.',
           ),
-          data.statutoryCitation ?? 'Cal. Civ. Code § 1950.5(c)',
+          citation,
         );
       }
 
@@ -327,16 +329,22 @@ function normalizeSecurityDeposit(deposit: RawChecks['securityDeposit']): CheckR
         return check.flag(
           POINTS_DEPOSIT_OVER_1X,
           nonEmptyDetail(data.message, 'Security deposit exceeds standard California 1x rent cap.'),
-          data.statutoryCitation ?? 'Cal. Civ. Code § 1950.5(c)',
+          citation,
         );
       }
 
-      return check.ok(
-        nonEmptyDetail(
-          data.message,
-          'Security deposit complies with California AB 12 statutory cap.',
-        ),
-        data.statutoryCitation ?? null,
+      if (data.status === 'compliant') {
+        return check.ok(
+          nonEmptyDetail(
+            data.message,
+            'Security deposit complies with California AB 12 statutory cap.',
+          ),
+          citation,
+        );
+      }
+
+      return check.unknown(
+        nonEmptyDetail(data.message, 'Security deposit check returned an unrecognized status.'),
       );
     },
   });
@@ -358,20 +366,28 @@ function normalizeApplicationFee(fee: RawChecks['applicationFee']): CheckResult 
       skippedDetail: 'Application fee not specified; check skipped.',
     },
     mapData: (data, check) => {
+      const citation = data.statutoryCitation ?? null;
+
       if (data.status === 'violation' || data.flag === 'EXCESSIVE_APPLICATION_FEE') {
         return check.flag(
           POINTS_EXCESSIVE_FEE,
           nonEmptyDetail(data.message, 'Application screening fee exceeds statutory limit.'),
-          data.statutoryCitation ?? 'Cal. Civ. Code § 1950.6',
+          citation,
         );
       }
 
-      return check.ok(
-        nonEmptyDetail(
-          data.message,
-          'Application screening fee complies with California statutory limits.',
-        ),
-        data.statutoryCitation ?? null,
+      if (data.status === 'compliant') {
+        return check.ok(
+          nonEmptyDetail(
+            data.message,
+            'Application screening fee complies with California statutory limits.',
+          ),
+          citation,
+        );
+      }
+
+      return check.unknown(
+        nonEmptyDetail(data.message, 'Application fee check returned an unrecognized status.'),
       );
     },
   });
@@ -477,10 +493,16 @@ function normalizeGisQuery(gis: RawChecks['gisQuery']): CheckResult {
         );
       }
 
-      const apn = data.parcel?.apn.trim();
-      return activeCheck.ok(
-        nonEmptyDetail(data.message, 'Address verified in county parcel records.'),
-        apn ? `APN: ${apn}` : null,
+      if (data.status === 'compliant') {
+        const apn = data.parcel?.apn.trim();
+        return activeCheck.ok(
+          nonEmptyDetail(data.message, 'Address verified in county parcel records.'),
+          apn ? `APN: ${apn}` : null,
+        );
+      }
+
+      return activeCheck.unknown(
+        nonEmptyDetail(data.message, 'County GIS check returned an unrecognized status.'),
       );
     },
   });
@@ -521,9 +543,15 @@ function normalizeLandUse(landUse: RawChecks['landUse']): CheckResult {
         );
       }
 
-      return check.ok(
-        nonEmptyDetail(data.message, 'Complies with lawful residential land use.'),
-        evidence,
+      if (data.status === 'compliant') {
+        return check.ok(
+          nonEmptyDetail(data.message, 'Complies with lawful residential land use.'),
+          evidence,
+        );
+      }
+
+      return check.unknown(
+        nonEmptyDetail(data.message, 'Land use check returned an unrecognized status.'),
       );
     },
   });
@@ -571,9 +599,15 @@ function normalizeContactPhone(phone: RawChecks['contactPhone']): CheckResult {
         );
       }
 
-      return check.ok(
-        nonEmptyDetail(data.message, 'Phone number verified with regional or commercial prefix.'),
-        evidence,
+      if (data.status === 'compliant') {
+        return check.ok(
+          nonEmptyDetail(data.message, 'Phone number verified with regional or commercial prefix.'),
+          evidence,
+        );
+      }
+
+      return check.unknown(
+        nonEmptyDetail(data.message, 'Contact phone check returned an unrecognized status.'),
       );
     },
   });
@@ -649,16 +683,45 @@ function normalizeListingSearch(search: RawChecks['listingSearch']): CheckResult
     return check.unknown('Duplicate listing search could not be completed due to worker failure.');
   }
 
-  if (search.matches.length > 0) {
-    const urls = search.matches
-      .map((match) => match.url)
-      .filter(Boolean)
-      .join(', ');
+  if (search.status === 'skipped') {
+    return check.skipped(
+      nonEmptyDetail(search.message, 'Cross-platform duplicate listing search skipped.'),
+    );
+  }
 
+  const urls = search.matches
+    .map((match) => match.url)
+    .filter(Boolean)
+    .join(', ');
+
+  if (
+    search.flag === 'DUPLICATE_LISTING_MISMATCH' ||
+    search.status === 'violation' ||
+    search.status === 'warning'
+  ) {
     return check.flag(
       POINTS_DUPLICATE_MISMATCH,
-      'Cross-platform duplicate listing match detected on other rental platforms.',
+      nonEmptyDetail(
+        search.message,
+        'Cross-platform duplicate listing mismatch detected (significant differences in rent or contact info).',
+      ),
       urls || null,
+    );
+  }
+
+  if (search.matches.length > 0) {
+    return check.ok(
+      nonEmptyDetail(
+        search.message,
+        'Cross-platform duplicate listings found with consistent listing details.',
+      ),
+      urls || null,
+    );
+  }
+
+  if (search.status === 'compliant') {
+    return check.ok(
+      nonEmptyDetail(search.message, 'No duplicate listings detected on other rental platforms.'),
     );
   }
 

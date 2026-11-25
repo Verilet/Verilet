@@ -18,6 +18,7 @@ import {
   MIN_EVALUATED_CHECKS_THRESHOLD,
   INSUFFICIENT_DATA_SUMMARY,
 } from '../src/services/scoringEngine.service.js';
+import { listingSearch } from '../src/services/listingSearch.service.js';
 import type { RawChecks, WorkerFailureFallback } from '../src/schemas/evaluate.schema.js';
 
 describe('SCRUM-70-T-2: Deterministic listing risk scoring engine', () => {
@@ -638,7 +639,7 @@ describe('SCRUM-70-T-2: Deterministic listing risk scoring engine', () => {
       expect(above75Price?.evidence).toBe('75.1% of baseline');
     });
 
-    it('applies POINTS_DUPLICATE_MISMATCH (+35) when cross-platform duplicate matches exist', () => {
+    it('treats raw duplicate matches without a mismatch flag or status as OK with 0 points', () => {
       const raw = createCompliantChecks({
         listingSearch: {
           matches: [
@@ -657,11 +658,63 @@ describe('SCRUM-70-T-2: Deterministic listing risk scoring engine', () => {
       const result = calculateListingScore(raw);
       const duplicateCheck = result.checks.find((c) => c.id === 'listingSearch');
 
+      expect(duplicateCheck?.status).toBe('OK');
+      expect(duplicateCheck?.scoreImpact).toBe(0);
+      expect(duplicateCheck?.evidence).toContain('zillow.com');
+      expect(result.score).toBe(0);
+      expect(result.rating).toBe('LOW');
+    });
+
+    it('applies POINTS_DUPLICATE_MISMATCH (+35) when listingSearch returns a mismatch flag or violation status', async () => {
+      const stubbed = await listingSearch();
+      expect(stubbed.status).toBe('compliant');
+      expect(stubbed.flag).toBeNull();
+
+      const raw = createCompliantChecks({
+        listingSearch: {
+          status: 'violation',
+          flag: 'DUPLICATE_LISTING_MISMATCH',
+          message: 'Cross-platform duplicate differs in rent or contact info.',
+          matches: [
+            {
+              url: 'https://zillow.com/homedetails/123-ocean-st/999_zpid/',
+              site: 'zillow',
+              title: '123 Ocean St Apartment',
+              matchedBy: ['address', 'photo'],
+              rent: 1800,
+            },
+          ],
+          failedSources: [],
+        },
+      });
+
+      const result = calculateListingScore(raw);
+      const duplicateCheck = result.checks.find((c) => c.id === 'listingSearch');
+
       expect(duplicateCheck?.status).toBe('FLAG');
       expect(duplicateCheck?.scoreImpact).toBe(POINTS_DUPLICATE_MISMATCH);
       expect(duplicateCheck?.evidence).toContain('zillow.com');
       expect(result.score).toBe(POINTS_DUPLICATE_MISMATCH);
-      expect(result.rating).toBe('LOW');
+    });
+
+    it('normalizes unrecognized envelope worker statuses to UNKNOWN with 0 points', () => {
+      const raw = createMalformedChecks({
+        securityDeposit: {
+          success: true,
+          data: {
+            status: 'unexpected_status',
+            flag: null,
+            message: 'Unknown deposit state',
+            statutoryCitation: null,
+          },
+        },
+      });
+
+      const result = calculateListingScore(raw);
+      const depositCheck = result.checks.find((c) => c.id === 'securityDeposit');
+
+      expect(depositCheck?.status).toBe('UNKNOWN');
+      expect(depositCheck?.scoreImpact).toBe(0);
     });
 
     it('applies POINTS_UNREGISTERED_ENTITY (+10) when rental agency is unregistered', () => {

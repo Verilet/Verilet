@@ -1,10 +1,7 @@
-import dotenv from 'dotenv';
+// Must stay the first import: it loads the env files before app.ts and its routes run.
+import './config/loadEnv.js';
 import app from './app.js';
 import { connectDatabase, disconnectDatabase } from './config/database.js';
-
-// Settings are only read once the server starts or handles a request, so loading them here is
-// early enough. `.env.local`, where `clerk env pull` writes the Clerk keys, wins over `.env`.
-dotenv.config({ path: ['.env.local', '.env'], quiet: true });
 
 /**
  * Server Entry Point

@@ -1,4 +1,5 @@
 import type { Request, Response } from 'express';
+import { signedInUserId } from '../middleware/auth.middleware.js';
 import type { SaveScanRequest } from '../schemas/savedScan.schema.js';
 import { deleteScan, getScan, listScans, saveScan } from '../services/scanPersistence.service.js';
 
@@ -6,26 +7,31 @@ import { deleteScan, getScan, listScans, saveScan } from '../services/scanPersis
 const NOT_FOUND = { success: false, error: "We couldn't find that scan." };
 
 /**
- * The signed-in student's Clerk user ID, which `requireUser` put in `res.locals`.
+ * Runs a handler's work and sends the standard answer: the data with `successStatus`, a 404 when
+ * the work finds nothing (null), or a 500 with `failMessage` when it throws.
  *
  * @param res The response.
- * @returns The user ID.
+ * @param successStatus The status for a successful answer, 200 or 201.
+ * @param failMessage What couldn't be done, shown to the student on a 500.
+ * @param work Does the handler's job; resolves null when there is no such scan.
+ * @returns The response.
  */
-function userIdOf(res: Response): string {
-  return String(res.locals.userId);
-}
-
-/**
- * Logs a failure and answers 500 with the error envelope.
- *
- * @param res The response.
- * @param message What couldn't be done, shown to the student.
- * @param err What went wrong.
- * @returns The 500 response.
- */
-function serverError(res: Response, message: string, err: unknown) {
-  console.error(message, err instanceof Error ? err.message : err);
-  return res.status(500).json({ success: false, error: message });
+async function respond<T>(
+  res: Response,
+  successStatus: number,
+  failMessage: string,
+  work: () => Promise<T | null>,
+): Promise<Response> {
+  try {
+    const data = await work();
+    if (data === null) {
+      return res.status(404).json(NOT_FOUND);
+    }
+    return res.status(successStatus).json({ success: true, data });
+  } catch (err) {
+    console.error(failMessage, err instanceof Error ? err.message : err);
+    return res.status(500).json({ success: false, error: failMessage });
+  }
 }
 
 /**
@@ -35,13 +41,10 @@ function serverError(res: Response, message: string, err: unknown) {
  * @param res The response.
  * @returns 201 with the saved scan, or 500.
  */
-export async function createSavedScan(req: Request, res: Response) {
-  try {
-    const scan = await saveScan(userIdOf(res), req.body as SaveScanRequest);
-    return res.status(201).json({ success: true, data: scan });
-  } catch (err) {
-    return serverError(res, "We couldn't save that scan.", err);
-  }
+export function createSavedScan(req: Request, res: Response): Promise<Response> {
+  return respond(res, 201, "We couldn't save that scan.", () =>
+    saveScan(signedInUserId(res), req.body as SaveScanRequest),
+  );
 }
 
 /**
@@ -51,12 +54,8 @@ export async function createSavedScan(req: Request, res: Response) {
  * @param res The response.
  * @returns 200 with the scans, or 500.
  */
-export async function listSavedScans(_req: Request, res: Response) {
-  try {
-    return res.status(200).json({ success: true, data: await listScans(userIdOf(res)) });
-  } catch (err) {
-    return serverError(res, "We couldn't load your scans.", err);
-  }
+export function listSavedScans(_req: Request, res: Response): Promise<Response> {
+  return respond(res, 200, "We couldn't load your scans.", () => listScans(signedInUserId(res)));
 }
 
 /**
@@ -66,16 +65,10 @@ export async function listSavedScans(_req: Request, res: Response) {
  * @param res The response.
  * @returns 200 with the scan, 404, or 500.
  */
-export async function getSavedScan(req: Request<{ id: string }>, res: Response) {
-  try {
-    const scan = await getScan(userIdOf(res), req.params.id);
-    if (!scan) {
-      return res.status(404).json(NOT_FOUND);
-    }
-    return res.status(200).json({ success: true, data: scan });
-  } catch (err) {
-    return serverError(res, "We couldn't load that scan.", err);
-  }
+export function getSavedScan(req: Request<{ id: string }>, res: Response): Promise<Response> {
+  return respond(res, 200, "We couldn't load that scan.", () =>
+    getScan(signedInUserId(res), req.params.id),
+  );
 }
 
 /**
@@ -85,14 +78,8 @@ export async function getSavedScan(req: Request<{ id: string }>, res: Response) 
  * @param res The response.
  * @returns 200 with the deleted scan's ID, 404, or 500.
  */
-export async function deleteSavedScan(req: Request<{ id: string }>, res: Response) {
-  try {
-    const deleted = await deleteScan(userIdOf(res), req.params.id);
-    if (!deleted) {
-      return res.status(404).json(NOT_FOUND);
-    }
-    return res.status(200).json({ success: true, data: { id: req.params.id } });
-  } catch (err) {
-    return serverError(res, "We couldn't delete that scan.", err);
-  }
+export function deleteSavedScan(req: Request<{ id: string }>, res: Response): Promise<Response> {
+  return respond(res, 200, "We couldn't delete that scan.", async () =>
+    (await deleteScan(signedInUserId(res), req.params.id)) ? { id: req.params.id } : null,
+  );
 }

@@ -17,7 +17,12 @@ const savedScanSchema = new Schema(
   {
     userId: { type: String, required: true },
     listingUrl: { type: String, required: true },
-    rent: { type: Number, required: true, min: 0 },
+    // Rent must be more than 0, the same rule as saveScanRequestSchema.
+    rent: {
+      type: Number,
+      required: true,
+      validate: { validator: (rent: number) => rent > 0, message: 'Rent must be more than 0.' },
+    },
     bedrooms: { type: String, enum: BEDROOM_VALUES, required: true },
     location: { type: String, required: true },
     landlord: { type: String, default: '' },

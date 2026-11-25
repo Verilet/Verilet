@@ -9,7 +9,7 @@ The API stores a scan as it was evaluated: the listing, its score and its checks
 - Every request needs a Clerk session token: `Authorization: Bearer <token>`, from `getToken()` on the client.
 - The server checks it with `@clerk/express` (`clerkMiddleware` and `getAuth`) and uses the Clerk user ID as the owner of each scan.
 - A student only ever sees, opens or deletes their own scans. Another student's scan ID answers `404`, the same as one that doesn't exist.
-- Server settings: `CLERK_PUBLISHABLE_KEY` and `CLERK_SECRET_KEY`, in `server/.env` or `server/.env.local`. If either is missing, every request answers `503`.
+- Server settings: `CLERK_PUBLISHABLE_KEY` and `CLERK_SECRET_KEY`, in `server/.env` or `server/.env.local` (loaded first by `server/src/config/loadEnv.ts`). If either is missing, blank or not a Clerk key of the right kind, every request answers `503`.
 
 ## Responses
 
@@ -18,13 +18,13 @@ All responses use the standard envelopes:
 - Success: `{ "success": true, "data": ... }`
 - Error: `{ "success": false, "error": "Message", "details"?: ... }`
 
-| Status | When                                                                        |
-| ------ | --------------------------------------------------------------------------- |
-| `400`  | The body fails validation. `details` holds Zod's flattened field errors.    |
-| `401`  | No signed-in Clerk user.                                                    |
-| `404`  | The scan doesn't exist, the ID is malformed, or it belongs to someone else. |
-| `500`  | The database failed.                                                        |
-| `503`  | Sign-in isn't configured on the server.                                     |
+| Status | When                                                                                              |
+| ------ | ------------------------------------------------------------------------------------------------- |
+| `400`  | The body fails validation: `"Validation failed"`, with Zod's formatted field errors in `details`. |
+| `401`  | No signed-in Clerk user.                                                                          |
+| `404`  | The scan doesn't exist, the ID is malformed, or it belongs to someone else.                       |
+| `500`  | The database failed.                                                                              |
+| `503`  | Sign-in isn't configured on the server.                                                           |
 
 ## Saved scan
 
@@ -88,11 +88,11 @@ MongoDB collection `savedscans` (Mongoose model `SavedScan` in `server/src/model
 
 ## Code
 
-| Layer      | File                                                                     |
-| ---------- | ------------------------------------------------------------------------ |
-| Routes     | `server/src/routes/scans.routes.ts`                                      |
-| Controller | `server/src/controllers/scans.controller.ts`                             |
-| Service    | `server/src/services/scanPersistence.service.ts`                         |
-| Model      | `server/src/models/savedScan.model.ts`                                   |
-| Schema     | `server/src/schemas/savedScan.schema.ts`                                 |
-| Middleware | `server/src/middleware/auth.middleware.ts`, `validateBody.middleware.ts` |
+| Layer      | File                                                                                         |
+| ---------- | -------------------------------------------------------------------------------------------- |
+| Routes     | `server/src/routes/scans.routes.ts`                                                          |
+| Controller | `server/src/controllers/scans.controller.ts`                                                 |
+| Service    | `server/src/services/scanPersistence.service.ts`                                             |
+| Model      | `server/src/models/savedScan.model.ts`                                                       |
+| Schema     | `server/src/schemas/savedScan.schema.ts`                                                     |
+| Middleware | `server/src/middleware/auth.middleware.ts`, `validate.middleware.ts` (shared `validateBody`) |

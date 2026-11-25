@@ -1,5 +1,7 @@
 import request from 'supertest';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { Response } from 'express';
+import { signedInUserId } from '../src/middleware/auth.middleware.js';
 import type { SavedScanResponse } from '../src/schemas/savedScan.schema.js';
 
 /** A stored scan in the in-memory database. */
@@ -25,34 +27,62 @@ vi.mock('@clerk/express', () => ({
 }));
 
 /**
- * Mongoose model stand-in that keeps scans in memory. It supports the calls the persistence
- * service makes, so the real service, controller and routes all run.
+ * Mongoose model stand-in that keeps scans in memory and answers the calls the persistence
+ * service makes, so the real service, controller, routes and validation all run.
  */
 vi.mock('../src/models/savedScan.model.js', async () => {
   const { Types } = await import('mongoose');
 
   /**
-   * Whether a stored row matches a query filter such as `{ _id, userId }`.
+   * Stored rows that match a query filter such as `{ _id, userId }`. Throws when a test has made
+   * the database fail.
    *
-   * @param row The stored row.
    * @param filter The fields to match.
-   * @returns True when every field matches.
+   * @returns The matching rows.
    */
-  function matches(row: StoredScan, filter: Record<string, unknown>): boolean {
-    return Object.entries(filter).every(([key, value]) => String(row[key]) === String(value));
-  }
-
-  /** Throws when a test has made the database fail. */
-  function touch() {
+  function rowsMatching(filter: Record<string, unknown>): StoredScan[] {
     if (db.fail) {
       throw new Error('database down');
     }
+    return db.rows.filter((row) =>
+      Object.entries(filter).every(([key, value]) => String(row[key]) === String(value)),
+    );
+  }
+
+  /**
+   * A chainable query like Mongoose's, over rows that already matched.
+   *
+   * @param rows The matching rows.
+   * @param single Whether `lean()` gives the first row (`findOne`) instead of all of them.
+   * @returns The query.
+   */
+  function query(rows: StoredScan[], single: boolean) {
+    let result = rows;
+    const chain = {
+      select: (fields: string) => {
+        const hidden = fields.split(' ').map((field) => field.replace(/^-/, ''));
+        result = result.map((row) =>
+          Object.fromEntries(Object.entries(row).filter(([key]) => !hidden.includes(key))),
+        ) as StoredScan[];
+        return chain;
+      },
+      sort: () => {
+        result = [...result].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+        return chain;
+      },
+      limit: (count: number) => {
+        result = result.slice(0, count);
+        return chain;
+      },
+      lean: async () => (single ? (result[0] ?? null) : result),
+    };
+    return chain;
   }
 
   return {
     SavedScanModel: {
       create: async (doc: Record<string, unknown>) => {
-        touch();
+        rowsMatching({});
         db.clock += 1;
         const row = {
           ...doc,
@@ -62,34 +92,12 @@ vi.mock('../src/models/savedScan.model.js', async () => {
         db.rows.push(row);
         return { toObject: () => ({ ...row }) };
       },
-      find: (filter: Record<string, unknown>) => {
-        touch();
-        let result = db.rows.filter((row) => matches(row, filter));
-        const query = {
-          sort: () => {
-            result = [...result].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-            return query;
-          },
-          limit: (count: number) => {
-            result = result.slice(0, count);
-            return query;
-          },
-          lean: async () => result,
-        };
-        return query;
-      },
-      findOne: (filter: Record<string, unknown>) => {
-        touch();
-        return { lean: async () => db.rows.find((row) => matches(row, filter)) ?? null };
-      },
+      find: (filter: Record<string, unknown>) => query(rowsMatching(filter), false),
+      findOne: (filter: Record<string, unknown>) => query(rowsMatching(filter), true),
       deleteOne: async (filter: Record<string, unknown>) => {
-        touch();
-        const index = db.rows.findIndex((row) => matches(row, filter));
-        if (index < 0) {
-          return { deletedCount: 0 };
-        }
-        db.rows.splice(index, 1);
-        return { deletedCount: 1 };
+        const [row] = rowsMatching(filter);
+        db.rows = db.rows.filter((stored) => stored !== row);
+        return { deletedCount: row ? 1 : 0 };
       },
     },
   };
@@ -159,7 +167,7 @@ afterEach(() => {
 });
 
 describe('SCRUM-69-T-1: saved scans API', () => {
-  it('SCRUM-69-T-1 [Criterion 1] rejects signed-out requests on every route', async () => {
+  it('[Criterion 1] rejects signed-out requests on every route', async () => {
     const id = '65a0c0ffee0000000000abcd';
     const responses = [
       await request(app).get('/api/scans'),
@@ -175,20 +183,22 @@ describe('SCRUM-69-T-1: saved scans API', () => {
     expect(db.rows).toHaveLength(0);
   });
 
-  it.each(['CLERK_SECRET_KEY', 'CLERK_PUBLISHABLE_KEY'])(
-    'SCRUM-69-T-1 [Criterion 2] answers 503 when %s is not set',
-    async (name) => {
-      vi.stubEnv(name, '');
+  it.each([
+    ['CLERK_SECRET_KEY', ''],
+    ['CLERK_PUBLISHABLE_KEY', ''],
+    ['CLERK_SECRET_KEY', '   '],
+    ['CLERK_PUBLISHABLE_KEY', 'sk_test_wrong_kind'],
+  ])('[Criterion 2] answers 503 when %s is %j', async (name, value) => {
+    vi.stubEnv(name, value);
 
-      const res = await request(app).get('/api/scans').set(asUser('user_a'));
+    const res = await request(app).get('/api/scans').set(asUser('user_a'));
 
-      expect(res.status).toBe(503);
-      expect(res.body.success).toBe(false);
-      expect(res.body.error).toEqual(expect.any(String));
-    },
-  );
+    expect(res.status).toBe(503);
+    expect(res.body.success).toBe(false);
+    expect(res.body.error).toEqual(expect.any(String));
+  });
 
-  it('SCRUM-69-T-1 [Criterion 3] saves a scan for the signed-in user', async () => {
+  it('[Criterion 3] saves a scan for the signed-in user', async () => {
     const res = await request(app).post('/api/scans').set(asUser('user_a')).send(scan);
 
     expect(res.status).toBe(201);
@@ -213,7 +223,7 @@ describe('SCRUM-69-T-1: saved scans API', () => {
       'checks',
     ],
     ['an extra userId field', { userId: 'user_b' }, 'userId'],
-  ])('SCRUM-69-T-1 [Criterion 4] rejects %s and saves nothing', async (_name, change, field) => {
+  ])('[Criterion 4] rejects %s and saves nothing', async (_name, change, field) => {
     const res = await request(app)
       .post('/api/scans')
       .set(asUser('user_a'))
@@ -225,7 +235,7 @@ describe('SCRUM-69-T-1: saved scans API', () => {
     expect(db.rows).toHaveLength(0);
   });
 
-  it("SCRUM-69-T-1 [Criterion 5] lists only the user's scans, newest first", async () => {
+  it("[Criterion 5] lists only the user's scans, newest first", async () => {
     const first = await save('user_a', { location: 'First place' });
     await save('user_b', { location: 'Someone else' });
     const second = await save('user_a', { location: 'Second place' });
@@ -239,7 +249,7 @@ describe('SCRUM-69-T-1: saved scans API', () => {
     ]);
   });
 
-  it('SCRUM-69-T-1 [Criterion 5] lists at most 100 scans, the newest', async () => {
+  it('[Criterion 5] lists at most 100 scans, the newest', async () => {
     for (let count = 0; count < 101; count += 1) {
       await save('user_c', { location: `Place ${count}` });
     }
@@ -252,7 +262,7 @@ describe('SCRUM-69-T-1: saved scans API', () => {
     expect(res.body.data[99].location).toBe('Place 1');
   });
 
-  it("SCRUM-69-T-1 [Criterion 6] opens only the owner's scan", async () => {
+  it("[Criterion 6] opens only the owner's scan", async () => {
     const mine = await save('user_a');
 
     const own = await request(app).get(`/api/scans/${mine.id}`).set(asUser('user_a'));
@@ -271,7 +281,7 @@ describe('SCRUM-69-T-1: saved scans API', () => {
     }
   });
 
-  it("SCRUM-69-T-1 [Criterion 7] deletes only the owner's scan", async () => {
+  it("[Criterion 7] deletes only the owner's scan", async () => {
     const mine = await save('user_a');
 
     const other = await request(app).delete(`/api/scans/${mine.id}`).set(asUser('user_b'));
@@ -288,7 +298,7 @@ describe('SCRUM-69-T-1: saved scans API', () => {
     expect(db.rows).toHaveLength(0);
   });
 
-  it('SCRUM-69-T-1 [Criterion 8] answers 500 when the database fails', async () => {
+  it('[Criterion 8] answers 500 when the database fails', async () => {
     db.fail = true;
 
     const saved = await request(app).post('/api/scans').set(asUser('user_a')).send(scan);
@@ -298,5 +308,10 @@ describe('SCRUM-69-T-1: saved scans API', () => {
     expect(saved.body).toEqual({ success: false, error: "We couldn't save that scan." });
     expect(listed.status).toBe(500);
     expect(listed.body).toEqual({ success: false, error: "We couldn't load your scans." });
+  });
+
+  it('refuses to read or write scans when no signed-in user was stored', () => {
+    const res = { locals: {} } as Response;
+    expect(() => signedInUserId(res)).toThrow(/requireUser/);
   });
 });

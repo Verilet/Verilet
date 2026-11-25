@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   clearCompanyCache,
   fetchCaliforniaCompany,
-} from '../../src/services/openCorporatesClient.service.js';
+} from '../src/services/openCorporatesClient.service.js';
 
 const fakeCompanyRecord = {
   name: 'IRVINE BAY-AREA RENTALS LLC',

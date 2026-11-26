@@ -16,6 +16,7 @@ Serves SCRUM-64. Rental scammers often copy a real listing's photos and address 
 
 - `findListingCopies(input)` in `server/src/services/listingSearch.service.ts` returns `Promise<{ matches: ListingMatch[], failedSources: ('address' | 'photo')[] }>`.
 - `ListingSearchInputSchema` (Zod): `{ address?: string | null (trimmed; an empty or whitespace-only address counts as missing), photos: string[] (each a URL, default []), excludeUrl?: string (URL) }`. The input must have an address, at least one photo, or both; if it has neither, it is invalid. Invalid input throws a `ZodError`.
+- `ListingSearchResult` also has optional `status`, `flag`, and `message` fields, and `ListingMatch` has an optional `rent` field, which the scoring engine (SCRUM-70-T-2) reads. `findListingCopies` does not set them; SCRUM-64-T-2 sets them after comparing the copies.
 - Each match is `{ url, site, title, matchedBy }`:
   - `site` is the page's hostname without a leading `www.` (e.g. `'zillow.com'`).
   - `title` is the page title from the search result, or `null`.

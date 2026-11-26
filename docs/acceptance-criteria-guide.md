@@ -8,12 +8,12 @@ In our Sprint 1 retrospective, we identified that vague tickets led to misaligne
 
 ## 1. The Two Levels of Acceptance Criteria
 
-Acceptance criteria operate at two distinct levels in our project:
+Acceptance criteria operate at two distinct levels in our project, mirroring our two-scope [Definition of Done](./definition-of-done.md):
 
 ```mermaid
 flowchart LR
-    Story["Story-Level AC (Jira)\n- Written from user perspective\n- Given-When-Then format (BDD)\n- Defines business outcome"]
-    Task["Task-Level AC (Task Spec)\n- Written for developer & tests\n- Numbered technical invariants\n- 1-to-1 mapping to Vitest assertions"]
+    Story["Story-Level AC (Jira)\n- Maps to User Story DoD\n- Written from user perspective\n- Given-When-Then format (BDD)\n- Defines business outcome"]
+    Task["Task-Level AC (Task Spec)\n- Maps to Sprint Task DoD\n- Written for developer & tests\n- Numbered technical invariants\n- 1-to-1 mapping to Vitest assertions"]
 
     Story -->|"Decomposes into"| Task
 ```
@@ -95,6 +95,7 @@ $$\text{Criterion } N \iff \text{Test Table Entry } N \iff \text{Vitest Assertio
 
 - If you have 5 numbered acceptance criteria, you **must** have at least 5 test table entries describing how each criterion is verified.
 - The corresponding test file must contain real assertions validating those exact conditions.
+- Test assertions in `client/tests/` or `server/tests/` must include the explicit `[Criterion N]` tag prefix and follow declarative behavioral phrasing per [docs/style-guide.md §3.2](./style-guide.md#32-unit-test-naming-conventions).
 - Pull requests that have missing criteria or unmapped tests will not be approved.
 
 ---
@@ -143,11 +144,11 @@ Serves <parent-story-id> (<short summary of parent story>). [Explain what this s
 ## Tests
 
 File: `server/tests/<task-id>_<name>.test.ts`
-Setup for all: [Describe test fixture setup, supertest initialization, or mock declarations.]
+Setup for all: [Describe test fixture setup, supertest initialization, or mock declarations. In the test file, group under describe('<task-id>: <descriptor>', ...) and prefix assertions with [Criterion N] per docs/style-guide.md §3.2.]
 
-- Criterion 1: `<task-id> <short test description>` — [specific inputs sent and assertions verified].
-- Criterion 2: `<task-id> <short test description>` — [specific inputs sent and assertions verified].
-- Criterion 3: `<task-id> <short test description>` — [specific inputs sent and assertions verified].
-- Criterion 4: `<task-id> <short test description>` — [specific inputs sent and assertions verified].
-- Criterion 5: `<task-id> <short test description>` — [specific inputs sent and assertions verified].
+- Criterion 1: `<task-id> <short test description>` — [specific inputs sent and assertions verified; maps to it('[Criterion 1] ...')].
+- Criterion 2: `<task-id> <short test description>` — [specific inputs sent and assertions verified; maps to it('[Criterion 2] ...')].
+- Criterion 3: `<task-id> <short test description>` — [specific inputs sent and assertions verified; maps to it('[Criterion 3] ...')].
+- Criterion 4: `<task-id> <short test description>` — [specific inputs sent and assertions verified; maps to it('[Criterion 4] ...')].
+- Criterion 5: `<task-id> <short test description>` — [specific inputs sent and assertions verified; maps to it('[Criterion 5] ...')].
 ```

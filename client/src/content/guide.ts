@@ -3,13 +3,19 @@
  * results page explain things the same way. Edit text here, not in the views.
  */
 
+/** One of the three steps on the landing page. */
 export interface GuideStep {
+  /** Short step name, e.g. "Paste the link". */
   title: string;
+  /** One sentence about the step. */
   text: string;
 }
 
+/** One check Verilet runs, as explained on the landing and How it works pages. */
 export interface GuideCheck {
+  /** Stable ID, matching the check IDs in results. */
   id: string;
+  /** Check name, e.g. "Payment method". */
   title: string;
   /** What we do (one sentence). */
   what: string;
@@ -19,16 +25,21 @@ export interface GuideCheck {
   status: string;
 }
 
+/** One stop on the How it works road. */
 export interface GuideStop {
   /** "Stop 1" ... "Stop 5", "Finish". */
   label: string;
+  /** Stop name. */
   title: string;
+  /** What we do at this stop (one sentence). */
   what: string;
+  /** Why it matters (one sentence). */
   why: string;
   /** What is happening at this stop, shown in the How it works status bar. */
   status: string;
 }
 
+/** The three steps on the landing page. */
 const STEPS: GuideStep[] = [
   {
     title: 'Paste the link',
@@ -44,6 +55,7 @@ const STEPS: GuideStep[] = [
   },
 ];
 
+/** The checks Verilet runs, in the order they are explained. */
 const CHECKS: GuideCheck[] = [
   {
     id: 'rent',
@@ -75,6 +87,7 @@ const CHECKS: GuideCheck[] = [
   },
 ];
 
+/** The How it works road: the link, each check, then the finish. */
 const STOPS: GuideStop[] = [
   {
     label: 'Stop 1',
@@ -99,8 +112,9 @@ const STOPS: GuideStop[] = [
   },
 ];
 
+/** All the wording for the landing, How it works, results and log in pages. */
 export const GUIDE = {
-  eyebrow: 'RENTAL SCAM CHECK FOR STUDENTS',
+  eyebrow: 'Rental scam check for students',
   headline: { prefix: 'Check a rental listing', accent: 'before you pay' },
   pitch:
     'Verilet looks for common scam signs in a rental listing and gives you a clear risk rating, with the reasons behind it.',
@@ -108,9 +122,30 @@ export const GUIDE = {
   ctaLabel: 'Check a listing',
   howLabel: 'See how it works',
   tripLinkLabel: 'See every stop on the road',
+  auth: {
+    eyebrow: 'Verilet account',
+    signIn: {
+      title: 'Log in to Verilet',
+      text: 'Log in to keep your checks and come back to them later.',
+    },
+    signUp: {
+      title: 'Create your Verilet account',
+      text: 'It takes a minute. You can still check a listing without one.',
+    },
+    points: [
+      'Every check is saved to your account.',
+      'Come back to a result any time, on any device.',
+      'Verilet never sees or stores your password.',
+    ],
+    unavailableTitle: "Sign-in isn't available",
+    unavailableText: 'Sign-in is unavailable right now. Please try again later.',
+    unavailableDevText:
+      'Sign-in is not set up yet. Add VITE_CLERK_PUBLISHABLE_KEY to client/.env and restart the dev server.',
+    logInLabel: 'Log in',
+  },
   legendHeading: 'How to read your result',
   listingDemo: {
-    label: 'EXAMPLE LISTING',
+    label: 'Example listing',
     title: 'Sunny 2 bed near campus',
     description: 'Available now. Must rent this week. No viewings, the owner is overseas.',
     rent: '$1,200 / month',

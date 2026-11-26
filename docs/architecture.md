@@ -69,8 +69,8 @@ Detect-Housing-Scam/
 └── docs/                       # Architectural specifications, governance, and sprint records
     ├── architecture.md         # This system architecture guide
     ├── ci-cd.md                # CI/CD pipelines, Git hooks, and branch checks
-    ├── style-guide.md          # Google JS/TS coding standards & API conventions
-    ├── definition-of-done.md   # Definition of Done checklist
+    ├── style-guide.md          # Google JS/TS coding standards, API & unit test conventions
+    ├── definition-of-done.md   # Two-scope Definition of Done (Sprint Tasks & User Stories)
     ├── acceptance-criteria-guide.md # Acceptance criteria guidelines & ticket templates
     ├── sprint-review/          # Sprint reviews and retrospective reports
     ├── sprint-planning/        # Sprint backlog plans and capacity targets

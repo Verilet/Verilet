@@ -8,8 +8,8 @@ Before designing, implementing, or testing features, agents **MUST consult the `
 
 - **[`docs/architecture.md`](./docs/architecture.md)**: System architecture, component boundaries, 3-tier scraper data flows, and design invariants.
 - **[`docs/ci-cd.md`](./docs/ci-cd.md)**: Git hooks, branch naming conventions, PR validation workflows, and CD pipelines.
-- **[`docs/style-guide.md`](./docs/style-guide.md)**: Google JavaScript and TypeScript coding standards, Express 5 API conventions, and React 19 guidelines.
-- **[`docs/definition-of-done.md`](./docs/definition-of-done.md)**: Definition of Done checklist covering code quality, offline testing, CSE 115A process points, and PR review.
+- **[`docs/style-guide.md`](./docs/style-guide.md)**: Google JavaScript and TypeScript coding standards, Express 5 API conventions, React 19 guidelines, and unit test naming conventions (§3.2).
+- **[`docs/definition-of-done.md`](./docs/definition-of-done.md)**: The two-scope Definition of Done for Sprint Tasks (PR level) and User Stories (Jira level).
 - **[`docs/acceptance-criteria-guide.md`](./docs/acceptance-criteria-guide.md)**: Given-When-Then story criteria, task-level technical invariants, and the 1-to-1 test mapping invariant.
 - **[`docs/tasks/`](./docs/tasks/)**: CSE 115A sprint task specifications, criteria mapping, and past task examples.
 
@@ -111,12 +111,15 @@ When working on sprint tasks submitted to the CSE 115A Repo Metrics app:
    - Spec commit: `<task-id>: task spec` (e.g. `US-1-T-1: task spec` or `SCRUM-3-T-1: task spec`).
    - Implementation commits: `<task-id>: <summary>` (e.g. `US-1-T-1: implement login rejection check`).
 
-4. **Pull Request Rules:**
+4. **Pull Request & File Modification Rules:**
    - PR Title: `<task-id>: <title>` (e.g. `US-1-T-1: Reject a non-university email on login`).
-   - Within `docs/tasks/`, the PR must touch **exactly one file**: `docs/tasks/sprint-N/<task-id>.md`.
+   - Each sprint task PR corresponds to its designated task spec in `docs/tasks/sprint-N/<task-id>.md`.
+   - **Touching Multiple Files:** Implementing a task is expected to touch all necessary files across the stack (e.g., services, route handlers, controllers, Zod schemas, React components, and test suites). PRs and agents are never restricted to touching only one file.
+   - Initial commit isolation: Remember that only the initial commit must contain the spec file alone (to protect the `<task-id>-base` process point); subsequent implementation commits should freely create and modify all files required to complete the task.
 
 5. **Test Mapping Invariant:**
    - Every numbered criterion under `## Acceptance criteria` in the spec must have a corresponding entry in the `## Tests` table and a real passing test file.
+   - Test files and test assertions must strictly follow [docs/style-guide.md §3.2](./docs/style-guide.md#32-unit-test-naming-conventions), prefixing criteria assertions with `[Criterion N]` (e.g. `it('[Criterion 1] ...')`) and using declarative behavioral phrasing.
    - Never weaken, bypass, or delete a test to force implementation to pass.
 
 ## Git and Contribution Rules

@@ -30,3 +30,16 @@
   background: var(--color-neutral-bg);
   color: var(--color-muted);
 }
+
+/* Score colours for the number and bar. */
+.score--danger {
+  color: var(--color-danger);
+}
+
+.score--warn {
+  color: var(--color-warn);
+}
+
+.score--ok {
+  color: var(--color-ok);
+}

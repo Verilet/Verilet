@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import type { CarBox } from '../lib/carArrival';
 import { CAR_BODY_INSET, CAR_BODY_RADIUS, CAR_WIDTH } from '../lib/carShape';
 import { CarIcon } from './RoadIcons';
+import '../styles/transitions.css';
 
 const MORPH_MS = 620;
 /** The shape finishes here; the rest of the time the outline fades into the real input. */

@@ -9,6 +9,9 @@ import { GUIDE } from '../content/guide';
 import { canAnimateOnScroll } from '../lib/motion';
 import { useInView } from '../lib/useInView';
 import type { CheckStatus } from '../types';
+import '../styles/landing.css';
+import '../styles/about.css';
+import '../styles/transitions.css';
 
 /** Pause before the car sets off, and the time between stops (an 800ms drive, then parked). */
 const TRIP_START_MS = 250;

@@ -1,6 +1,7 @@
 import ListingForm from '../components/ListingForm';
 import type { CarArrivalInfo } from '../lib/carArrival';
 import type { ListingInput } from '../types';
+import '../styles/form.css';
 
 interface CheckViewProps {
   onSubmit: (input: ListingInput) => void;

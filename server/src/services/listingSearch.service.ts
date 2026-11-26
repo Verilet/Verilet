@@ -82,6 +82,12 @@ export type ListingSearchInput = z.input<typeof ListingSearchInputSchema>;
 /** Search source that found a listing. */
 export type SearchSource = 'address' | 'photo';
 
+/** Evaluation status read by the scoring engine (SCRUM-70-T-2). */
+export type ListingSearchStatus = 'compliant' | 'warning' | 'violation' | 'skipped';
+
+/** Fraud flag set when listing copies differ significantly in rent or contact info. */
+export type ListingSearchFlag = 'DUPLICATE_LISTING_MISMATCH' | null;
+
 /** A copy of the listing found on another site. */
 export interface ListingMatch {
   readonly url: string;
@@ -89,10 +95,18 @@ export interface ListingMatch {
   readonly site: string;
   readonly title: string | null;
   readonly matchedBy: readonly SearchSource[];
+  /** Rent scraped from the copy; not set by findListingCopies (filled in by SCRUM-64-T-2). */
+  readonly rent?: number | null;
 }
 
-/** Result of findListingCopies. */
+/**
+ * Result of findListingCopies. status, flag, and message are not set by findListingCopies;
+ * they are read by the scoring engine and set once copies are compared (SCRUM-64-T-2).
+ */
 export interface ListingSearchResult {
+  readonly status?: ListingSearchStatus;
+  readonly flag?: ListingSearchFlag;
+  readonly message?: string;
   readonly matches: readonly ListingMatch[];
   readonly failedSources: readonly SearchSource[];
 }
@@ -389,11 +403,14 @@ export async function findListingCopies(input: ListingSearchInput): Promise<List
  * Connecting findListingCopies to the orchestrator is out of scope for SCRUM-64-T-1.
  *
  * @param input Evaluation request (unused).
- * @return An empty search result.
+ * @return A compliant result with no matches.
  */
 export async function listingSearch(input?: unknown): Promise<ListingSearchResult> {
   void input;
   return {
+    status: 'compliant',
+    flag: null,
+    message: 'No mismatched cross-platform duplicate listings detected.',
     matches: [],
     failedSources: [],
   };

@@ -33,6 +33,7 @@ import HomeView from './views/HomeView';
 import LandingView from './views/LandingView';
 import ResultsView from './views/ResultsView';
 import ScansView from './views/ScansView';
+import SharedResultView from './views/SharedResultView';
 
 /** Props for the app root. */
 interface AppProps {
@@ -441,6 +442,7 @@ function App({
           }
         />
         <Route path="/how-it-works" element={<AboutView />} />
+        <Route path="/shared/:data" element={<SharedResultView />} />
         <Route
           path="/scans"
           element={

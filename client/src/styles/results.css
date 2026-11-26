@@ -29,6 +29,14 @@
   font-weight: 700;
 }
 
+/* Says a result came from someone else's share link. */
+.summary__shared {
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: var(--color-sand);
+  font-size: 14px;
+}
+
 .summary__advice {
   font-size: 16px;
   color: var(--color-muted);

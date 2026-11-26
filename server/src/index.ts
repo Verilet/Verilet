@@ -1,4 +1,5 @@
-import 'dotenv/config';
+// Must stay the first import: it loads the env files before app.ts and its routes run.
+import './config/loadEnv.js';
 import app from './app.js';
 import { connectDatabase, disconnectDatabase } from './config/database.js';
 

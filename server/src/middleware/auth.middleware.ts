@@ -33,10 +33,6 @@ function readClerkKeys(): ClerkKeys | null {
   return result.success ? result.data : null;
 }
 
-/**
- * Clerk's middleware, created on the first request, after the keys are checked. It lives for one
- * server run; the keys can only change on a restart, which creates it again.
- */
 let clerk: RequestHandler | undefined;
 
 /**

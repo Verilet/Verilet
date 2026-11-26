@@ -4,7 +4,6 @@ import { RatingChip } from '../components/Chip';
 import ListingForm from '../components/ListingForm';
 import type { CarArrivalInfo } from '../lib/carArrival';
 import { formatScanDate, scanShortTitle } from '../lib/format';
-import { ratingFromScore } from '../lib/risk';
 import type { ListingInput, ScanResult } from '../types';
 import '../styles/home.css';
 
@@ -45,7 +44,7 @@ export default function HomeView({
         scan,
         title: scanShortTitle(scan),
         date: formatScanDate(scan.createdAt),
-        rating: ratingFromScore(scan.score),
+        rating: scan.rating,
       })),
     [scans],
   );

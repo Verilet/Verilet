@@ -193,6 +193,11 @@ export const GUIDE = {
       tone: 'neutral',
       text: 'We could not check this. It is not a good or bad sign.',
     },
+    {
+      label: 'SKIPPED',
+      tone: 'neutral',
+      text: 'This optional detail was not provided, so the check was skipped.',
+    },
     { label: 'OK', tone: 'ok', text: 'Nothing looked wrong on this check.' },
   ],
   faq: [

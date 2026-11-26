@@ -41,19 +41,20 @@ describe('validateListingForm', () => {
     });
   });
 
-  it('reports an error for each empty required field and allows an empty landlord', () => {
+  it('reports an error for each empty required field and allows empty optional fields including listingUrl and payment', () => {
     const result = validateListingForm(EMPTY_FORM);
     expect(result.success).toBe(false);
     if (result.success) {
       return;
     }
-    expect(Object.keys(result.errors).sort()).toEqual([
-      'bedrooms',
-      'listingUrl',
-      'location',
-      'payment',
-      'rent',
-    ]);
+    expect(Object.keys(result.errors).sort()).toEqual(['bedrooms', 'location', 'rent']);
+
+    const withoutOptional = validateListingForm({ ...valid, listingUrl: '   ', payment: '' });
+    expect(withoutOptional.success).toBe(true);
+    if (withoutOptional.success) {
+      expect(withoutOptional.data.listingUrl).toBe('');
+      expect(withoutOptional.data.payment).toBeNull();
+    }
   });
 
   it.each(['ftp://example.com', 'example.com', 'javascript:alert(1)', 'not a url'])(

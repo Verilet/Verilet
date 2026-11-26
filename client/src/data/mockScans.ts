@@ -1,3 +1,4 @@
+import { ratingFromScore } from '../lib/risk';
 import { scoreListing } from '../services/scanService';
 import type { ListingInput, ScanResult } from '../types';
 
@@ -36,7 +37,14 @@ type SeedInput = Omit<ListingInput, keyof typeof SAMPLE_DETAILS>;
  */
 function seed(id: string, days: number, score: number, sample: SeedInput): ScanResult {
   const input: ListingInput = { ...sample, ...SAMPLE_DETAILS };
-  return { ...input, ...scoreListing(input), score, id, createdAt: daysAgo(days) };
+  return {
+    ...input,
+    ...scoreListing(input),
+    score,
+    rating: ratingFromScore(score),
+    id,
+    createdAt: daysAgo(days),
+  };
 }
 
 /** Sample history for the logged-in views until scans are loaded from the API. */

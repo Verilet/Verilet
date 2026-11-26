@@ -246,9 +246,8 @@ describe('SCRUM-70-T-1: Listing evaluation orchestrator & POST /api/evaluate', (
     expect(rawChecks.agencyStanding).toMatchObject({ status: 'compliant' });
     expect(rawChecks.listingSearch).toMatchObject({ matches: [] });
 
-    // Also assert minimal payload with nullish optional fields succeeds
+    // Also assert minimal payload with nullish optional fields (including omitted listingUrl and payment) succeeds
     const minimalPayload = {
-      listingUrl: 'https://example.com/listing',
       rent: 2000,
       bedrooms: 'studio',
       location: 'Santa Cruz, CA',
@@ -261,7 +260,6 @@ describe('SCRUM-70-T-1: Listing evaluation orchestrator & POST /api/evaluate', (
   // Criterion 2
   it('[Criterion 2] rejects malformed payload with HTTP 400 and validation errors', async () => {
     const invalidPayloads = [
-      { desc: 'missing listingUrl', payload: { ...validPayload, listingUrl: undefined } },
       { desc: 'invalid listingUrl', payload: { ...validPayload, listingUrl: 'not-a-valid-url' } },
       {
         desc: 'non-http listingUrl',

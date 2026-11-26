@@ -70,8 +70,10 @@ export const listingFormSchema = z.object({
   listingUrl: z
     .string()
     .trim()
-    .min(1, 'Enter the listing link.')
-    .refine(isHttpUrl, 'Enter a full link that starts with http:// or https://.'),
+    .refine(
+      (value) => value === '' || isHttpUrl(value),
+      'Enter a full link that starts with http:// or https://.',
+    ),
   rent: z
     .string()
     .trim()
@@ -82,7 +84,11 @@ export const listingFormSchema = z.object({
   bedrooms: z.enum(BEDROOM_VALUES, { error: 'Select the number of bedrooms.' }),
   location: z.string().trim().min(2, 'Enter a city or address.'),
   landlord: z.string().trim().max(120, 'Keep the name under 120 characters.'),
-  payment: z.enum(PAYMENT_VALUES, { error: 'Select how the landlord asks for payment.' }),
+  payment: z
+    .union([z.literal(''), z.enum(PAYMENT_VALUES)], {
+      error: 'Select how the landlord asks for payment.',
+    })
+    .transform((value) => (value === '' ? null : value)),
   securityDeposit: optionalMoney('security deposit'),
   applicationFee: optionalMoney('application fee'),
   contactPhone: z

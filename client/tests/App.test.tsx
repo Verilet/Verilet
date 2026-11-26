@@ -4,6 +4,7 @@ import { MemoryRouter } from 'react-router-dom';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import App from '../src/App';
+import { ratingFromScore } from '../src/lib/risk';
 import type { CheckListing } from '../src/services/scanService';
 import { scoreListing } from '../src/services/scanService';
 import type { ListingInput, ScanResult } from '../src/types';
@@ -35,6 +36,7 @@ function seedScan(id: string, score: number, location: string): ScanResult {
     ...scoreListing(validInput),
     id,
     score,
+    rating: ratingFromScore(score),
     location,
     createdAt: new Date().toISOString(),
   };
@@ -101,7 +103,8 @@ describe('logged-out flow', () => {
     ).toBeInTheDocument();
     expect(screen.getByText('Enter the monthly rent.')).toBeInTheDocument();
     expect(screen.getByText('Select the number of bedrooms.')).toBeInTheDocument();
-    expect(screen.getByText('Select how the landlord asks for payment.')).toBeInTheDocument();
+    expect(screen.getByText('Enter a city or address.')).toBeInTheDocument();
+    expect(screen.queryByText('Select how the landlord asks for payment.')).not.toBeInTheDocument();
     expect(screen.getByLabelText('Listing link')).toHaveFocus();
     expect(check).not.toHaveBeenCalled();
   });

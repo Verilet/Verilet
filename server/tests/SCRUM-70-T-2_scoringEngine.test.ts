@@ -735,13 +735,13 @@ describe('SCRUM-70-T-2: Deterministic listing risk scoring engine', () => {
       expect(result.rating).toBe('LOW');
     });
 
-    it('applies POINTS_OBFUSCATED_CONTACT (+25) when flag is OBFUSCATED_PHONE_NUMBER', () => {
+    it('applies POINTS_OBFUSCATED_CONTACT (+25) when flag is OBFUSCATED_CONTACT', () => {
       const raw = createCompliantChecks({
         contactPhone: {
           success: true,
           data: {
             status: 'warning',
-            flag: 'OBFUSCATED_PHONE_NUMBER',
+            flag: 'OBFUSCATED_CONTACT',
             message: 'Obfuscated phone number detected in listing text',
             areaCode: '831',
           },

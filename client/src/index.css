@@ -19,6 +19,8 @@
   --color-ok-bg: #dcfce7;
 
   --color-card: #ffffff;
+  --color-overlay-bg: rgba(255, 255, 255, 0.84);
+  --color-overlay-shadow: 0 4px 16px rgba(17, 24, 39, 0.08);
   --color-accent: #b84a29;
   --color-accent-bg: #f8e3da;
   --color-sand: #e7eaef;

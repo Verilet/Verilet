@@ -5,10 +5,78 @@
 }
 
 .listing-form {
+  position: relative;
+  width: 100%;
+}
+
+.listing-form__fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 24px;
+}
+
+.listing-form__overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: var(--color-overlay-bg);
+  backdrop-filter: blur(2px);
+  border-radius: var(--radius-control);
+}
+
+.listing-form__overlay-card {
   width: 100%;
+  max-width: 340px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 24px 28px;
+  text-align: center;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--color-overlay-shadow);
+  color: var(--color-ink);
+}
+
+.listing-form__gear {
+  color: var(--color-accent);
+  flex-shrink: 0;
+}
+
+.listing-form__gear--spinning {
+  animation: listing-gear-spin 2s linear infinite;
+}
+
+.listing-form__overlay-title {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.listing-form__overlay-text {
+  font-size: 14px;
+  color: var(--color-muted);
+}
+
+@keyframes listing-gear-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .listing-form__gear--spinning {
+    animation: none;
+  }
 }
 
 .field-row {
@@ -16,7 +84,7 @@
   gap: 16px;
 }
 
-.field-row > .field {
+.field-row>.field {
   flex: 1 1 0;
   min-width: 0;
 }

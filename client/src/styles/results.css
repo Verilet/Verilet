@@ -70,7 +70,7 @@
 
 .check {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
 }
@@ -79,15 +79,43 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
+  min-width: 0;
 }
 
 .check__title {
   font-size: 15px;
   font-weight: 500;
+  overflow-wrap: break-word;
 }
 
 .check__detail {
   font-size: 13px;
+  color: var(--color-muted);
+  overflow-wrap: break-word;
+}
+
+.check__evidence {
+  font-size: 12px;
+  color: var(--color-muted);
+  overflow-wrap: anywhere;
+}
+
+.check__meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.check__impact {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-danger);
+  white-space: nowrap;
+}
+
+.details__summary {
+  font-size: 14px;
   color: var(--color-muted);
 }
 

@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { RatingChip } from '../components/Chip';
 import { formatScanDate, listingHost, scanTitle } from '../lib/format';
-import { RATING_TONE, ratingFromScore } from '../lib/risk';
+import { RATING_TONE } from '../lib/risk';
 import { shareButtonLabel, type ShareStatus } from '../lib/share';
 import '../styles/scans.css';
 import type { Rating, ScanResult } from '../types';
@@ -33,7 +33,7 @@ interface ScanRow {
 function toRows(scans: ScanResult[]): ScanRow[] {
   return scans.map((scan) => ({
     scan,
-    rating: ratingFromScore(scan.score),
+    rating: scan.rating,
     title: scanTitle(scan),
     host: listingHost(scan.listingUrl),
     date: formatScanDate(scan.createdAt),
@@ -144,13 +144,15 @@ export default function ScansView({ scans, onShareScan, shareStatus }: ScansView
                   <tr key={scan.id}>
                     <td className="col-listing">
                       <span className="scans-table__title">{title}</span>
-                      <span className="scans-table__sub">{host}</span>
+                      {host && <span className="scans-table__sub">{host}</span>}
                     </td>
                     <td className="col-rating">
                       <RatingChip rating={rating} />
                     </td>
                     <td className="col-score">
-                      <span className={`score score--${RATING_TONE[rating]}`}>{scan.score}</span>
+                      <span className={`score score--${RATING_TONE[rating]}`}>
+                        {scan.score ?? '—'}
+                      </span>
                     </td>
                     <td className="col-date">{date}</td>
                     <td className="col-actions">

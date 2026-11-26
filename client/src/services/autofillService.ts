@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { readClientEnv } from '../lib/env';
+import { postJson } from '../lib/api';
 
 /** Listing fields that can be populated into the submission form from an external listing URL. */
 export const listingAutofillSchema = z.object({
@@ -47,9 +47,6 @@ export type ScrapedListingData = z.infer<typeof scrapedListingDataSchema>;
 /** Backend scrape endpoint JSON response envelope. */
 export type ScrapeResponseEnvelope = z.infer<typeof scrapeResponseEnvelopeSchema>;
 
-/** Timeout limit for outgoing scrape requests. */
-const AUTOFILL_TIMEOUT_MS = 10_000;
-
 /**
  * Calls the backend POST /api/scrape endpoint with the listing URL and normalizes
  * the extracted properties into form-compatible string fields.
@@ -61,23 +58,7 @@ const AUTOFILL_TIMEOUT_MS = 10_000;
 export const autofillListing: AutofillListing = async (
   listingUrl: string,
 ): Promise<ListingAutofill> => {
-  const endpoint = `${readClientEnv().apiUrl}/api/scrape`;
-
-  const response = await fetch(endpoint, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ url: listingUrl }),
-    signal: AbortSignal.timeout(AUTOFILL_TIMEOUT_MS),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Scrape request failed with HTTP ${response.status}`);
-  }
-
-  const rawJson: unknown = await response.json();
-  const parsed = scrapeResponseEnvelopeSchema.parse(rawJson);
+  const parsed = await postJson('/api/scrape', { url: listingUrl }, scrapeResponseEnvelopeSchema);
 
   if (!parsed.success || !parsed.data) {
     return {};

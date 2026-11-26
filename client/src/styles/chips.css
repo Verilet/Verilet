@@ -43,3 +43,7 @@
 .score--ok {
   color: var(--color-ok);
 }
+
+.score--neutral {
+  color: var(--color-muted);
+}

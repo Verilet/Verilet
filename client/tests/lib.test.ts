@@ -90,6 +90,7 @@ const SCAN: ScanResult = {
   description: '',
   photos: [],
   score: 82,
+  rating: 'HIGH',
   checks: [],
 };
 

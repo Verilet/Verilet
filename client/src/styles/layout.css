@@ -102,6 +102,8 @@
   --color-bg: #faf3e8;
   --color-surface: #faf3e8;
   --color-card: #fffcf7;
+  --color-overlay-bg: rgba(250, 243, 232, 0.88);
+  --color-overlay-shadow: 0 4px 16px rgba(43, 29, 18, 0.08);
   --color-border: #e6d8c3;
   --color-ink: #2b1d12;
   --color-muted: #6b5a4a;

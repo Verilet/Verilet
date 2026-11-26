@@ -4,7 +4,7 @@ import ChevronIcon from '../components/ChevronIcon';
 import { RatingChip, StatusChip } from '../components/Chip';
 import { GUIDE } from '../content/guide';
 import { scanMeta } from '../lib/format';
-import { RATING_HEADLINE, ratingFromScore, ratingTone } from '../lib/risk';
+import { RATING_HEADLINE, RATING_TONE, isInsufficientScan } from '../lib/risk';
 import type { ScanResult } from '../types';
 import '../styles/results.css';
 
@@ -40,8 +40,11 @@ export default function ResultsView({
 }: ResultsViewProps) {
   const [expanded, setExpanded] = useState(defaultExpanded);
   const detailsId = useId();
-  const rating = ratingFromScore(scan.score);
+  const rating = scan.rating;
   const headline = RATING_HEADLINE[rating];
+  const isInsufficient = isInsufficientScan(scan);
+  const scoredValue = isInsufficient ? null : scan.score;
+  const scoreTone = RATING_TONE[rating];
 
   return (
     <main className="main main--center">
@@ -58,85 +61,102 @@ export default function ResultsView({
           <h1 className="summary__title" id="result-heading">
             {headline.title}
           </h1>
-          <p className="summary__advice">{headline.advice}</p>
+          <p className="summary__advice">
+            {isInsufficient ? (scan.summary ?? headline.advice) : headline.advice}
+          </p>
           <div className="actions">
-            <button
-              type="button"
-              className="button button--primary"
-              aria-expanded={expanded}
-              aria-controls={detailsId}
-              onClick={() => setExpanded((open) => !open)}
-            >
-              {expanded ? 'Hide details' : 'More details'}
-              <ChevronIcon up={expanded} />
-            </button>
-            <button type="button" className="button button--secondary" onClick={onShare}>
-              {shareLabel}
-            </button>
+            {!isInsufficient && (
+              <>
+                <button
+                  type="button"
+                  className="button button--primary"
+                  aria-expanded={expanded}
+                  aria-controls={detailsId}
+                  onClick={() => setExpanded((open) => !open)}
+                >
+                  {expanded ? 'Hide details' : 'More details'}
+                  <ChevronIcon up={expanded} />
+                </button>
+                <button type="button" className="button button--secondary" onClick={onShare}>
+                  {shareLabel}
+                </button>
+              </>
+            )}
             <Link to="/check" className="button button--secondary">
               Check another listing
             </Link>
           </div>
-          {/* Tells screen readers whether the copy worked; the button text changes for sighted users. */}
-          <p className="visually-hidden" aria-live="polite">
-            {shareLabel === 'Share result' ? '' : shareLabel}
-          </p>
+          {!isInsufficient && (
+            /* Tells screen readers whether the copy worked; the button text changes for sighted users. */
+            <p className="visually-hidden" aria-live="polite">
+              {shareLabel === 'Share result' ? '' : shareLabel}
+            </p>
+          )}
         </section>
 
-        <section
-          id={detailsId}
-          className="card card--details"
-          hidden={!expanded}
-          aria-label="Result details"
-        >
-          <p className="details__label">Risk score</p>
-          <p className="score-figure">
-            <span className={`score-figure__value score--${ratingTone(scan.score)}`}>
-              {scan.score}
-            </span>
-            <span className="score-figure__max">/ 100</span>
-          </p>
-          <div
-            className="score-bar"
-            role="meter"
-            aria-label="Risk score"
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-valuenow={scan.score}
+        {scoredValue !== null && (
+          <section
+            id={detailsId}
+            className="card card--details"
+            hidden={!expanded}
+            aria-label="Result details"
           >
+            <p className="details__label">Risk score</p>
+            <p className="score-figure">
+              <span className={`score-figure__value score--${scoreTone}`}>{scoredValue}</span>
+              <span className="score-figure__max">/ 100</span>
+            </p>
             <div
-              className={`score-bar__fill score-bar__fill--${ratingTone(scan.score)}`}
-              style={{ width: `${scan.score}%` }}
-            />
-          </div>
-          <div className="score-scale">
-            <span>0 · Low risk</span>
-            <span>High risk · 100</span>
-          </div>
-          <hr className="divider" />
-          <h2 className="details__heading">What we checked</h2>
-          <ul className="checks">
-            {scan.checks.map((check) => (
-              <li key={check.id} className="check">
-                <div className="check__text">
-                  <span className="check__title">{check.title}</span>
-                  <span className="check__detail">{check.detail}</span>
-                </div>
-                <StatusChip status={check.status} />
-              </li>
-            ))}
-          </ul>
-          <hr className="divider" />
-          <h2 className="details__heading">{GUIDE.legendHeading}</h2>
-          <ul className="legend__list">
-            {GUIDE.legend.map((item) => (
-              <li key={item.label} className="legend__item">
-                <span className={`chip chip--${item.tone}`}>{item.label}</span>
-                <span className="legend__text">{item.text}</span>
-              </li>
-            ))}
-          </ul>
-        </section>
+              className="score-bar"
+              role="meter"
+              aria-label="Risk score"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={scoredValue}
+            >
+              <div
+                className={`score-bar__fill score-bar__fill--${scoreTone}`}
+                style={{ width: `${scoredValue}%` }}
+              />
+            </div>
+            <div className="score-scale">
+              <span>0 · Low risk</span>
+              <span>High risk · 100</span>
+            </div>
+            {scan.summary && <p className="details__summary">{scan.summary}</p>}
+            <hr className="divider" />
+            <h2 className="details__heading">What we checked</h2>
+            <ul className="checks">
+              {scan.checks.map((check) => (
+                <li key={check.id} className="check">
+                  <div className="check__text">
+                    <span className="check__title">{check.title}</span>
+                    <span className="check__detail">{check.detail}</span>
+                    {check.evidence && (
+                      <span className="check__evidence">Evidence: {check.evidence}</span>
+                    )}
+                  </div>
+                  <div className="check__meta">
+                    {check.scoreImpact > 0 && (
+                      <span className="check__impact">+{check.scoreImpact} pts</span>
+                    )}
+                    <StatusChip status={check.status} />
+                  </div>
+                </li>
+              ))}
+            </ul>
+            <hr className="divider" />
+            <h2 className="details__heading">{GUIDE.legendHeading}</h2>
+            <ul className="legend__list">
+              {GUIDE.legend.map((item) => (
+                <li key={item.label} className="legend__item">
+                  <span className={`chip chip--${item.tone}`}>{item.label}</span>
+                  <span className="legend__text">{item.text}</span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
 
         <p className="footnote footnote--left">
           Verilet gives a risk rating, not a guarantee. Always verify in person before sending

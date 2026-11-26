@@ -1,7 +1,7 @@
 import {
   type BedroomValue,
   type EvaluateRequest,
-  type EvaluateResponse,
+  type OrchestrationResponse,
   type PaymentValue,
   type WorkerFailureFallback,
 } from '../schemas/evaluate.schema.js';
@@ -170,7 +170,7 @@ export interface OrchestratorOptions {
 export async function orchestrateEvaluation(
   input: EvaluateRequest,
   options?: OrchestratorOptions,
-): Promise<EvaluateResponse> {
+): Promise<OrchestrationResponse> {
   const defaultTimeoutMs = Number(process.env.EVALUATE_WORKER_TIMEOUT_MS) || WORKER_TIMEOUT_MS;
   const timeoutMs = options?.workerTimeoutMs ?? defaultTimeoutMs;
 

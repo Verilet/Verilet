@@ -22,7 +22,8 @@ import {
 import { AUTH_PATHS, useAuthState } from './auth/authState';
 import Header from './components/Header';
 import { readCarArrival } from './lib/carArrival';
-import { loadScans, saveScans } from './lib/scanStorage';
+import { isInsufficientScan } from './lib/risk';
+import { loadScans, parseTransientScan, saveScans } from './lib/scanStorage';
 import { readPreviewFlag, savePreviewFlag } from './lib/session';
 import { copyShareText, shareButtonLabel, type ShareStatus } from './lib/share';
 import { checkListing as defaultCheckListing, type CheckListing } from './services/scanService';
@@ -43,7 +44,7 @@ interface AppProps {
   loggedIn?: boolean;
   /** Scans to start with instead of the ones saved in this browser tab. */
   initialScans?: ScanResult[];
-  /** Injectable for tests; defaults to the placeholder scan service. */
+  /** Injectable for tests; defaults to the live `POST /api/evaluate` API client. */
   checkListing?: CheckListing;
 }
 
@@ -237,13 +238,16 @@ interface ResultsRouteProps {
 
 /**
  * Opens the scan named in the address, or a not-found page when this tab doesn't have it.
+ * Falls back to a Zod-validated transient scan passed via router state for `INSUFFICIENT_DATA`.
  *
  * @param props The route's props.
  * @returns The results page for the scan, or a not-found page.
  */
 function ResultsRoute({ scans, loggedIn, onShare, shareStatus }: ResultsRouteProps) {
   const { scanId } = useParams();
-  const scan = scans.find((candidate) => candidate.id === scanId);
+  const { state } = useLocation();
+  const scan =
+    scans.find((candidate) => candidate.id === scanId) ?? parseTransientScan(state, scanId);
   if (!scan) {
     return (
       <NotFound
@@ -252,12 +256,13 @@ function ResultsRoute({ scans, loggedIn, onShare, shareStatus }: ResultsRoutePro
       />
     );
   }
+  const isInsufficient = isInsufficientScan(scan);
   return (
     <ResultsView
       key={scan.id}
       scan={scan}
-      backLabel={loggedIn ? '← My scans' : '← Check another listing'}
-      backTo={loggedIn ? '/scans' : '/check'}
+      backLabel={loggedIn && !isInsufficient ? '← My scans' : '← Check another listing'}
+      backTo={loggedIn && !isInsufficient ? '/scans' : '/check'}
       onShare={() => onShare(scan)}
       shareLabel={shareButtonLabel(scan.id, shareStatus, 'Share result')}
       defaultExpanded={loggedIn}
@@ -271,7 +276,7 @@ function ResultsRoute({ scans, loggedIn, onShare, shareStatus }: ResultsRoutePro
  * @param props The app's props.
  * @param props.loggedIn Preview the signed-in (true) or signed-out (false) screens.
  * @param props.initialScans Scans to start with.
- * @param props.checkListing Scores a listing; defaults to the placeholder scorer.
+ * @param props.checkListing Evaluates a listing; defaults to the live `POST /api/evaluate` client.
  * @returns The app.
  */
 function App({
@@ -363,8 +368,12 @@ function App({
     setSubmitError(null);
     try {
       const scan = await checkListing(input);
-      setScans((current) => [scan, ...current]);
-      navigate(`/results/${scan.id}`);
+      if (isInsufficientScan(scan)) {
+        navigate(`/results/${scan.id}`, { state: { transientScan: scan } });
+      } else {
+        setScans((current) => [scan, ...current]);
+        navigate(`/results/${scan.id}`);
+      }
     } catch {
       setSubmitError(SUBMIT_ERROR);
     } finally {

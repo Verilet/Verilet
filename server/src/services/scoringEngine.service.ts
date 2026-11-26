@@ -1,39 +1,14 @@
-import type { RawChecks, WorkerFailureFallback } from '../schemas/evaluate.schema.js';
+import type {
+  CheckResult,
+  CheckStatus,
+  RawChecks,
+  RiskRating,
+  ScoreResult,
+  WorkerFailureFallback,
+} from '../schemas/evaluate.schema.js';
 import { isP2pPaymentMethod } from './paymentFlags.service.js';
 
-/** Evaluation status of an individual diagnostic check. */
-export type CheckStatus = 'FLAG' | 'UNKNOWN' | 'OK' | 'SKIPPED';
-
-/** Overall risk tier rating for a rental listing. */
-export type RiskRating = 'LOW' | 'MEDIUM' | 'HIGH' | 'INSUFFICIENT_DATA';
-
-/** Standardized diagnostic check finding. */
-export interface CheckResult {
-  /** Unique identifier for the diagnostic check. */
-  readonly id: string;
-  /** Human-readable title for the check. */
-  readonly title: string;
-  /** Normalized status classification. */
-  readonly status: CheckStatus;
-  /** Point impact added to composite risk score. */
-  readonly scoreImpact: number;
-  /** Clear explanation of the check finding or compliance state. */
-  readonly detail: string;
-  /** Matched evidence string, citation, or key triggering the finding, or null when absent. */
-  readonly evidence: string | null;
-}
-
-/** Comprehensive composite score result returned by the scoring engine. */
-export interface ScoreResult {
-  /** Capped composite score between 0 and 100, or null if insufficient data. */
-  readonly score: number | null;
-  /** Categorical risk rating. */
-  readonly rating: RiskRating;
-  /** Human-readable narrative summary explaining the risk level. */
-  readonly summary: string;
-  /** Normalized breakdown of all diagnostic checks. */
-  readonly checks: readonly CheckResult[];
-}
+export type { CheckResult, CheckStatus, RiskRating, ScoreResult };
 
 /** Point weight: Untraceable payment methods (cryptocurrency, wire transfer, gift cards). */
 export const POINTS_UNTRACEABLE_PAYMENT = 40;
@@ -101,9 +76,9 @@ const RENT_MODERATE_PERCENT_THRESHOLD = 75;
 /** Number of cross-platform duplicate search providers ('address' and 'photo'). */
 const LISTING_SEARCH_SOURCE_COUNT = 2;
 
-/** Standard explanation returned when listing has insufficient evaluable data. */
+/** Standard explanation returned when fewer than the minimum required checks could be evaluated. */
 export const INSUFFICIENT_DATA_SUMMARY =
-  'Could not evaluate listing due to insufficient data. Please add details to calculate risk.';
+  "We couldn't verify enough checks to calculate a reliable risk score. Try adding more listing details (such as a full street address with ZIP code, security deposit, application fee, landlord name, phone number, or description).";
 
 /** Standard success/failure envelope shape shared by evaluation worker services. */
 type WorkerEnvelope<Data> =
@@ -510,14 +485,40 @@ function normalizeGisQuery(gis: RawChecks['gisQuery']): CheckResult {
 
 /**
  * Normalizes assessor zoning and land-use worker output into a standard CheckResult.
+ * When land-use was skipped because upstream GIS verification failed or found no parcel,
+ * surfaces a plain-language UNKNOWN explanation instead of exposing missing parcel fields.
  *
  * @param landUse Raw land use evaluation result or worker failure fallback.
+ * @param gisCheck Normalized upstream GIS check result.
  * @returns Normalized land use CheckResult.
  */
-function normalizeLandUse(landUse: RawChecks['landUse']): CheckResult {
+function normalizeLandUse(landUse: RawChecks['landUse'], gisCheck: CheckResult): CheckResult {
+  const builder = createCheckBuilder('landUse', 'Zoning and Land Use Compliance');
+
+  if (
+    landUse &&
+    !isWorkerFailure(landUse) &&
+    landUse.success &&
+    landUse.data.status === 'skipped'
+  ) {
+    if (gisCheck.status === 'UNKNOWN') {
+      return builder.unknown(
+        'Zoning and land use could not be checked because county property records were unavailable.',
+      );
+    }
+    if (gisCheck.status === 'FLAG') {
+      return builder.unknown(
+        'Zoning and land use could not be checked because the address was not found in county records.',
+      );
+    }
+    if (gisCheck.status === 'SKIPPED') {
+      return builder.skipped('Address not provided; zoning and land use check skipped.');
+    }
+  }
+
   return normalizeEnvelopeCheck({
     raw: landUse,
-    builder: createCheckBuilder('landUse', 'Zoning and Land Use Compliance'),
+    builder,
     defaults: {
       workerFailureDetail:
         'Zoning and land use check could not be completed due to worker failure.',
@@ -574,9 +575,11 @@ function normalizeContactPhone(phone: RawChecks['contactPhone']): CheckResult {
       skippedDetail: 'Contact phone number not specified; check skipped.',
     },
     mapData: (data, check) => {
-      const evidence = data.areaCode ? `Area code: ${data.areaCode}` : null;
+      const rawEvidence = typeof data.evidence === 'string' ? data.evidence.trim() : '';
+      const areaEvidence = data.areaCode ? `Area code: ${data.areaCode}` : null;
+      const evidence = rawEvidence || areaEvidence;
 
-      if (data.flag === 'OBFUSCATED_PHONE_NUMBER') {
+      if (data.flag === 'OBFUSCATED_CONTACT') {
         return check.flag(
           POINTS_OBFUSCATED_CONTACT,
           nonEmptyDetail(
@@ -782,13 +785,14 @@ function generateSummary(score: number, rating: Exclude<RiskRating, 'INSUFFICIEN
  * @returns Composite ScoreResult with score, rating, summary, and normalized checks.
  */
 export function calculateListingScore(rawChecks: RawChecks): ScoreResult {
+  const gisCheck = normalizeGisQuery(rawChecks.gisQuery);
   const checks: CheckResult[] = [
     normalizePrice(rawChecks.price),
     normalizeSecurityDeposit(rawChecks.securityDeposit),
     normalizeApplicationFee(rawChecks.applicationFee),
     normalizePayment(rawChecks.untraceablePayment),
-    normalizeGisQuery(rawChecks.gisQuery),
-    normalizeLandUse(rawChecks.landUse),
+    gisCheck,
+    normalizeLandUse(rawChecks.landUse, gisCheck),
     normalizeContactPhone(rawChecks.contactPhone),
     normalizeAgencyStanding(rawChecks.agencyStanding),
     normalizeListingSearch(rawChecks.listingSearch),

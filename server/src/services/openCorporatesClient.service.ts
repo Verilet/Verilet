@@ -10,6 +10,7 @@ export interface openCorpCompanyRecord {
   jurisdiction_code: string;
 }
 
+// testing
 export type openCorpErrorTypes =
   | 'TIMEOUT'
   | 'RATE_LIMITED'

@@ -128,6 +128,6 @@ export async function fetchCaliforniaCompany(
     ) {
       return { success: false, data: null, error: 'TIMEOUT' };
     }
-    return { success: false, data: null, error: 'TIMEOUT' };
+    return { success: false, data: null, error: 'NETWORK_ERROR' };
   }
 }

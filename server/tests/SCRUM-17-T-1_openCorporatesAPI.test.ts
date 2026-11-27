@@ -150,19 +150,25 @@ describe('[Criterion 7] Sample Test for HTTP 429 Rate Limit', () => {
   });
 });
 
-describe('[Criterion 8] Sample Test for Timeout and 5xx Error Handling', () => {
+describe('[Criterion 8] Sample Test for Timeout and Error Handling', () => {
   it.each([
-    ['HTTP 500', () => buildJsonRes({}, 500)],
-    ['HTTP 503', () => buildJsonRes({}, 503)],
-    ['network timeout', () => Promise.reject(new Error('Network has timed out.'))],
-  ])(
-    'Without throwing or caching, TIMEOUT is returned for %s',
-    async (_errorType, mockBehavior) => {
-      mockFetch.mockImplementation(mockBehavior as never);
-      const testResult = await fetchCaliforniaCompany('IRVINE BAY-AREA RENTALS LLC');
-      expect(testResult).toEqual({ success: false, data: null, error: 'TIMEOUT' });
-      await fetchCaliforniaCompany('IRVINE BAY-AREA RENTALS LLC');
-      expect(mockFetch).toHaveBeenCalledTimes(2);
-    },
-  );
+    ['HTTP 500', () => buildJsonRes({}, 500), 'UPSTREAM_ERROR'],
+    ['HTTP 503', () => buildJsonRes({}, 503), 'UPSTREAM_ERROR'],
+    ['HTTP 404', () => buildJsonRes({}, 404), 'NOT_FOUND'],
+    ['HTTP 401', () => buildJsonRes({}, 401), 'UNAUTHORIZED'],
+    ['AbortError', () => Promise.reject(new DOMException('Aborted.', 'AbortError')), 'TIMEOUT'],
+    ['TimeoutError', () => Promise.reject(new DOMException('Timeout.', 'TimeoutError')), 'TIMEOUT'],
+    [
+      'Network Error',
+      () => Promise.reject(new Error('Network error has occurred.')),
+      'NETWORK_ERROR',
+    ],
+  ])('%s returns %s AND DOES NOT throw or cahce', async (_, mocksBehavior, expectedError) => {
+    mockFetch.mockImplementation(mocksBehavior as never);
+    const testResult = await fetchCaliforniaCompany('IRVINE BAY-AREA RENTALS LLC');
+    expect(testResult).toEqual({ success: false, data: null, error: expectedError });
+    mockFetch.mockImplementation(() => buildJsonRes(buildJSONBody(fakeCompanyRecord)));
+    await fetchCaliforniaCompany('IRVINE BAY-AREA RENTALS LLC');
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+  });
 });

@@ -10,7 +10,15 @@ export interface openCorpCompanyRecord {
   jurisdiction_code: string;
 }
 
-export type openCorpErrorTypes = 'TIMEOUT' | 'RATE_LIMITED' | 'API_KEY_MISSING';
+export type openCorpErrorTypes =
+  | 'TIMEOUT'
+  | 'RATE_LIMITED'
+  | 'API_KEY_MISSING'
+  | 'UNAUTHORIZED'
+  | 'NOT_FOUND'
+  | 'UPSTREAM_ERROR'
+  | 'NETWORK_ERROR'
+  | 'INVALID_RESPONSE';
 
 export interface openCorpResult {
   success: boolean;

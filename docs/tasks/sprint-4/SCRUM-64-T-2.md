@@ -10,7 +10,7 @@ estimate_hours: 6
 
 ## Description
 
-Serves SCRUM-64. Rental scammers copy a real listing's photos and address, repost it on Craigslist with a lower rent, and put their own contact information on it. SCRUM-64-T-1 finds up to 5 copies of the listing on other sites. This task scrapes those copies with Firecrawl, compares their rent and contact information with the listing being checked, and sets the `status`, `flag`, and `message` fields that the scoring engine (SCRUM-70-T-2) already reads. Copies are weighted by how trustworthy their source is: copies with an MLS number are trusted first, then large listing sites, and open sites where anyone can post (for example Facebook Marketplace) are never used as the reference. Out of scope: connecting this check to the evaluation orchestrator, adding photos or a contact email to the evaluate request, detecting copies that are for sale or sold as a separate fraud signal, and the results screen.
+Serves SCRUM-64. Rental scammers copy a real listing's photos and address, repost it on Craigslist with a lower rent, and put their own contact information on it. SCRUM-64-T-1 finds up to 5 copies of the listing on other sites. This task scrapes those copies with Firecrawl, compares their rent and contact information with the listing being checked, and sets the `status`, `flag`, and `message` fields that the scoring engine (SCRUM-70-T-2) already reads. Copies are weighted by how trustworthy their source is: copies with an MLS number are trusted first, then large listing sites, and open sites where anyone can post (for example Facebook Marketplace) are never used as the reference. A listing whose phone or email matches a trusted copy is not flagged for a lower rent, because a scammer would not list the real landlord's contact. Out of scope: connecting this check to the evaluation orchestrator, adding photos or a contact email to the evaluate request, detecting copies that are for sale or sold as a separate fraud signal, and the results screen.
 
 ## Specs
 
@@ -58,12 +58,14 @@ Serves SCRUM-64. Rental scammers copy a real listing's photos and address, repos
      - the emails differ;
      - the domains differ, or the shared domain is in `FREE_EMAIL_DOMAINS`.
   3. **Neither:** otherwise, there is no contact verdict.
+- The contact check has three outcomes: contact match (the compared phone or email matched at least one reference copy), contact mismatch, or no contact verdict.
 - Result. The outcome is decided in this order, and returns `{ status, flag, message, matches, failedSources }`. `matches` and `failedSources` are copied from `search`, and each match gets `rent` set to its scraped `rentMin` (or `null`).
   1. `search.matches` is empty and `search.failedSources` is not empty: `skipped`, with a message that the copy search failed.
   2. `search.matches` is empty: `skipped`, with a message that no copies were found on other sites.
   3. There are no reference copies, because every scrape failed, only open copies were found, or no copy was comparable: `skipped`, with a message that the copies could not be verified.
-  4. There is a price mismatch or a contact mismatch: `violation` with flag `DUPLICATE_LISTING_MISMATCH`, and a message naming each mismatch found (rent, phone, or email) and the reference value.
-  5. Otherwise: `compliant` with `flag: null`.
+  4. There is a contact match: `compliant` with `flag: null`, even if there is a price mismatch, because a scammer would not list the real landlord's contact. If there is a price mismatch, the message says the rent is lower than on the reference copies but the contact matches.
+  5. There is a price mismatch or a contact mismatch: `violation` with flag `DUPLICATE_LISTING_MISMATCH`, and a message naming each mismatch found (rent, phone, or email) and the reference value.
+  6. Otherwise: `compliant` with `flag: null`.
 - `skipped` and `compliant` results always have `flag: null`.
 
 ## Requirements
@@ -77,12 +79,12 @@ Serves SCRUM-64. Rental scammers copy a real listing's photos and address, repos
 
 ## Acceptance criteria
 
-1. When the listing's rent is at least 15% below the reference rent, the result is `violation` with flag `DUPLICATE_LISTING_MISMATCH`. A gap of exactly 15% is flagged, a gap of 14% is not, and a listing rent higher than the reference is never flagged.
+1. When the listing's rent is at least 15% below the reference rent and there is no contact match, the result is `violation` with flag `DUPLICATE_LISTING_MISMATCH`. A gap of exactly 15% is flagged, a gap of 14% is not, and a listing rent higher than the reference is never flagged.
 2. Copies with an MLS number are the reference when present; otherwise trusted listing sites are the reference; open-site copies are never the reference, even when their rent is lower than the listing's.
 3. The reference rent is the median of the reference copies' rents, using the lowest rent of a range, and copies with a different bedroom count or a `for_sale`, `sold`, or `off_market` type are left out of the comparison.
 4. When the listing and the reference copies have phones, a listing phone that matches none of them is a contact mismatch (`violation`), and the same phone written in a different format is not a mismatch.
 5. When the listing or the reference copies have no phone, emails are compared instead: a different address on a different domain or on a free email domain is a mismatch, and a different address on the same company domain is not.
-6. When the reference copies agree with the listing's rent and contact, or no contact can be compared and the rent agrees, the result is `compliant` with `flag: null`.
+6. When the listing's phone or email matches a reference copy, the result is `compliant` with `flag: null` even if the rent is 15% or more below the reference; it is also `compliant` when no contact can be compared and the rent agrees.
 7. The result is `skipped` with `flag: null` and a reason-specific message when no copies were found, when the copy search failed, when only open-site copies were found, or when no copy is comparable.
 8. `checkListingCopies` scrapes every match with Firecrawl JSON extraction in parallel; a scrape that fails, times out after 15 seconds, or returns malformed data is left out without stopping the others, and the function does not throw.
 9. Input with a non-positive rent, an unknown bedroom value, or an invalid email is rejected with a `ZodError` and makes no network call.
@@ -93,12 +95,12 @@ File: `server/tests/SCRUM-64-T-2_listingCompare.test.ts`
 
 Setup for all: Offline Vitest unit tests grouped under `describe('SCRUM-64-T-2: listing copy comparison', ...)`. `compareListingCopies` is called with hand-built `ScrapedCopy` objects. For `checkListingCopies`, `fetch` is replaced with `vi.stubGlobal('fetch', ...)` returning canned Firecrawl scrape JSON, and `FIRECRAWL_API_KEY` is set with `vi.stubEnv`. Test names follow `docs/style-guide.md` §3.2 with a `[Criterion N]` prefix.
 
-- Criterion 1: `[Criterion 1] flags a listing whose rent is at least 15% below the reference rent`: one portal reference copy at $2000; a listing at $1700 (exactly 15%) is `violation` with `DUPLICATE_LISTING_MISMATCH` and a message mentioning rent; $1720 (14%) and $2400 (higher) are `compliant`.
+- Criterion 1: `[Criterion 1] flags a listing whose rent is at least 15% below the reference rent when the contact does not match`: one portal reference copy at $2000 with no phone or email on either side; a listing at $1700 (exactly 15%) is `violation` with `DUPLICATE_LISTING_MISMATCH` and a message mentioning rent; $1720 (14%) and $2400 (higher) are `compliant`.
 - Criterion 2: `[Criterion 2] uses MLS copies first and never uses open-site copies as the reference`: an MLS copy at $2000 and a portal copy at $1700 with a listing at $1700 is `violation` (MLS wins); a listing at $1700 with only a Facebook Marketplace copy at $1700 and no trusted copy is `skipped`; an open copy at $1500 alongside a portal copy at $1750 does not change a `compliant` result for a listing at $1700.
 - Criterion 3: `[Criterion 3] compares against the median rent of comparable reference copies`: portal copies at $1900, $2000, and $3000 give a reference of $2000; a copy with range $2000-$3500 counts as $2000; a 2-bedroom copy and a `for_sale` copy at $900000 are ignored for a 1-bedroom listing.
 - Criterion 4: `[Criterion 4] flags a listing phone that matches no reference copy`: listing `831-555-0100` with reference phones `(831) 555-0199` is `violation` with a message mentioning phone; listing `+1 831.555.0199` with reference `(831) 555-0199` is `compliant`.
 - Criterion 5: `[Criterion 5] compares email when phones are not available`: no listing phone; listing `scam@gmail.com` vs reference `leasing@riverrow.com` is `violation`; listing `john@riverrow.com` vs reference `leasing@riverrow.com` is `compliant`; listing `a@gmail.com` vs reference `b@gmail.com` is `violation`.
-- Criterion 6: `[Criterion 6] returns compliant when the reference copies agree with the listing`: same rent and same phone is `compliant` with `flag: null`; same rent with no phone or email on either side is `compliant`.
+- Criterion 6: `[Criterion 6] returns compliant when the contact matches or the reference copies agree with the listing`: same rent and same phone is `compliant` with `flag: null`; a listing at $1600 with the same phone as a $2000 reference copy (20% lower) is `compliant` with `flag: null` and a message mentioning the lower rent; a listing at $1600 with the same company email domain as the reference copy is `compliant`; same rent with no phone or email on either side is `compliant`.
 - Criterion 7: `[Criterion 7] skips with a reason when copies cannot be compared`: empty matches with `failedSources: ['address']`, empty matches with no failed sources, only open copies, and only 2-bedroom copies for a 1-bedroom listing each return `skipped`, `flag: null`, and a different non-empty message.
 - Criterion 8: `[Criterion 8] scrapes every match in parallel and tolerates failed scrapes`: three matches where the first returns 500, the second never resolves until aborted (fake timers advanced 15000 ms), and the third returns a valid portal copy; asserts three POST calls to the scrape URL, each body has `formats[0].type === 'json'`, the result is computed from the third copy only, and the promise resolves. With `FIRECRAWL_API_KEY` unset, the result is `skipped` and nothing throws.
 - Criterion 9: `[Criterion 9] rejects invalid listing input before any network call`: `rent: 0`, `rent: -100`, `bedrooms: '7'`, and `email: 'not-an-email'` each reject with a `ZodError`, and `fetch` is never called.

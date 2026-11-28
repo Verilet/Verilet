@@ -15,6 +15,7 @@ import {
   withTimeout,
   normalizeSettledResult,
   mapBedroomsToSpaceType,
+  mapPaymentToSelections,
   extractZip,
   WORKER_FAILED_FALLBACK,
 } from '../src/services/evaluateOrchestrator.service.js';
@@ -68,6 +69,8 @@ describe('SCRUM-70-T-1: Listing evaluation orchestrator & POST /api/evaluate', (
     });
 
     vi.spyOn(paymentFlagsService, 'detectUntraceablePayment').mockReturnValue([]);
+    vi.spyOn(paymentFlagsService, 'detectAdvanceFee').mockReturnValue([]);
+    vi.spyOn(paymentFlagsService, 'detectHighRiskSelections').mockReturnValue([]);
 
     vi.spyOn(gisQueryService, 'evaluateGisQuery').mockResolvedValue({
       success: true,
@@ -136,6 +139,52 @@ describe('SCRUM-70-T-1: Listing evaluation orchestrator & POST /api/evaluate', (
       expect(mapBedroomsToSpaceType('2')).toBe('2br');
       expect(mapBedroomsToSpaceType('3')).toBe('3br');
       expect(mapBedroomsToSpaceType('4+')).toBe('4br');
+    });
+
+    it('mapPaymentToSelections maps request payment enums to detector tokens', () => {
+      expect(mapPaymentToSelections('wire')).toEqual(['wire_transfer']);
+      expect(mapPaymentToSelections('zelle-venmo')).toEqual(['zelle', 'venmo']);
+      expect(mapPaymentToSelections('crypto')).toEqual(['crypto']);
+      expect(mapPaymentToSelections('gift-card')).toEqual(['gift-card']);
+      expect(mapPaymentToSelections(null)).toEqual([]);
+      expect(mapPaymentToSelections(undefined)).toEqual([]);
+    });
+
+    it('orchestrateEvaluation merges untraceable, advance-fee, and selected payment violations', async () => {
+      vi.spyOn(paymentFlagsService, 'detectUntraceablePayment').mockReturnValue([
+        {
+          code: 'UNTRACEABLE_PAYMENT',
+          severity: 'critical',
+          title: 'Crypto requested.',
+          explanation: 'Irreversible.',
+          evidence: 'Bitcoin',
+        },
+      ]);
+      vi.spyOn(paymentFlagsService, 'detectAdvanceFee').mockReturnValue([
+        {
+          code: 'ADVANCE_FEE_DEPOSIT',
+          severity: 'critical',
+          title: 'Advance fee requested.',
+          explanation: 'No fee before tour.',
+          evidence: 'Zelle deposit',
+        },
+      ]);
+      const highRiskSpy = vi
+        .spyOn(paymentFlagsService, 'detectHighRiskSelections')
+        .mockReturnValue([
+          {
+            code: 'HIGH_RISK_PAYMENT_METHOD',
+            severity: 'critical',
+            title: 'Wire Transfer requested.',
+            explanation: 'Irreversible.',
+            evidence: 'wire_transfer',
+          },
+        ]);
+
+      const result = await orchestrateEvaluation({ ...validPayload, payment: 'wire' });
+
+      expect(highRiskSpy).toHaveBeenCalledWith(['wire_transfer']);
+      expect(result.data.rawChecks.untraceablePayment).toHaveLength(3);
     });
 
     it('extractZip extracts 5-digit postal code when present', () => {

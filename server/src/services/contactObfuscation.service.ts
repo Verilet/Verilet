@@ -23,23 +23,36 @@ export type ContactObfuscationResult =
   | { readonly success: true; readonly data: ContactObfuscationData }
   | { readonly success: false; readonly error: string };
 
-/** Words representing individual digits, including "oh" for zero. */
-const NUMBER_WORDS = new Set([
-  'zero',
-  'one',
-  'two',
-  'three',
-  'four',
-  'five',
-  'six',
-  'seven',
-  'eight',
-  'nine',
-  'oh',
-]);
+/** Words representing tens values. */
+const TENS_WORDS: Record<string, string> = {
+  twenty: '2',
+  thirty: '3',
+  forty: '4',
+  fifty: '5',
+  sixty: '6',
+  seventy: '7',
+  eighty: '8',
+  ninety: '9',
+};
 
-/** Pattern for a single spelled-out digit or numeric digit group. */
-const NUMBER_TOKEN_PATTERN = '(?:zero|one|two|three|four|five|six|seven|eight|nine|oh|\\d+)';
+/** Maps individual number words to their digit values. */
+const DIGIT_WORDS: Record<string, string> = {
+  zero: '0',
+  oh: '0',
+  one: '1',
+  two: '2',
+  three: '3',
+  four: '4',
+  five: '5',
+  six: '6',
+  seven: '7',
+  eight: '8',
+  nine: '9',
+};
+
+/** Pattern for a number word, connector, or numeric digit group. */
+const NUMBER_TOKEN_PATTERN =
+  '(?:zero|one|two|three|four|five|six|seven|eight|nine|oh|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|and|\\d+)';
 
 /**
  * Matches sequences of spelled-out digits and/or numeric groups.
@@ -90,26 +103,73 @@ function violationResult(evidence: string): ContactObfuscationResult {
 }
 
 /**
+ * Converts a sequence of number words and numeric groups into digits.
+ *
+ * Individual number words represent individual digits.
+ * A tens word followed by a unit word is combined:
+ * "thirty one" becomes "31".
+ * The word "and" is ignored as a spoken-number connector.
+ */
+function decodeNumberSequence(sequence: string): {
+  decoded: string;
+  numberWordCount: number;
+} {
+  const tokens =
+    sequence.match(
+      /zero|one|two|three|four|five|six|seven|eight|nine|oh|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|and|\d+/gi,
+    ) ?? [];
+
+  let decoded = '';
+  let numberWordCount = 0;
+
+  for (let index = 0; index < tokens.length; index += 1) {
+    const token = tokens[index].toLowerCase();
+
+    if (token === 'and') {
+      continue;
+    }
+
+    const tensDigit = TENS_WORDS[token];
+
+    if (tensDigit !== undefined) {
+      numberWordCount += 1;
+      decoded += tensDigit;
+
+      const nextToken = tokens[index + 1]?.toLowerCase();
+      const unitDigit = nextToken ? DIGIT_WORDS[nextToken] : undefined;
+
+      if (unitDigit !== undefined) {
+        decoded += unitDigit;
+        numberWordCount += 1;
+        index += 1;
+      } else {
+        decoded += '0';
+      }
+
+      continue;
+    }
+
+    const digit = DIGIT_WORDS[token];
+
+    if (digit !== undefined) {
+      decoded += digit;
+      numberWordCount += 1;
+      continue;
+    }
+
+    decoded += token;
+  }
+
+  return { decoded, numberWordCount };
+}
+
+/**
  * Checks whether a sequence contains at least seven decoded digits
- * and at least one spelled-out digit.
+ * and at least two spelled-out number words.
  */
 function isObfuscatedNumberSequence(sequence: string): boolean {
-  const tokens = sequence.match(/zero|one|two|three|four|five|six|seven|eight|nine|oh|\d+/gi);
-  if (!tokens) {
-    return false;
-  }
-  let digitCount = 0;
-  let containsNumberWord = false;
-  for (const token of tokens) {
-    const normalizedToken = token.toLowerCase();
-    if (NUMBER_WORDS.has(normalizedToken)) {
-      digitCount += 1;
-      containsNumberWord = true;
-    } else {
-      digitCount += token.length;
-    }
-  }
-  return digitCount >= 7 && containsNumberWord;
+  const { decoded, numberWordCount } = decodeNumberSequence(sequence);
+  return decoded.length >= 7 && numberWordCount >= 2;
 }
 
 /**

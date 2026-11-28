@@ -6,7 +6,8 @@ import {
 } from '../src/services/contactObfuscation.service.js';
 
 // Criterion 1:
-// Spelled-out sequences containing at least seven digits are violations.
+// Spelled-out sequences containing at least seven decoded digits and
+// at least two spelled-out number words are violations.
 // The matched sequence is returned as evidence.
 describe('detectObfuscatedContact - spelled-out numbers', () => {
   it('SCRUM-16-T-2 detects a 10-digit spelled-out phone number', () => {
@@ -57,7 +58,7 @@ describe('detectObfuscatedContact - spelled-out numbers', () => {
 
 // Criterion 2:
 // Mixed spelled-out and numeric digits separated by spaces or punctuation
-// are detected as disguised contact numbers.
+// are detected as disguised contact numbers when the detection threshold is met.
 describe('detectObfuscatedContact - mixed number sequences', () => {
   it('SCRUM-16-T-2 detects a sequence mixing spelled-out and numeric digits', () => {
     const result = detectObfuscatedContact('My number is eight three one - five five five - 0199');
@@ -87,6 +88,56 @@ describe('detectObfuscatedContact - mixed number sequences', () => {
 });
 
 // Criterion 3:
+// Compound number words, including tens-based numbers, and sequences
+// connected by "and" are decoded and detected when the detection threshold is met.
+describe('detectObfuscatedContact - compound number sequences', () => {
+  it('SCRUM-16-T-2 detects compound number phrases', () => {
+    const result = detectObfuscatedContact(
+      'Contact me at eight thirty one, five fifty five, zero one nine nine',
+    );
+
+    expect(result).toMatchObject({
+      success: true,
+      data: {
+        status: 'violation',
+        flag: 'OBFUSCATED_CONTACT',
+        evidence: 'eight thirty one, five fifty five, zero one nine nine',
+      },
+    });
+  });
+
+  it('SCRUM-16-T-2 detects compound number phrases with and connectors', () => {
+    const result = detectObfuscatedContact(
+      'Contact me at eight and thirty one, five and fifty five, zero one nine nine',
+    );
+
+    expect(result).toMatchObject({
+      success: true,
+      data: {
+        status: 'violation',
+        flag: 'OBFUSCATED_CONTACT',
+        evidence: 'eight and thirty one, five and fifty five, zero one nine nine',
+      },
+    });
+  });
+
+  it('SCRUM-16-T-2 detects compound number phrases separated by hyphens', () => {
+    const result = detectObfuscatedContact(
+      'Contact me at eight thirty-one, five fifty-five, zero one nine nine',
+    );
+
+    expect(result).toMatchObject({
+      success: true,
+      data: {
+        status: 'violation',
+        flag: 'OBFUSCATED_CONTACT',
+        evidence: 'eight thirty-one, five fifty-five, zero one nine nine',
+      },
+    });
+  });
+});
+
+// Criterion 4:
 // Phone-shaped sequences using O/o for zero and I/i for one
 // are detected as disguised contact numbers.
 describe('detectObfuscatedContact - leetspeak numbers', () => {
@@ -107,8 +158,9 @@ describe('detectObfuscatedContact - leetspeak numbers', () => {
   );
 });
 
-// Criterion 4:
-// Natural prose containing number words must remain compliant.
+// Criterion 5:
+// Natural descriptive prose containing ordinary number words must remain
+// compliant when it does not contain a phone-like obfuscated sequence.
 describe('detectObfuscatedContact - clean descriptions', () => {
   it.each([
     'The apartment has one bedroom and two bathrooms.',
@@ -128,6 +180,37 @@ describe('detectObfuscatedContact - clean descriptions', () => {
     });
   });
 
+  // Criterion 6:
+  // A numeric phone number followed by a single unrelated number word
+  // must remain compliant.
+  it('SCRUM-16-T-2 does not flag a numeric phone number followed by ordinary prose', () => {
+    const result = detectObfuscatedContact('Call 831-555-0199, one of our agents will help');
+
+    expect(result).toMatchObject({
+      success: true,
+      data: {
+        status: 'compliant',
+        flag: null,
+        evidence: null,
+      },
+    });
+  });
+
+  // Criterion 7:
+  // A date followed by a single unrelated number word must remain compliant.
+  it('SCRUM-16-T-2 does not flag a date followed by a number word', () => {
+    const result = detectObfuscatedContact('Available 12/01/2025, one bedroom left');
+
+    expect(result).toMatchObject({
+      success: true,
+      data: {
+        status: 'compliant',
+        flag: null,
+        evidence: null,
+      },
+    });
+  });
+
   it('SCRUM-16-T-2 does not flag an ordinary numeric phone number as obfuscated', () => {
     const result = detectObfuscatedContact('Call me at (831) 555-0199 for more information.');
 
@@ -142,9 +225,10 @@ describe('detectObfuscatedContact - clean descriptions', () => {
   });
 });
 
-// Criterion 5:
-// The extraction function returns the first ordinary 10-digit phone
-// number in a description, or null when no number is present.
+// Criterion 8:
+// The extraction function returns the first standard numeric 10-digit
+// phone number in a description, including commonly formatted numbers,
+// or null when no qualifying phone number is present.
 describe('extractPhoneFromDescription', () => {
   it('SCRUM-16-T-2 extracts an unformatted 10-digit phone number', () => {
     const result = extractPhoneFromDescription('Call me at 8315550199 for more information.');
@@ -191,9 +275,9 @@ describe('extractPhoneFromDescription', () => {
   });
 });
 
-// Criterion 6:
+// Criterion 9:
 // Missing, empty, whitespace-only, null, and undefined descriptions
-// are skipped.
+// return the skipped response envelope.
 describe('detectObfuscatedContact - missing descriptions', () => {
   it.each(['', '   ', null, undefined])(
     'SCRUM-16-T-2 skips an empty or missing description',
@@ -213,8 +297,9 @@ describe('detectObfuscatedContact - missing descriptions', () => {
   );
 });
 
-// Criterion 7:
-// Non-string description inputs return an invalid-input failure envelope.
+// Criterion 10:
+// Non-string description inputs return an invalid-input failure envelope
+// without throwing an exception.
 describe('detectObfuscatedContact - invalid descriptions', () => {
   it.each([123, true, { description: '8315550199' }])(
     'SCRUM-16-T-2 rejects a non-string description input',
@@ -237,12 +322,19 @@ describe('detectObfuscatedContact - invalid descriptions', () => {
   });
 });
 
-// Criterion 8:
-// At least four distinct disguised contact-number examples are tested.
+// Criterion 11:
+// At least four distinct disguised contact-number patterns are tested:
+// 1. Individual spelled-out digits.
+// 2. Mixed numeric and spelled-out digits.
+// 3. Compound number words.
+// 4. Leetspeak substitutions.
 //
-// Covered by the spelled-out, mixed-sequence, and leetspeak test groups above.
+// Covered by the spelled-out, mixed-sequence, compound-number,
+// and leetspeak test groups above.
 
-// Criterion 9:
-// At least three clean listing-description examples are tested.
+// Criterion 12:
+// At least three distinct clean listing-description samples are tested.
+// The date and numeric-phone false-positive examples must also remain compliant.
 //
-// Covered by the clean descriptions test group above.
+// Covered by the clean descriptions test group above, including the
+// date and numeric-phone false-positive tests.
